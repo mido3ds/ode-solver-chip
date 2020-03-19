@@ -110,11 +110,9 @@ CPU is a non-synthesisable HDL test-bench that:
 * keep receiving data into array of vectors and outputting them into file in the same format of the input file
 * wait for the positive edge of `INTERRUPT` signal 
 
-Simulation is done!
+Simulation is done! 
 
-## Output
-
-TODO
+You can turn the output into human-readable json using output-formatting script
 
 # Sepecifications
 
