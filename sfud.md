@@ -72,6 +72,39 @@ This stage is the responsibility of a script that gets called before the simulat
     - ONLY the ASCII characters 0 or 1 are permitted in the file and NOTHING ELSE
     - there is NO EMPTY LINE/s in the file or spaces
 
+## Instantiating HW
+
+All the next stages are the responsibility of the CPU simulation code.
+
+CPU is a non-synthesisable HDL test-bench that:
+
+* instantiates the HW main module
+* attaches the appropriate signals to the HW main module
+* generates CLK with fixed frequency
+* loads data into HW
+* puts HW into PROCESS state
+* load output out from the HW and into a file
+
+## Loading Input
+
+* load the output of the former script into array of vectors each is 32bit wide that will hold one line in the file
+* put HW at LOAD state
+* RESET for one cycle
+* for each 32bit vector in the former array:
+    - at the positive edge of CLK:
+        * load vector into `DATA` bus
+* load DATA with 0s 
+* wait for the positive edge of `INTERRUPT` signal 
+* check for `ERROR / SUCCESS` and only proceed if it is SUCCESS(1)
+
+## Processing
+
+TODO
+
+## Output
+
+TODO
+
 # Sepecifications
 
 ## Input Data Structure
