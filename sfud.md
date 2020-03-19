@@ -12,9 +12,9 @@ pagestyle: headings
 
 ![Overall Design](d0.png)
 
-## Interface:
+# Interfaces and HW Summary
 
-This section summarizes the interfaces:
+The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
 
 * CLK: IN
 * RESET: IN
@@ -53,4 +53,40 @@ This section summarizes the interfaces:
 * ERROR / SUCCESS: OUT
     - CPU should operate on this value only when `INTERRUPT` is 1
     - errros that could happen include: divide by zero, H > 1, incomplete input
+
+# Simulation Workflow
+
+## Input Preparing
+
+This stage is the responsibility of a script that gets called before the simulation:
+
+* INPUT: json file that follows the format stated in main document
+* create bit stream of the read data that follows the `Input Data Structure` specifications
+* encode the bits following the `Compression` specifications
+* collect encoding output in ASCII string, each byte in string is either '0' or '1' in ASCII format
+* when the string reaches the length of 32 bytes, push it to output file
+* if the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file
+* OUTPUT: 
+    - ASCII file that contains multiple lines of compressed data
+    - each line has exactly 32 '0' or '1' ASCII characters
+    - ONLY the ASCII characters 0 or 1 are permitted in the file and NOTHING ELSE
+    - there is NO EMPTY LINE/s in the file or spaces
+
+# Sepecifications
+
+## Input Data Structure
+
+TODO
+
+## Output Data Structure
+
+TODO
+
+## Compression
+
+TODO
+
+## Decompression
+
+TODO
 
