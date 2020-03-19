@@ -74,7 +74,7 @@ This stage is the responsibility of a script that gets called before the simulat
 
 ## Instantiating HW
 
-All the next stages are the responsibility of the CPU simulation code.
+This stage and all the next ones are the responsibility of the CPU simulation code.
 
 CPU is a non-synthesisable HDL test-bench that:
 
@@ -95,11 +95,22 @@ CPU is a non-synthesisable HDL test-bench that:
         * load vector into `DATA` bus
 * load DATA with 0s 
 * wait for the positive edge of `INTERRUPT` signal 
-* check for `ERROR / SUCCESS` and only proceed if it is SUCCESS(1)
+* check for `ERROR / SUCCESS` and only proceed if it is SUCCESS
 
 ## Processing
 
-TODO
+* put HW at PROCESS state
+* wait for the `INTERRUPT` positive edge
+* check for `ERROR / SUCCESS` and only proceed if it is SUCCESS
+
+## Extracting Output
+
+* put high impedence on `DATA` bus
+* put HW at OUT state
+* keep receiving data into array of vectors and outputting them into file in the same format of the input file
+* wait for the positive edge of `INTERRUPT` signal 
+
+Simulation is done!
 
 ## Output
 
