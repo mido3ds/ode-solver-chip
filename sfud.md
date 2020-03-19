@@ -116,13 +116,75 @@ You can turn the output into human-readable json using output-formatting script
 
 # Sepecifications
 
-## Input Data Structure
+## Memory Mapping
+Not all modules listen on all addresses. 
 
-TODO
+If address bus is loaded with an address `A` that some module `M` is not assigned to, module `M` must ignore the data and address bus.
 
-## Output Data Structure
+| Address | Type            | Size (words) | Name   | Description                              |
+|---------|-----------------|--------------|--------|------------------------------------------|
+| 0x0000  | `struct Header` | 1            | Header | Includes Dimensions and modes            |
+| 0x0001  | `f64`           | 4            | H      | Timestep (variable step mode)            |
+| 0x0005  | `f64`           | 4            | Error  | Error Tolerance (variable step mode)     |
+| 0x0009  | `f64[64]`       | 256          | T      | Time points where solutions are required |
+| 0x0109  | `f64[50][50]`   | 10000        | A      | Matrix A                                 |
+| 0x2819  | `f64[50][50]`   | 10000        | B      | Matrix B                                 |
+| 0x4F29  | `f64[50]`       | 200          | X      | Initial value of X                       |
+| 0x4FF1  | `f64[50][64]`   | 12800        | Xout   | Final Output X                           |
+| 0x81F1  | `f64[50]`       | 200          | U0     | Initial U vector                         |
+| 0x82B9  | `f64[50][64]`   | 12800        | Us     | U vector at required time steps          |
+| 0xB4B9  | `f64[50]`       | 200          | Uint   | Interpolated U Vector                    |
 
-TODO
+## Modules
+
+### RAM
+
+TODO: figure showing its ports
+
+* Role: 
+    - Store input data for solver to access
+    - Store output data from solver that IO will later will transfer back to CPU
+* Ports:
+    - INOUT: 32bit data bus
+    - IN: 16 bit address bus
+    - IN: R/W control signal
+* Word: 16 bit
+* Size: 33265 words
+* Address Range: [0x0000, 0x81F0] all readable and writeable
+
+### IO
+
+TODO: role
+TODO: figure showing its ports
+TODO: ports
+
+### Solver
+
+TODO: role
+TODO: figure showing its ports
+TODO: ports
+
+### Interpolator
+
+TODO: role
+TODO: figure showing its ports
+TODO: ports
+
+### Fixed/Floating Point Unit (FPU)
+
+TODO: role
+TODO: figure showing its ports
+TODO: ports
+
+## Header Data Structure
+
+| Index | Name          | Description                 | Datatype | Total Size |
+|-------|---------------|-----------------------------|----------|------------|
+| 15:10 | N             | Dimension of X              | `uint`   | 6 bits     |
+| 9:4   | M             | Dimension of U              | `uint`   | 6 bits     |
+| 3     | Solver Mode   | Fixed Step or Variable Step | `enum`   | 1 bit      |
+| 2:1   | FPU Precision | fixed point, f64 or f32     | `enum`   | 2 bits     |
+| 0     | NOT USED      | ------                      | ------   | 1 bit      |
 
 ## Compression
 
