@@ -45,7 +45,7 @@ This section summarizes the interfaces:
         * only IO, RAM work
         * IO just copies final outputs to cpu from RAM
         * ends when IO raises INTERRUPT with either SUCCESS or ERROR 
-* DATA (64bit): INOUT
+* DATA (32bit): INOUT
     - Data bus between cpu and io
 * INTERRUPT: OUT
     - raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task
