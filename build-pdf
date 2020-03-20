@@ -1,2 +1,2 @@
-drawio d0.drawio -x -f png -o d0.png -b 8
+drawio d1.drawio -x -f png -o d1.png -b 8
 pandoc sfud.md -t latex -o sfud.pdf

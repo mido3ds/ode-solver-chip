@@ -10,7 +10,7 @@ date: \today
 pagestyle: headings
 ... 
 
-![Overall Design](d0.png)
+![Overall Design](d1.png)
 
 # Interfaces and HW Summary
 
