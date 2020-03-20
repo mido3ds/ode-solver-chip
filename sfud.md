@@ -188,7 +188,7 @@ TODO: figure showing its ports
 * Size: 33265 words
 * Address Range: [0x0000, 0x81F0] all readable and writeable
 
-### IO
+## IO
 
 ![I/O Design](IO.png)
 
@@ -209,15 +209,15 @@ TODO: figure showing its ports
     - OUT: Error to CPU
 
 
-## IO Job and sub_modules:
+### IO Job and sub_modules:
 
 * On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator`, and when `CPU` requests output result, and they are available, sends them out.
 * `Decompressor` [Read here](# Decompression) 
 * `Next Address Unit` is responsible for calculating the next address to push the data at, as you know the address bus is our discriber to the data on the data bus, so in order to let the IO knows where teh matrix of variable ended this unit decides this, furthermore, `NAU` knows `N` and `M`, so when reading the matrix `A` it knows where exactly it ends.
-* `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 
 
-### Solver
+## Solver
 
 ![Solver Design](solver.png)
 
@@ -238,7 +238,7 @@ TODO: figure showing its ports
     - OUT: R/W to RAM
     - OUT: Error to CPU
 
-## Solver Memory Size:
+### Solver Memory Size:
 
 * Main Part: 40 KB --> 20009 (16 bits) Registers
     - N, M, C = 16 bits
@@ -262,19 +262,19 @@ TODO: figure showing its ports
     - 50: max of M
     - 64: max of numbers
     - 5: max of times answer is required
-# Pleace notice we are storing all the 5 output values and flushing them to the CPU.
+* Please notice we are storing all the 5 output values and flushing them to the CPU.
 
-## Solver Job and sub_modules:
+### Solver Job and sub_modules:
 
 * On a large scale it receives `U_h` from interpolator, gives it another `h` to compute `U_hnew` at, then computes `X_h` and decides to stop and flush output to I/O or continue.
 * At the begining it receives its data from I/O such as N,M,err,h...etc.
-* `FPU` helps knowing mode and fp.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 * `Arithmetic Solver` where the absolute mathemetical operations reley.
 * `Error Unit` to detect any error in sizes, h, numbers...etc.
 * `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[# Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
 * `Counter Unit`, tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
 
-### Interpolator
+## Interpolator
 
 ![Interpolator Design](interpolator.png)
 
@@ -291,7 +291,7 @@ TODO: figure showing its ports
     - OUT: Interrupt to CPU
     - OUT: Error to CPU
 
-## Interpolator Memory Size:
+### Interpolator Memory Size:
 
 * U_s: 16000 bits --> 1000 (16 bits) Registers
     - U_s = 5*[50]*64 = 16000 bits
@@ -309,7 +309,7 @@ TODO: figure showing its ports
     - 50: max of M
     - 64: max of numbers
 
-## Interpolator Job and sub_modules:
+### Interpolator Job and sub_modules:
 
 * On a large scale, it only computes U at a specific time.
 * At the begining it receives from `IO` the `U_s` and `T_s` fixed variables/data, and stores them.
@@ -322,11 +322,11 @@ TODO: figure showing its ports
 * `Time Pointer Unit` helps you to identify which T of the T_s array we are currently handling.
 * Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on...
 * `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes....etc.
-* `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 
 
 
-### Fixed/Floating Point Unit (FPU)
+## Fixed/Floating Point Unit (FPU)
 
 TODO: role
 TODO: figure showing its ports
