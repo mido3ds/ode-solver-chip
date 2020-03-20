@@ -222,6 +222,32 @@ TODO: figure showing its ports
     - OUT: R/W to RAM
     - OUT: Error to CPU
 
+## Solver Memory Size:
+
+* Main Part: 40 KB --> 20009 (16 bits) Registers
+    - N, M, C = 16 bits
+    - h = 64 bits
+    - err = 64 bits
+    - A = [50*50]*64 = 160000 bits
+    - B = [50*50]*64 = 160000 bits
+    
+* X_current: 3200 bits --> 200 (16 bits) Registers
+    - X = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
+
+* U_current: 3200 bits --> 200 (16 bits) Registers
+    - U = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
+
+* X_out: 16000 bits --> 1000 (16 bits) Registers
+    - X = 5 * 50 * 64 = 16000 bits
+    - 50: max of M
+    - 64: max of numbers
+    - 5: max of times answer is required
+# Pleace notice we are storing all the 5 output values and flushing them to the CPU.
+
 ## Solver Job and sub_modules:
 
 * On a large scale it receives `U_h` from interpolator, gives it another `h` to compute `U_hnew` at, then computes `X_h` and decides to stop and flush output to I/O or continue.
@@ -248,6 +274,24 @@ TODO: figure showing its ports
     - IN: 2bit Load/Process/Out
     - OUT: Interrupt to CPU
     - OUT: Error to CPU
+
+## Interpolator Memory Size:
+
+* U_s: 16000 bits --> 1000 (16 bits) Registers
+    - U_s = 5*[50]*64 = 16000 bits
+    - 50: max of M
+    - 64: max of numbers
+    - 5: max of times answer is required
+    
+* T_s: 320 bits --> 20 (16 bits) Registers
+    - T_s = 5*64 = 320 bits
+    - 5: max of times answer is required
+    - 64: max of numbers
+
+* U_out: 3200 bits --> 200 (16 bits) Registers
+    - U = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
 
 ## Interpolator Job and sub_modules:
 
