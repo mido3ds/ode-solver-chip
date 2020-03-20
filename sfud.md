@@ -154,9 +154,22 @@ TODO: figure showing its ports
 
 ### IO
 
-TODO: role
-TODO: figure showing its ports
-TODO: ports
+* Role:
+    - Receive backets of 32 bits from the CPUm through `DATA` bus.
+    - Decompress the data
+    - Send the data to other modules (Solver/Interpolation/RAM).
+
+* Ports:
+    - INOUT: 32bit data bus with other modules
+    - INOUT: 32bit data bus with CPU
+    - IN: 32bit address bus
+    - IN: CLOCK
+    - IN: Reset
+    - IN: 2bit Load/Process/Out
+    - OUT: Interrupt to CPU
+    - OUT: R/W to RAM
+    - OUT: Error to CPU
+
 
 ### Solver
 
@@ -188,22 +201,32 @@ TODO: ports
 
 ## Compression
 
-Follow bit-level Run-length encoding to compress ram content before sending them as following:
+Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to seven) [1:7] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
 
-* INPUT: bit stream of `X` bits
-* OUTPUT: `Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)`
+### Input 
+Bit stream of `X` bits
+
+### Output 
+`Y` compressed 4bit packets, where `X >= Y >= ceil(X/7)`
 Each packet must follow this format:
 | Bit Index | Description                        | Size   |
 |-----------|------------------------------------|--------|
-| 3:1       | Number of bits to generate `[0:8]` | 3 bits |
+| 3:1       | Number of bits to generate `[0:7]` | 3 bits |
 | 0         | Bit to generate                    | 1 bit  |
 TOOO: encoding figure
-* ALGORITHM:
+
+### Example
+| Original | Compression |
+|----------|-------------|
+| 1111111  | 1111        |
+| 0000     | 0110        |
+
+### Pseudo-code
 ```
 c = first bit in bit_stream
 count = 0
 for b in bit_stream:
-    if c == b and count < 8:
+    if c == b and count < 7:
         count++
     else:
         emit_packet(count, c)
@@ -211,7 +234,16 @@ for b in bit_stream:
         c = b
 ```
 
+### Reason for choosing this size
+Because the occurence of more that 7 ones or zeros simultaneously is very rare.
+
+### Problem
+This compression algorithm may not compress the data, rather than that it may increase the number of bits.
+
 ## Decompression
 
-TODO
+Decompression, like a dummy operator, takes four bits.
+extract the count/existence of the fourth bit from the first three.
+then place the output in a buffer.
+
 
