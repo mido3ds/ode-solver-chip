@@ -196,7 +196,7 @@ TODO: figure showing its ports
 ## IO Job and sub_modules:
 
 * On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator`, and when `CPU` requests output result, and they are available, sends them out.
-* `Decompressor` [Read here](## Decompression) 
+* `Decompressor` [Read here](# Decompression) 
 * `Next Address Unit` is responsible for calculating the next address to push the data at, as you know the address bus is our discriber to the data on the data bus, so in order to let the IO knows where teh matrix of variable ended this unit decides this, furthermore, `NAU` knows `N` and `M`, so when reading the matrix `A` it knows where exactly it ends.
 * `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
 
@@ -229,7 +229,7 @@ TODO: figure showing its ports
 * `FPU` helps knowing mode and fp.
 * `Arithmetic Solver` where the absolute mathemetical operations reley.
 * `Error Unit` to detect any error in sizes, h, numbers...etc.
-* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[### Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
+* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[# Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
 * `Counter Unit`, tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
 
 ### Interpolator
@@ -253,6 +253,7 @@ TODO: figure showing its ports
 
 * On a large scale, it only computes U at a specific time.
 * At the begining it receives from `IO` the `U_s` and `T_s` fixed variables/data, and stores them.
+
 * Each U_s is at most of size [64*50] = 3200 bits = 200 registers
 * Each T_s is at most of size [64] bits = 4 regs.
 * T_s keeps hold of the time where each U_s represents, for example, T_s = [1,2,3], there fore the first 200 regs. in U_s are the value of `U` at time `1`, and so on...
