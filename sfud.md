@@ -32,15 +32,15 @@ The hardware has the following interfaces that triggers some actions summarized 
         * buffer is flushed into data bus with appropriate adderss
         * ends when cpu finishes its data loading and switches to `WAIT` state
     - WAIT(1):
-        * Same state as `LOAD`, but IO doesn't receive anymore data from CPU
-        * ends when IO flushes all its buffer and raises `INTERRUP` with either `ERROR` or `SUCCESS`
+        * Same state as `LOAD` , but IO doesn't receive anymore data from CPU
+        * ends when IO flushes all its buffer and raises `INTERRUP` with either `ERROR` or `SUCCESS` 
     - PROC(2):
         * SOLVER sends time step to calculate U at
         * SOLVER and INTERPOLATOR work concurrently to calculate their outputs
         * INTERPOLATOR sends `DONE` signal to SOLVER when it finishes the interpolated U
         * SOLVER can request to copy the interpolated U 
         * INTERPOLATOR waits for SOLVER to send next time step
-        * ends when either SOLVER or INTERP raises INTERRUPT with either `SUCCESS` or `ERROR`
+        * ends when either SOLVER or INTERP raises INTERRUPT with either `SUCCESS` or `ERROR` 
     - OUT(3):
         * IO just copies final outputs to cpu from SOLVER memory
         * ends when IO raises INTERRUPT with either `SUCCESS` or `ERROR` 
@@ -48,7 +48,7 @@ The hardware has the following interfaces that triggers some actions summarized 
     - Data bus between cpu and io
 * INTERRUPT: OUT
     - raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task
-    - if task finished with success the `ERROR / SUCCESS` is set to `SUCCESS`, otherwise it's `ERROR`
+    - if task finished with success the `ERROR / SUCCESS` is set to `SUCCESS` , otherwise it's `ERROR` 
 * ERROR(0) / SUCCESS(1): OUT
     - CPU should operate on this value ONLY when `INTERRUPT` is 1
     - errros that could happen include: divide by zero, H > 1, incomplete input
@@ -116,7 +116,8 @@ You can turn the output into human-readable json using output-formatting script
 # Sepecifications
 
 ## Memory Mapping
-The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
+
+The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory.
 
 The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
 
@@ -126,10 +127,12 @@ This way communicating is simplified.
 
 `A` column for module `M` is the action of the address taken at module `M` when it sees that address.
 It's either:
-* `W`: *Write to* module `M`. Module `M` is expected to *read* the data bus and store data internally, so the other module *wrote* to module `M`.
-* `R`: *Read from* module `M`. Module `M` is expected to *write* some data to the data bus as response to this address, so the other module *reads* from it.
+
+* `W` : *Write to* module `M` . Module `M` is expected to *read* the data bus and store data internally, so the other module *wrote* to module `M` .
+* `R` : *Read from* module `M` . Module `M` is expected to *write* some data to the data bus as response to this address, so the other module *reads* from it.
 
 ### Solver Memory Mapping
+
 Solver module listens at the following addresses:
 | Address | A | Type            | #Words | Name   | Description                          |
 |---------|---|-----------------|--------|--------|--------------------------------------|
@@ -142,6 +145,7 @@ Solver module listens at the following addresses:
 | 0xXXXX  | R | `f64[50][64]`   | 12800  | Xout   | Final Output X                       |
 
 ### Interpolator Memory Mapping
+
 Interpolator module listens at the following addresses:
 | Address | A | Type            | #Words | Name   | Description                              |
 |---------|---|-----------------|--------|--------|------------------------------------------|
@@ -192,14 +196,12 @@ TODO: figure showing its ports
     - OUT: R/W to RAM
     - OUT: Error to CPU
 
-
 ## IO Job and sub_modules:
 
-* On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator`, and when `CPU` requests output result, and they are available, sends them out.
+* On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator` , and when `CPU` requests output result, and they are available, sends them out.
 * `Decompressor` [Read here](## Decompression) 
-* `Next Address Unit` is responsible for calculating the next address to push the data at, as you know the address bus is our discriber to the data on the data bus, so in order to let the IO knows where teh matrix of variable ended this unit decides this, furthermore, `NAU` knows `N` and `M`, so when reading the matrix `A` it knows where exactly it ends.
+* `Next Address Unit` is responsible for calculating the next address to push the data at, as you know the address bus is our discriber to the data on the data bus, so in order to let the IO knows where teh matrix of variable ended this unit decides this, furthermore, `NAU` knows `N` and `M` , so when reading the matrix `A` it knows where exactly it ends.
 * `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
-
 
 ### Solver
 
@@ -225,12 +227,12 @@ TODO: figure showing its ports
 ## Solver Job and sub_modules:
 
 * On a large scale it receives `U_h` from interpolator, gives it another `h` to compute `U_hnew` at, then computes `X_h` and decides to stop and flush output to I/O or continue.
-* At the begining it receives its data from I/O such as N,M,err,h...etc.
+* At the begining it receives its data from I/O such as N, M, err, h... etc.
 * `FPU` helps knowing mode and fp.
 * `Arithmetic Solver` where the absolute mathemetical operations reley.
-* `Error Unit` to detect any error in sizes, h, numbers...etc.
-* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[### Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
-* `Counter Unit`, tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
+* `Error Unit` to detect any error in sizes, h, numbers... etc.
+* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h` , interpolator is calculating `U_hnew` , (more about parallelism here)[### Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h` , and detects when to stop, in summation it calculates the next `h` , even if it was fixed step.
+* `Counter Unit` , tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
 
 ### Interpolator
 
@@ -239,7 +241,7 @@ TODO: figure showing its ports
 * Role:
     - Calculates the upcoming U knowing h, U initial and U final.
 
-* Role:
+* Ports:
     - OUT: Done signal to Solver
     - INOUT: 32bit data bus with other modules
     - IN: 16bit address bus
@@ -255,20 +257,53 @@ TODO: figure showing its ports
 * At the begining it receives from `IO` the `U_s` and `T_s` fixed variables/data, and stores them.
 * Each U_s is at most of size [64*50] = 3200 bits = 200 registers
 * Each T_s is at most of size [64] bits = 4 regs.
-* T_s keeps hold of the time where each U_s represents, for example, T_s = [1,2,3], there fore the first 200 regs. in U_s are the value of `U` at time `1`, and so on...
-* You will need an iterator to target the appropriate U_s from the array of memory, that's the `Address pointer Unit`.
+* T_s keeps hold of the time where each U_s represents, for example, T_s = [1, 2, 3], there fore the first 200 regs.in U_s are the value of `U` at time `1` , and so on... 
+* You will need an iterator to target the appropriate U_s from the array of memory, that's the `Address pointer Unit` .
 * `Arithmetic Solver` is where you're absolute mathematical operations reley.
 * `Time Pointer Unit` helps you to identify which T of the T_s array we are currently handling.
-* Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on...
-* `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes....etc.
+* Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on... 
+* `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes... .etc.
 * `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
-
-
 
 ### Fixed/Floating Point Unit (FPU)
 
-TODO: role
-TODO: figure showing its ports
+![FP Unit with its ports](FPU.png)
+
+* Role:
+    - Instantiated, in the rest modules, multiple times and for different purposes.
+    - perform the following operations given in port `OP` .
+    - perform them in different modes given in `MODE` .
+
+* Ports:
+    - `MODE` : 
+        * FIXED(0): operate on *LOWEST* 16bits of both `A` and `B` following `Fixed point specifications` .
+        * F64(1): operate on *ALL* 64bits of both `A` and `B` following `Floating point specifications` .
+        * F32(2): operate on *LOWEST* 32bits of both `A` and `B` following `Floating point specifications` .
+    - `OP` :
+        * 0: `A + B` 
+        * 1: `A - B` 
+        * 2: `A * B` 
+        * 3: `A / B` 
+    - `CLK` : FPU operates on *POSITIVE* edge.
+    - `DONE` : one operation needs multiple clocks, so FPU must RAISE `DONE` to `1` when finished for *EXACTLY ONE* clock cycle.
+    - `ENABLE` : FPU must only operate when `ENABLE` is set to `1` .
+    - `A` , `B` , `C` : input and output busses, *all* are 64bit wide.
+    - `ERROR` : 
+        * FPU sets `ERROR` to `1` when an exception takes place. 
+        * Each mode has its possible set of exceptions, see the corresponding specifications. 
+        * MUST stay at `1` after setting it, until `RESET` is set to `1` .
+    - `RESET` : clears `ERROR` state *REGARDLESS* of `ENABLE` input
+
+* Fixed point specifications: 
+    - 16bit input
+    - 16bit output
+    - scale factor in both input and output = 7
+    - in case of overflow or division by zero, `ERROR` MUST be set to `1` and MUST stay at `1` until `RESET` is set to `1` .
+
+* Floating point specifications:
+    - MUST follow [IEEE-754 2019-revision](https://en.wikipedia.org/wiki/IEEE_754) for both fp32 and fp64 modes.
+    - `ERROR` is set to `1` when *ANY* of the exceptions stated in the `IEEE-754` takes place, and stay at `1` until `RESET` is set to `1` .
+
 TODO: ports
 
 ## Header Data Structure
@@ -286,10 +321,12 @@ TODO: ports
 Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to eight) [1:8] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
 
 ### Input 
+
 Bit stream of `X` bits
 
 ### Output 
-`Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)`
+
+`Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)` 
 Each packet must follow this format:
 | Bit Index | Description                    | Size   |
 |-----------|--------------------------------|--------|
@@ -301,13 +338,15 @@ Each packet must follow this format:
 TOOO: encoding figure
 
 ### Example
+
 | Original | Compression |
 |----------|-------------|
 | 11111111 | 1111        |
 | 0000     | 0110        |
 
 ### Pseudo-code
-```
+
+``` 
 c = first bit in bit_stream
 count = 0
 for b in bit_stream:
@@ -320,14 +359,18 @@ for b in bit_stream:
 ```
 
 ### Reason for choosing this size
+
 Because the occurence of more that 7 ones or zeros simultaneously is very rare.
 
 ### Problem
+
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
+
 Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
-```
+
+``` 
 for packet in packets:
     # bit to repeat
     b = packet[0]
@@ -346,10 +389,11 @@ for packet in packets:
         buffer.flush()
 ```
 
-
 ## Parallelism in design
 
-* Parallelism in design is between `Solver` and `Interpolator`, happens when Solver is calculating the next `X_h`, interpolator is calculating `U_h2`.
-* In fixed step algorithm, there's no problems, the only problem is when we reach the last `X`, then the upcoming `h` will be garbage or uunwanted `h`, and program will terminate either ways.
-* In adaptive/variable step algorithm, when `Solver` is calculating `X_h`, `Interpolator` is busy calculating `U_h/2`,
-and when Solver is calculating `X_h/2` and `X_h`, interpolator will be calculating `U_h*`, `h*` is the `h` from the algorithm equaiton, which is `h = (0.9*h^​2​*L)/(e)`, this `U_h*` might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate `U_hnew`.
+* Parallelism in design is between `Solver` and `Interpolator` , happens when Solver is calculating the next `X_h` , interpolator is calculating `U_h2` .
+* In fixed step algorithm, there's no problems, the only problem is when we reach the last `X` , then the upcoming `h` will be garbage or uunwanted `h` , and program will terminate either ways.
+* In adaptive/variable step algorithm, when `Solver` is calculating `X_h` , `Interpolator` is busy calculating `U_h/2` , 
+
+and when Solver is calculating `X_h/2` and `X_h` , interpolator will be calculating `U_h*` , `h*` is the `h` from the algorithm equaiton, which is `h = (0.9*h^​2​*L)/(e)` , this `U_h*` might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate `U_hnew` .
+
