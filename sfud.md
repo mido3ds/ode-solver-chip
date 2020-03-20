@@ -154,7 +154,7 @@ TODO: figure showing its ports
 
 ### IO
 
-* FIGURE
+![I/O Design](IO.png)
 
 * Role:
     - Receive backets of 32 bits from the CPUm through `DATA` bus.
@@ -174,7 +174,8 @@ TODO: figure showing its ports
 
 
 ### Solver
-TODO: figure showing its ports
+
+![Solver Design](solver.png)
 
 * Role:
     - Computes the upcoming X knowing h, the previous X and U.
@@ -195,7 +196,8 @@ TODO: figure showing its ports
 
 ### Interpolator
 
-TODO: figure showing its ports
+![Interpolator Design](interpolator.png)
+
 * Role:
     - Calculates the upcoming U knowing h, U initial and U final.
 
