@@ -17,48 +17,47 @@ pagestyle: headings
 The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
 
 * CLK: IN
-* RESET: IN
+* RESET: ASYNC IN
     - clears all internal states of all modules:
         * IO internal buffer
-        * ERROR/SUCCESS of all modules resets to SUCCESS(1)
-        * INTERRUP resets to zero
-        * INTERPOLATOR invalidates all its cache, which means it needs to refill it from IO 
-        * SOVLER invalidates all its cache and registers, which means it needs to access the ram again 
-        * CPY from solver to interp, and ACK from interp to solver are both zeroed to stop any copy operations
-    - RAM is NOT cleared
-    - ASYNC
-    - CPU is expected next clock to turn the `LOAD / PROC / OUT` into `LOAD` state and we will start loding input again.
-* LOAD / PROC / OUT (2bit): IN
+        * ERROR/SUCCESS of all modules resets to SUCCESS
+        * INTERRUPT resets to zero
+    - Memory at solver and interpolator are NOT cleared
+    - at next clock, CPU is expected to turn the `LOAD / WAIT / PROC / OUT` into `LOAD` state and we will start loding input again.
+* LOAD / WAIT / PROC / OUT (2bit): IN
     - set the current major state of the machine
     - LOAD(0):
-        * only IO, RAM, INTERPOLATOR work
         * IO receives *compressed* data from the CPU
         * IO decompresses data into buffer
-        * buffer is written into RAM and/or INTERPOLATOR CACHE depending on internal counter
-        * ends when IO flushes all buffer and raises INTERRUPT with either SUCCESS or ERROR
-    - PROC(1):
-        * only RAM, SOLVER, INTERPOLATOR work
+        * buffer is flushed into data bus with appropriate adderss
+        * ends when cpu finishes its data loading and switches to `WAIT` state
+    - WAIT(1):
+        * Same state as `LOAD`, but IO doesn't receive anymore data from CPU
+        * ends when IO flushes all its buffer and raises `INTERRUP` with either `ERROR` or `SUCCESS`
+    - PROC(2):
+        * SOLVER sends time step to calculate U at
         * SOLVER and INTERPOLATOR work concurrently to calculate their outputs
-        * INTERPOLATOR waits for SOLVER CPY to copy its output then proceeds to calculating next output
-        * ends when either SOLVER or INTERP raises INTERRUPT with either SUCCESS or ERROR
-    - OUT(2):
-        * only IO, RAM work
-        * IO just copies final outputs to cpu from RAM
-        * ends when IO raises INTERRUPT with either SUCCESS or ERROR 
+        * INTERPOLATOR sends `DONE` signal to SOLVER when it finishes the interpolated U
+        * SOLVER can request to copy the interpolated U 
+        * INTERPOLATOR waits for SOLVER to send next time step
+        * ends when either SOLVER or INTERP raises INTERRUPT with either `SUCCESS` or `ERROR`
+    - OUT(3):
+        * IO just copies final outputs to cpu from SOLVER memory
+        * ends when IO raises INTERRUPT with either `SUCCESS` or `ERROR` 
 * DATA (32bit): INOUT
     - Data bus between cpu and io
 * INTERRUPT: OUT
     - raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task
-    - if task finished with success the `ERROR / SUCCESS` is set to SUCCESS(1), otherwise it's ERROR(0)
-* ERROR / SUCCESS: OUT
-    - CPU should operate on this value only when `INTERRUPT` is 1
+    - if task finished with success the `ERROR / SUCCESS` is set to `SUCCESS`, otherwise it's `ERROR`
+* ERROR(0) / SUCCESS(1): OUT
+    - CPU should operate on this value ONLY when `INTERRUPT` is 1
     - errros that could happen include: divide by zero, H > 1, incomplete input
 
 # Simulation Workflow
 
 ## Input Preparing
 
-This stage is the responsibility of a script that gets called before the simulation:
+This stage is the responsibility of a script that runs before the simulation:
 
 * INPUT: json file that follows the format stated in main document
 * create bit stream of the read data that follows the `Input Data Structure` specifications
@@ -117,30 +116,43 @@ You can turn the output into human-readable json using output-formatting script
 # Sepecifications
 
 ## Memory Mapping
-Not all modules listen on all addresses. 
+The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
 
-If address bus is loaded with an address `A` that some module `M` is not assigned to, module `M` must ignore the data and address bus.
+The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
+
+If address bus is loaded with an address `Adr` that some module `M` is not assigned to, module `M` must ignore the data and address bus so the rest can communicate.
+
+This way communicating is simplified.
+
+`A` column for module `M` is the action of the address taken at module `M` when it sees that address.
+It's either:
+* `W`: *Write to* module `M`. Module `M` is expected to *read* the data bus and store data internally, so the other module *wrote* to module `M`.
+* `R`: *Read from* module `M`. Module `M` is expected to *write* some data to the data bus as response to this address, so the other module *reads* from it.
 
 ### Solver Memory Mapping
-| Address | Type            | Size (words) | Name   | Description                          |
-|---------|-----------------|--------------|--------|--------------------------------------|
-| 0x0000  | `struct Header` | 1            | Header | Includes Dimensions and modes        |
-| 0xXXXX  | `f64`           | 4            | H      | Timestep (variable step mode)        |
-| 0xXXXX  | `f64`           | 4            | Error  | Error Tolerance (variable step mode) |
-| 0xXXXX  | `f64[50][50]`   | 10000        | A      | Matrix A                             |
-| 0xXXXX  | `f64[50][50]`   | 10000        | B      | Matrix B                             |
-| 0xXXXX  | `f64[50]`       | 200          | X      | Initial value of X                   |
-| 0xXXXX  | `f64[50][64]`   | 12800        | Xout   | Final Output X                       |
+Solver module listens at the following addresses:
+| Address | A | Type            | #Words | Name   | Description                          |
+|---------|---|-----------------|--------|--------|--------------------------------------|
+| 0x0000  | W | `struct Header` | 1      | Header | Includes Dimensions and modes        |
+| 0xXXXX  | W | `f64`           | 4      | H      | Timestep (variable step mode)        |
+| 0xXXXX  | W | `f64`           | 4      | Error  | Error Tolerance (variable step mode) |
+| 0xXXXX  | W | `f64[50][50]`   | 10000  | A      | Matrix A                             |
+| 0xXXXX  | W | `f64[50][50]`   | 10000  | B      | Matrix B                             |
+| 0xXXXX  | W | `f64[50]`       | 200    | X      | Initial value of X                   |
+| 0xXXXX  | R | `f64[50][64]`   | 12800  | Xout   | Final Output X                       |
 
 ### Interpolator Memory Mapping
-| Address | Type            | Size (words) | Name   | Description                              |
-|---------|-----------------|--------------|--------|------------------------------------------|
-| 0x0000  | `struct Header` | 1            | Header | Includes Dimensions and modes            |
-| 0xXXXX  | `f64[64]`       | 256          | T      | Time points where solutions are required |
-| 0xXXXX  | `f64[50]`       | 200          | U0     | Initial U vector                         |
-| 0xXXXX  | `f64[50][64]`   | 12800        | Us     | U vector at required time steps          |
-| 0xXXXX  | `f64[50]`       | 200          | Uint   | Interpolated U Vector                    |
+Interpolator module listens at the following addresses:
+| Address | A | Type            | #Words | Name   | Description                              |
+|---------|---|-----------------|--------|--------|------------------------------------------|
+| 0x0000  | W | `struct Header` | 1      | Header | Includes Dimensions and modes            |
+| 0xXXXX  | W | `f64[64]`       | 256    | T      | Time points where solutions are required |
+| 0xXXXX  | W | `f64[50]`       | 200    | U0     | Initial U vector                         |
+| 0xXXXX  | W | `f64[50][64]`   | 12800  | Us     | U vector at required time steps          |
+| 0xXXXX  | R | `f64[50]`       | 200    | Uint   | Interpolated U Vector                    |
+| 0xXXXX  | W | `f32`           | 2      | K      | Time to calculate U at                   |
 
+TODO: size of K and its name
 TODO: figure out the addresses
 
 ## Modules
@@ -271,24 +283,27 @@ TODO: ports
 
 ## Compression
 
-Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to seven) [1:7] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
+Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to eight) [1:8] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
 
 ### Input 
 Bit stream of `X` bits
 
 ### Output 
-`Y` compressed 4bit packets, where `X >= Y >= ceil(X/7)`
+`Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)`
 Each packet must follow this format:
-| Bit Index | Description                        | Size   |
-|-----------|------------------------------------|--------|
-| 3:1       | Number of bits to generate `[0:7]` | 3 bits |
-| 0         | Bit to generate                    | 1 bit  |
+| Bit Index | Description                    | Size   |
+|-----------|--------------------------------|--------|
+| 3:1       | Number of bits to generate - 1 | 3 bits |
+| 0         | Bit to generate                | 1 bit  |
+
+> NOTE: the 3 bits must be incremented before decode
+
 TOOO: encoding figure
 
 ### Example
 | Original | Compression |
 |----------|-------------|
-| 1111111  | 1111        |
+| 1111111! | 1111        |
 | 0000     | 0110        |
 
 ### Pseudo-code
@@ -299,7 +314,7 @@ for b in bit_stream:
     if c == b and count < 7:
         count++
     else:
-        emit_packet(count, c)
+        emit_packet(count-1, c)
         count = 1
         c = b
 ```
@@ -311,6 +326,9 @@ Because the occurence of more that 7 ones or zeros simultaneously is very rare.
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
+
+TODO: mention algorithm
+TODO: note the increment of numbers 
 
 Decompression, like a dummy operator, takes four bits.
 extract the count/existence of the fourth bit from the first three.
