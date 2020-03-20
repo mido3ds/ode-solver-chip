@@ -207,17 +207,17 @@ Solver module listens at the following addresses:
  \hline\hline
   0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0xXXXX  & W & f64 & 4 & H & Timestep (variable step mode)  \\
+ 0x0001  & W & f64 & 4 & H & Timestep (variable step mode)  \\
  \hline
- 0xXXXX  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
+ 0x0005  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
  \hline
- 0xXXXX  & W & f64[50][50] & 10000 & A & Matrix A \\
+ 0x0009  & W & f64[50][50] & 10000 & A & Matrix A \\
  \hline
- 0xXXXX  & W & f64[50][50] & 10000 & B & Matrix B \\
+ 0x2719  & W & f64[50][50] & 10000 & B & Matrix B \\
  \hline
- 0xXXXX  & W & f64[50] & 200 & X & Initial value of X \\
+ 0x4E29  & W & f64[50] & 200 & X & Initial value of X \\
  \hline
- 0xXXXX  & R & f64[50][64] & 12800 & Xout & Final Output X \\ [1ex] 
+ 0x4EF1  & R & f64[50][64] & 12800 & Xout & Final Output X \\ [1ex] 
  \hline
 \end{tabular}
 \end{center}
@@ -232,15 +232,15 @@ Interpolator module listens at the following addresses:
  \hline\hline
   0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0xXXXX  & W & f64[64] & 256 & T & Time points where solutions are required  \\
+ 0x80F1  & W & f64[64] & 256 & T & Time points where solutions are required  \\
  \hline
- 0xXXXX  & W & f64[50] & 200 & U0 & Initial U vector \\
+ 0x81F1  & W & f64[50] & 200 & U0 & Initial U vector \\
  \hline
- 0xXXXX  & W & f64[50][64] & 12800 & Us & U vector at required time steps \\
+ 0x82B9  & W & f64[50][64] & 12800 & Us & U vector at required time steps \\
  \hline
- 0xXXXX  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
+ 0xB4B9  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
  \hline
- 0xXXXX  & W & f32 & 2 & K & Time to calculate U at \\ [1ex] 
+ 0xB581  & W & f32 & 2 & h_new & Time to calculate U at \\ [1ex] 
  \hline
 \end{tabular}
 \end{center}
