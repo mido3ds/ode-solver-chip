@@ -178,17 +178,38 @@ TODO: ports
 
 ## Header Data Structure
 
-| Index | Name          | Description                 | Datatype | Total Size |
-|-------|---------------|-----------------------------|----------|------------|
-| 15:10 | N             | Dimension of X              | `uint`   | 6 bits     |
-| 9:4   | M             | Dimension of U              | `uint`   | 6 bits     |
-| 3     | Solver Mode   | Fixed Step or Variable Step | `enum`   | 1 bit      |
-| 2:1   | FPU Precision | fixed point, f64 or f32     | `enum`   | 2 bits     |
-| 0     | NOT USED      | ------                      | ------   | 1 bit      |
+| Bit Index | Name          | Description                 | Datatype | Total Size |
+|-----------|---------------|-----------------------------|----------|------------|
+| 15:10     | N             | Dimension of X              | `uint`   | 6 bits     |
+| 9:4       | M             | Dimension of U              | `uint`   | 6 bits     |
+| 3         | Solver Mode   | Fixed Step or Variable Step | `enum`   | 1 bit      |
+| 2:1       | FPU Precision | fixed point, f64 or f32     | `enum`   | 2 bits     |
+| 0         | NOT USED      | ------                      | ------   | 1 bit      |
 
 ## Compression
 
-TODO
+Follow bit-level Run-length encoding to compress ram content before sending them as following:
+
+* INPUT: bit stream of `X` bits
+* OUTPUT: `Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)`
+Each packet must follow this format:
+| Bit Index | Description                        | Size   |
+|-----------|------------------------------------|--------|
+| 3:1       | Number of bits to generate `[0:8]` | 3 bits |
+| 0         | Bit to generate                    | 1 bit  |
+TOOO: encoding figure
+* ALGORITHM:
+```
+c = first bit in bit_stream
+count = 0
+for b in bit_stream:
+    if c == b and count < 8:
+        count++
+    else:
+        emit_packet(count, c)
+        count = 1
+        c = b
+```
 
 ## Decompression
 
