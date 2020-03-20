@@ -12,6 +12,22 @@ pagestyle: headings
 
 ![Overall Design](d1.png)
 
+### VARIABLES:
+
+* N : 6 bits [1:50]
+* M : 6 bits [1:50]
+* C : 3 bits [1:5]
+* h : 64 bits
+* err : 64 bits
+* mode : 1 bit [0,1]
+* fp: 2 bits [0,1,2]
+* A : 160000 bits, [N*N] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+* B : 160000 bits, [N*M] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+* X : 3200 bits, [N*1] each number....
+* U : 3200 bits, [M*1] each number....
+* T_s : 320 bits, [5*1] each number....
+* X_out : 16000 bits [N*1]*5
+
 # Interfaces and HW Summary
 
 The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
@@ -172,7 +188,7 @@ TODO: figure showing its ports
 * Size: 33265 words
 * Address Range: [0x0000, 0x81F0] all readable and writeable
 
-### IO
+## IO
 
 ![I/O Design](IO.png)
 
@@ -193,15 +209,15 @@ TODO: figure showing its ports
     - OUT: Error to CPU
 
 
-## IO Job and sub_modules:
+### IO Job and sub_modules:
 
 * On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator`, and when `CPU` requests output result, and they are available, sends them out.
-* `Decompressor` [Read here](## Decompression) 
+* `Decompressor` [Read here](# Decompression) 
 * `Next Address Unit` is responsible for calculating the next address to push the data at, as you know the address bus is our discriber to the data on the data bus, so in order to let the IO knows where teh matrix of variable ended this unit decides this, furthermore, `NAU` knows `N` and `M`, so when reading the matrix `A` it knows where exactly it ends.
-* `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 
 
-### Solver
+## Solver
 
 ![Solver Design](solver.png)
 
@@ -222,17 +238,43 @@ TODO: figure showing its ports
     - OUT: R/W to RAM
     - OUT: Error to CPU
 
-## Solver Job and sub_modules:
+### Solver Memory Size:
+
+* Main Part: 40 KB --> 20009 (16 bits) Registers
+    - N, M, C = 16 bits
+    - h = 64 bits
+    - err = 64 bits
+    - A = [50*50]*64 = 160000 bits
+    - B = [50*50]*64 = 160000 bits
+    
+* X_current: 3200 bits --> 200 (16 bits) Registers
+    - X = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
+
+* U_current: 3200 bits --> 200 (16 bits) Registers
+    - U = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
+
+* X_out: 16000 bits --> 1000 (16 bits) Registers
+    - X = 5 * 50 * 64 = 16000 bits
+    - 50: max of M
+    - 64: max of numbers
+    - 5: max of times answer is required
+* Please notice we are storing all the 5 output values and flushing them to the CPU.
+
+### Solver Job and sub_modules:
 
 * On a large scale it receives `U_h` from interpolator, gives it another `h` to compute `U_hnew` at, then computes `X_h` and decides to stop and flush output to I/O or continue.
 * At the begining it receives its data from I/O such as N,M,err,h...etc.
-* `FPU` helps knowing mode and fp.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 * `Arithmetic Solver` where the absolute mathemetical operations reley.
 * `Error Unit` to detect any error in sizes, h, numbers...etc.
-* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[### Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
+* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, (more about parallelism here)[# Parallelism in design], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
 * `Counter Unit`, tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
 
-### Interpolator
+## Interpolator
 
 ![Interpolator Design](interpolator.png)
 
@@ -249,10 +291,29 @@ TODO: figure showing its ports
     - OUT: Interrupt to CPU
     - OUT: Error to CPU
 
-## Interpolator Job and sub_modules:
+### Interpolator Memory Size:
+
+* U_s: 16000 bits --> 1000 (16 bits) Registers
+    - U_s = 5*[50]*64 = 16000 bits
+    - 50: max of M
+    - 64: max of numbers
+    - 5: max of times answer is required
+    
+* T_s: 320 bits --> 20 (16 bits) Registers
+    - T_s = 5*64 = 320 bits
+    - 5: max of times answer is required
+    - 64: max of numbers
+
+* U_out: 3200 bits --> 200 (16 bits) Registers
+    - U = 50*64 = 3200 bits
+    - 50: max of M
+    - 64: max of numbers
+
+### Interpolator Job and sub_modules:
 
 * On a large scale, it only computes U at a specific time.
 * At the begining it receives from `IO` the `U_s` and `T_s` fixed variables/data, and stores them.
+
 * Each U_s is at most of size [64*50] = 3200 bits = 200 registers
 * Each T_s is at most of size [64] bits = 4 regs.
 * T_s keeps hold of the time where each U_s represents, for example, T_s = [1,2,3], there fore the first 200 regs. in U_s are the value of `U` at time `1`, and so on...
@@ -261,11 +322,11 @@ TODO: figure showing its ports
 * `Time Pointer Unit` helps you to identify which T of the T_s array we are currently handling.
 * Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on...
 * `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes....etc.
-* `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
+* `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 
 
 
-### Fixed/Floating Point Unit (FPU)
+## Fixed/Floating Point Unit (FPU)
 
 TODO: role
 TODO: figure showing its ports
@@ -353,3 +414,22 @@ for packet in packets:
 * In fixed step algorithm, there's no problems, the only problem is when we reach the last `X`, then the upcoming `h` will be garbage or uunwanted `h`, and program will terminate either ways.
 * In adaptive/variable step algorithm, when `Solver` is calculating `X_h`, `Interpolator` is busy calculating `U_h/2`,
 and when Solver is calculating `X_h/2` and `X_h`, interpolator will be calculating `U_h*`, `h*` is the `h` from the algorithm equaiton, which is `h = (0.9*h^​2​*L)/(e)`, this `U_h*` might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate `U_hnew`.
+
+## Communication between different modules
+
+### IO and CPU
+* CPU asks to `Load`, IO reads 32bits of data.
+* When CPU finishes, raises `WAIT`, when IO finishes that last package of data `int` the cpu with `success`.
+* CPU raises `PROC`, so that all of other components starts acting.
+* When output data is ready, CPU is interrupted with `error` or `success`, then CPU raises `OUT` signal which implies that it's ready to take out the resulting output from IO.
+* If there's an erro, CPU should know which component sent it.
+
+### IO and Solver/Interpolator
+* IO puts the data and address on their busses, each component of them two reads that address and check if this address is within its range, if so this component reads the data and stores it.
+* When Solver is ready to flush the result it raises `int` and `success` or even `error`.
+
+### Solver and Interpolator
+* Please read the parallelism section first. [link here!]
+* Solver is working on `X_h` so it needs `U`, solver checks on `DONE` signal, if raised, reads the `U` from the data bus, Interpolator has already placed it there.
+* Then Solver places `h_new` at the data bus, interpolator reads it and they both work...
+* and repeat. 
