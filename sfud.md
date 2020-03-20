@@ -121,19 +121,27 @@ Not all modules listen on all addresses.
 
 If address bus is loaded with an address `A` that some module `M` is not assigned to, module `M` must ignore the data and address bus.
 
+### Solver Memory Mapping
+| Address | Type            | Size (words) | Name   | Description                          |
+|---------|-----------------|--------------|--------|--------------------------------------|
+| 0x0000  | `struct Header` | 1            | Header | Includes Dimensions and modes        |
+| 0xXXXX  | `f64`           | 4            | H      | Timestep (variable step mode)        |
+| 0xXXXX  | `f64`           | 4            | Error  | Error Tolerance (variable step mode) |
+| 0xXXXX  | `f64[50][50]`   | 10000        | A      | Matrix A                             |
+| 0xXXXX  | `f64[50][50]`   | 10000        | B      | Matrix B                             |
+| 0xXXXX  | `f64[50]`       | 200          | X      | Initial value of X                   |
+| 0xXXXX  | `f64[50][64]`   | 12800        | Xout   | Final Output X                       |
+
+### Interpolator Memory Mapping
 | Address | Type            | Size (words) | Name   | Description                              |
 |---------|-----------------|--------------|--------|------------------------------------------|
 | 0x0000  | `struct Header` | 1            | Header | Includes Dimensions and modes            |
-| 0x0001  | `f64`           | 4            | H      | Timestep (variable step mode)            |
-| 0x0005  | `f64`           | 4            | Error  | Error Tolerance (variable step mode)     |
-| 0x0009  | `f64[64]`       | 256          | T      | Time points where solutions are required |
-| 0x0109  | `f64[50][50]`   | 10000        | A      | Matrix A                                 |
-| 0x2819  | `f64[50][50]`   | 10000        | B      | Matrix B                                 |
-| 0x4F29  | `f64[50]`       | 200          | X      | Initial value of X                       |
-| 0x4FF1  | `f64[50][64]`   | 12800        | Xout   | Final Output X                           |
-| 0x81F1  | `f64[50]`       | 200          | U0     | Initial U vector                         |
-| 0x82B9  | `f64[50][64]`   | 12800        | Us     | U vector at required time steps          |
-| 0xB4B9  | `f64[50]`       | 200          | Uint   | Interpolated U Vector                    |
+| 0xXXXX  | `f64[64]`       | 256          | T      | Time points where solutions are required |
+| 0xXXXX  | `f64[50]`       | 200          | U0     | Initial U vector                         |
+| 0xXXXX  | `f64[50][64]`   | 12800        | Us     | U vector at required time steps          |
+| 0xXXXX  | `f64[50]`       | 200          | Uint   | Interpolated U Vector                    |
+
+TODO: figure out the addresses
 
 ## Modules
 
