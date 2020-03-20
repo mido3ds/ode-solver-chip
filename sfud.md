@@ -345,12 +345,19 @@ TODO: figure out the addresses
 * Fixed point specifications: 
     - 16bit input
     - 16bit output
-    - scale factor in both input and output = 7
+    - CONSTANT scale factor for both input and output = `7`. See `Scale Factor Definition`.
     - in case of overflow or division by zero, `ERROR` MUST be set to `1` and MUST stay at `1` until `RESET` is set to `1` .
 
 * Floating point specifications:
     - MUST follow [IEEE-754 2019-revision](https://en.wikipedia.org/wiki/IEEE_754) for both fp32 and fp64 modes.
     - `ERROR` is set to `1` when *ANY* of the exceptions stated in the `IEEE-754` takes place, and stay at `1` until `RESET` is set to `1` .
+
+* Scale Factor Definition:
+Scale Factor is an integer used to obtain the real number from the fixed point number and vice versa using the following formula: 
+$y = x \div 2^s$; where: 
+* $x \in \mathbb{N}$ is the fixed point number stored as an integer.
+* $y \in \mathbb{R}$ is the real number that represents $x$ with some error.
+* $s \in \mathbb{N}$ is the scale factor.
 
 ## Header Data Structure
 
