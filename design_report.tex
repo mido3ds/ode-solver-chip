@@ -29,6 +29,24 @@
     \label{fig:overall}
 \end{figure}
 
+\section{Variables Specs}
+\begin{itemize}
+    \item N : 6 bits [1:50]
+    \item M : 6 bits [1:50]
+    \item C : 3 bits [1:5]
+    \item h : 64 bits
+    \item err : 64 bits
+    \item mode : 1 bit [0,1]
+    \item fp: 2 bits [0,1,2]
+    \item A : 160000 bits, [N*N] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+    \item B : 160000 bits, [N*M] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+    \item X : 3200 bits, [N*1] each number....
+    \item U : 3200 bits, [M*1] each number....
+    \item T\_s : 320 bits, [5*1] each number....
+    \item X\_out : 16000 bits [N*1]*5
+\end{itemize}
+
+
 \section{Interfaces and HW Summary}
 The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
 \begin{itemize}
@@ -90,4 +108,74 @@ The hardware has the following interfaces that triggers some actions summarized 
     \end{itemize}
 \end{itemize}
 
+
+\section{Simulation Workflow}
+
+\subsection{Input Preparing}
+This stage is the responsibility of a script that runs before the simulation:
+\begin{itemize}
+    \item INPUT: json file that follows the format stated in main document.
+    \item create bit stream of the read data that follows the \emph{Input Data Structure} specifications.
+    \item encode the bits following the \emph{Compression} specifications.
+    \item collect encoding output in ASCII string, each byte in string is either '0' or '1' in ASCII format.
+    \item when the string reaches the length of 32 bytes, push it to output file.
+    \item if the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file.
+    \item OUTPUT:
+    \begin{itemize}
+        \item ASCII file that contains multiple lines of compressed data.
+        \item each line has exactly 32 '0' or '1' ASCII characters.
+        \item ONLY the ASCII characters 0 or 1 are permitted in the file and NOTHING ELSE.
+        \item there is NO EMPTY LINE/s in the file or spaces.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Instantiating HW}
+This stage and all the next ones are the responsibility of the CPU simulation code.
+
+CPU is a non-synthesisable HDL test-bench that:
+\begin{itemize}
+    \item instantiates the HW main module.
+    \item attaches the appropriate signals to the HW main module.
+    \item generates CLK with fixed frequency.
+    \item loads data into HW.
+    \item puts HW into PROCESS state.
+    \item load output out from the HW and into a file.
+\end{itemize}
+
+\subsection{Loading Input}
+\begin{itemize}
+    \item load the output of the former script into array of vectors each is 32bit wide that will hold one line in the file.
+    \item put HW at LOAD state.
+    \item RESET for one cycle.
+    \item for each 32bit vector in the former array:
+    \begin{itemize}
+        \item at the positive edge of CLK:
+        \begin{itemize}
+            \item load vector into \emph{DATA} bus.
+        \end{itemize}
+    \end{itemize}
+    \item load DATA with 0s.
+    \item wait for the positive edge of \emph{INTERRUPT} signal.
+    \item check for \emph{ERROR / SUCCESS} and only proceed if it is SUCCESS.
+\end{itemize}
+
+\subsection{Processing}
+\begin{itemize}
+    \item put HW at PROCESS state.
+    \item wait for the \emph{INTERRUPT} positive edge.
+    \item check for \emph{ERROR / SUCCESS} and only proceed if it is SUCCESS.
+\end{itemize}
+
+\subsection{Extracting Output}
+\begin{itemize}
+    \item put high impedance on \emph{DATA} bus.
+    \item put HW at OUT state.
+    \item keep receiving data into array of vectors and outputting them into file in the same format of the input file.
+    \item wait for the positive edge of \emph{INTERRUPT} signal. 
+\end{itemize}
+Simulation is done! 
+
+You can turn the output into human-readable json using output-formatting script.
+    
 \end{document}
+
