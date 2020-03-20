@@ -154,9 +154,22 @@ TODO: figure showing its ports
 
 ### IO
 
-TODO: role
-TODO: figure showing its ports
-TODO: ports
+* Role:
+    - Receive backets of 32 bits from the CPUm through `DATA` bus.
+    - Decompress the data
+    - Send the data to other modules (Solver/Interpolation/RAM).
+
+* Ports:
+    - INOUT: 32bit data bus with other modules
+    - INOUT: 32bit data bus with CPU
+    - IN: 32bit address bus
+    - IN: CLOCK
+    - IN: Reset
+    - IN: 2bit Load/Process/Out
+    - OUT: Interrupt to CPU
+    - OUT: R/W to RAM
+    - OUT: Error to CPU
+
 
 ### Solver
 
@@ -188,9 +201,31 @@ TODO: ports
 
 ## Compression
 
-TODO
+Compression is made by a script that takes each (one to eight) [1:8] bits and compressing them into four bits,
+using `RLE` (Run length encoding) algorithm.
+
+The first thress of them is the number of occurence of the fourth bit.
+and each eight of these four (32 bits) is put in a line in the file that to be read by the `CPU`.
+
+Examples:
+| Original| Compression | 
+|---------|-------------|
+| 11111   | 1001        |
+| 0000    | 0110        |
+
+Note: if a digit does not exist, it won't be compressed at all,
+so the count of the compressed bits starts with 1 ends with 8.
+
+Why this limitation?
+bexause the occurence of nine ones or nine zeros simultaneously is very rare.
+
+Problems?
+This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
 
-TODO
+Decompression, like a dummy operator, takes four bits.
+extract the count/existence of the fourth bit from the first three.
+then place the output in a buffer.
+
 
