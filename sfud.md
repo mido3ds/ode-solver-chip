@@ -223,35 +223,53 @@ TODO: ports
 
 ## Header Data Structure
 
-| Index | Name          | Description                 | Datatype | Total Size |
-|-------|---------------|-----------------------------|----------|------------|
-| 15:10 | N             | Dimension of X              | `uint`   | 6 bits     |
-| 9:4   | M             | Dimension of U              | `uint`   | 6 bits     |
-| 3     | Solver Mode   | Fixed Step or Variable Step | `enum`   | 1 bit      |
-| 2:1   | FPU Precision | fixed point, f64 or f32     | `enum`   | 2 bits     |
-| 0     | NOT USED      | ------                      | ------   | 1 bit      |
+| Bit Index | Name          | Description                 | Datatype | Total Size |
+|-----------|---------------|-----------------------------|----------|------------|
+| 15:10     | N             | Dimension of X              | `uint`   | 6 bits     |
+| 9:4       | M             | Dimension of U              | `uint`   | 6 bits     |
+| 3         | Solver Mode   | Fixed Step or Variable Step | `enum`   | 1 bit      |
+| 2:1       | FPU Precision | fixed point, f64 or f32     | `enum`   | 2 bits     |
+| 0         | NOT USED      | ------                      | ------   | 1 bit      |
 
 ## Compression
 
-Compression is made by a script that takes each (one to eight) [1:8] bits and compressing them into four bits,
-using `RLE` (Run length encoding) algorithm.
+Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to seven) [1:7] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
 
-The first thress of them is the number of occurence of the fourth bit.
-and each eight of these four (32 bits) is put in a line in the file that to be read by the `CPU`.
+### Input 
+Bit stream of `X` bits
 
-Examples:
-| Original| Compression | 
-|---------|-------------|
-| 11111   | 1001        |
-| 0000    | 0110        |
+### Output 
+`Y` compressed 4bit packets, where `X >= Y >= ceil(X/7)`
+Each packet must follow this format:
+| Bit Index | Description                        | Size   |
+|-----------|------------------------------------|--------|
+| 3:1       | Number of bits to generate `[0:7]` | 3 bits |
+| 0         | Bit to generate                    | 1 bit  |
+TOOO: encoding figure
 
-Note: if a digit does not exist, it won't be compressed at all,
-so the count of the compressed bits starts with 1 ends with 8.
+### Example
+| Original | Compression |
+|----------|-------------|
+| 1111111  | 1111        |
+| 0000     | 0110        |
 
-Why this limitation?
-bexause the occurence of nine ones or nine zeros simultaneously is very rare.
+### Pseudo-code
+```
+c = first bit in bit_stream
+count = 0
+for b in bit_stream:
+    if c == b and count < 7:
+        count++
+    else:
+        emit_packet(count, c)
+        count = 1
+        c = b
+```
 
-Problems?
+### Reason for choosing this size
+Because the occurence of more that 7 ones or zeros simultaneously is very rare.
+
+### Problem
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
