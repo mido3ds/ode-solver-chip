@@ -303,7 +303,7 @@ TOOO: encoding figure
 ### Example
 | Original | Compression |
 |----------|-------------|
-| 1111111! | 1111        |
+| 11111111 | 1111        |
 | 0000     | 0110        |
 
 ### Pseudo-code
@@ -326,16 +326,28 @@ Because the occurence of more that 7 ones or zeros simultaneously is very rare.
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
+Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
+```
+for packet in packets:
+    # bit to repeat
+    b = packet[0]
 
-TODO: mention algorithm
-TODO: note the increment of numbers 
+    # extract 3 bits
+    n = packet[3:1] 
 
-Decompression, like a dummy operator, takes four bits.
-extract the count/existence of the fourth bit from the first three.
-then place the output in a buffer.
+    # increment by 1 to get number of repetitions
+    n++ 
+
+    # generate n bit of b
+    for _ in range(n):
+        buffer.push(b)
+
+    if buffer.full():
+        buffer.flush()
+```
 
 
-### Parallelism in design
+## Parallelism in design
 
 * Parallelism in design is between `Solver` and `Interpolator`, happens when Solver is calculating the next `X_h`, interpolator is calculating `U_h2`.
 * In fixed step algorithm, there's no problems, the only problem is when we reach the last `X`, then the upcoming `h` will be garbage or uunwanted `h`, and program will terminate either ways.
