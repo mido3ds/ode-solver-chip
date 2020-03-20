@@ -318,3 +318,8 @@ then place the output in a buffer.
 
 
 ### Parallelism in design
+
+* Parallelism in design is between `Solver` and `Interpolator`, happens when Solver is calculating the next `X_h`, interpolator is calculating `U_h2`.
+* In fixed step algorithm, there's no problems, the only problem is when we reach the last `X`, then the upcoming `h` will be garbage or uunwanted `h`, and program will terminate either ways.
+* In adaptive/variable step algorithm, when `Solver` is calculating `X_h`, `Interpolator` is busy calculating `U_h/2`,
+and when Solver is calculating `X_h/2` and `X_h`, interpolator will be calculating `U_h*`, `h*` is the `h` from the algorithm equaiton, which is `h = (0.9*h^​2​*L)/(e)`, this `U_h*` might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate `U_hnew`.
