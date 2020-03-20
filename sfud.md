@@ -48,15 +48,15 @@ The hardware has the following interfaces that triggers some actions summarized 
         * buffer is flushed into data bus with appropriate adderss
         * ends when cpu finishes its data loading and switches to `WAIT` state
     - WAIT(1):
-        * Same state as `LOAD`, but IO doesn't receive anymore data from CPU
-        * ends when IO flushes all its buffer and raises `INTERRUP` with either `ERROR` or `SUCCESS`
+        * Same state as `LOAD` , but IO doesn't receive anymore data from CPU
+        * ends when IO flushes all its buffer and raises `INTERRUP` with either `ERROR` or `SUCCESS` 
     - PROC(2):
         * SOLVER sends time step to calculate U at
         * SOLVER and INTERPOLATOR work concurrently to calculate their outputs
         * INTERPOLATOR sends `DONE` signal to SOLVER when it finishes the interpolated U
         * SOLVER can request to copy the interpolated U 
         * INTERPOLATOR waits for SOLVER to send next time step
-        * ends when either SOLVER or INTERP raises INTERRUPT with either `SUCCESS` or `ERROR`
+        * ends when either SOLVER or INTERP raises INTERRUPT with either `SUCCESS` or `ERROR` 
     - OUT(3):
         * IO just copies final outputs to cpu from SOLVER memory
         * ends when IO raises INTERRUPT with either `SUCCESS` or `ERROR` 
@@ -64,7 +64,7 @@ The hardware has the following interfaces that triggers some actions summarized 
     - Data bus between cpu and io
 * INTERRUPT: OUT
     - raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task
-    - if task finished with success the `ERROR / SUCCESS` is set to `SUCCESS`, otherwise it's `ERROR`
+    - if task finished with success the `ERROR / SUCCESS` is set to `SUCCESS` , otherwise it's `ERROR` 
 * ERROR(0) / SUCCESS(1): OUT
     - CPU should operate on this value ONLY when `INTERRUPT` is 1
     - errros that could happen include: divide by zero, H > 1, incomplete input
@@ -132,7 +132,8 @@ You can turn the output into human-readable json using output-formatting script
 # Sepecifications
 
 ## Memory Mapping
-The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
+
+The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory.
 
 The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
 
@@ -142,10 +143,12 @@ This way communicating is simplified.
 
 `A` column for module `M` is the action of the address taken at module `M` when it sees that address.
 It's either:
-* `W`: *Write to* module `M`. Module `M` is expected to *read* the data bus and store data internally, so the other module *wrote* to module `M`.
-* `R`: *Read from* module `M`. Module `M` is expected to *write* some data to the data bus as response to this address, so the other module *reads* from it.
+
+* `W` : *Write to* module `M` . Module `M` is expected to *read* the data bus and store data internally, so the other module *wrote* to module `M` .
+* `R` : *Read from* module `M` . Module `M` is expected to *write* some data to the data bus as response to this address, so the other module *reads* from it.
 
 ### Solver Memory Mapping
+
 Solver module listens at the following addresses:
 | Address | A | Type            | #Words | Name   | Description                          |
 |---------|---|-----------------|--------|--------|--------------------------------------|
@@ -158,6 +161,7 @@ Solver module listens at the following addresses:
 | 0xXXXX  | R | `f64[50][64]`   | 12800  | Xout   | Final Output X                       |
 
 ### Interpolator Memory Mapping
+
 Interpolator module listens at the following addresses:
 | Address | A | Type            | #Words | Name   | Description                              |
 |---------|---|-----------------|--------|--------|------------------------------------------|
@@ -172,21 +176,6 @@ TODO: size of K and its name
 TODO: figure out the addresses
 
 ## Modules
-
-### RAM
-
-TODO: figure showing its ports
-
-* Role: 
-    - Store input data for solver to access
-    - Store output data from solver that IO will later will transfer back to CPU
-* Ports:
-    - INOUT: 32bit data bus
-    - IN: 16 bit address bus
-    - IN: R/W control signal
-* Word: 16 bit
-* Size: 33265 words
-* Address Range: [0x0000, 0x81F0] all readable and writeable
 
 ## IO
 
@@ -281,7 +270,7 @@ TODO: figure showing its ports
 * Role:
     - Calculates the upcoming U knowing h, U initial and U final.
 
-* Role:
+* Ports:
     - OUT: Done signal to Solver
     - INOUT: 32bit data bus with other modules
     - IN: 16bit address bus
@@ -316,21 +305,52 @@ TODO: figure showing its ports
 
 * Each U_s is at most of size [64*50] = 3200 bits = 200 registers
 * Each T_s is at most of size [64] bits = 4 regs.
-* T_s keeps hold of the time where each U_s represents, for example, T_s = [1,2,3], there fore the first 200 regs. in U_s are the value of `U` at time `1`, and so on...
-* You will need an iterator to target the appropriate U_s from the array of memory, that's the `Address pointer Unit`.
+* T_s keeps hold of the time where each U_s represents, for example, T_s = [1, 2, 3], there fore the first 200 regs.in U_s are the value of `U` at time `1` , and so on... 
+* You will need an iterator to target the appropriate U_s from the array of memory, that's the `Address pointer Unit` .
 * `Arithmetic Solver` is where you're absolute mathematical operations reley.
 * `Time Pointer Unit` helps you to identify which T of the T_s array we are currently handling.
 * Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on...
 * `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes....etc.
 * `FPU` [LINK HERE to ## Fixed/Floating Point Unit (FPU)]
 
+### Fixed/Floating Point Unit (FPU)
 
+![FP Unit with its ports](FPU.png)
 
-## Fixed/Floating Point Unit (FPU)
+* Role:
+    - Instantiated, in the rest modules, multiple times and for different purposes.
+    - perform the following operations given in port `OP` .
+    - perform them in different modes given in `MODE` .
 
-TODO: role
-TODO: figure showing its ports
-TODO: ports
+* Ports:
+    - `MODE` : 
+        * FIXED(0): operate on *LOWEST* 16bits of both `A` and `B` following `Fixed point specifications` .
+        * F64(1): operate on *ALL* 64bits of both `A` and `B` following `Floating point specifications` .
+        * F32(2): operate on *LOWEST* 32bits of both `A` and `B` following `Floating point specifications` .
+    - `OP` :
+        * 0: `A + B` 
+        * 1: `A - B` 
+        * 2: `A * B` 
+        * 3: `A / B` 
+    - `CLK` : FPU operates on *POSITIVE* edge.
+    - `DONE` : one operation needs multiple clocks, so FPU must RAISE `DONE` to `1` when finished for *EXACTLY ONE* clock cycle.
+    - `ENABLE` : FPU must only operate when `ENABLE` is set to `1` .
+    - `A` , `B` , `C` : input and output busses, *all* are 64bit wide.
+    - `ERROR` : 
+        * FPU sets `ERROR` to `1` when an exception takes place. 
+        * Each mode has its possible set of exceptions, see the corresponding specifications. 
+        * MUST stay at `1` after setting it, until `RESET` is set to `1` .
+    - `RESET` : clears `ERROR` state *REGARDLESS* of `ENABLE` input
+
+* Fixed point specifications: 
+    - 16bit input
+    - 16bit output
+    - scale factor in both input and output = 7
+    - in case of overflow or division by zero, `ERROR` MUST be set to `1` and MUST stay at `1` until `RESET` is set to `1` .
+
+* Floating point specifications:
+    - MUST follow [IEEE-754 2019-revision](https://en.wikipedia.org/wiki/IEEE_754) for both fp32 and fp64 modes.
+    - `ERROR` is set to `1` when *ANY* of the exceptions stated in the `IEEE-754` takes place, and stay at `1` until `RESET` is set to `1` .
 
 ## Header Data Structure
 
@@ -347,10 +367,12 @@ TODO: ports
 Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to eight) [1:8] repeating bits and compressing them into four bits, using `RLE` (Run length encoding) algorithm.
 
 ### Input 
+
 Bit stream of `X` bits
 
 ### Output 
-`Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)`
+
+`Y` compressed 4bit packets, where `X >= Y >= ceil(X/8)` 
 Each packet must follow this format:
 | Bit Index | Description                    | Size   |
 |-----------|--------------------------------|--------|
@@ -362,13 +384,15 @@ Each packet must follow this format:
 TOOO: encoding figure
 
 ### Example
+
 | Original | Compression |
 |----------|-------------|
 | 11111111 | 1111        |
 | 0000     | 0110        |
 
 ### Pseudo-code
-```
+
+``` 
 c = first bit in bit_stream
 count = 0
 for b in bit_stream:
@@ -381,14 +405,18 @@ for b in bit_stream:
 ```
 
 ### Reason for choosing this size
+
 Because the occurence of more that 7 ones or zeros simultaneously is very rare.
 
 ### Problem
+
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 ## Decompression
+
 Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
-```
+
+``` 
 for packet in packets:
     # bit to repeat
     b = packet[0]
@@ -406,7 +434,6 @@ for packet in packets:
     if buffer.full():
         buffer.flush()
 ```
-
 
 ## Parallelism in design
 
