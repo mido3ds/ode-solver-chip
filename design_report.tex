@@ -1,7 +1,9 @@
 \documentclass[12pt]{extarticle}
 \usepackage[utf8]{inputenc}
 \usepackage{cite}
+\usepackage{url}
 \usepackage{graphicx}
+\usepackage{amsfonts}
 
 \title{ODE Solver Design Report}
 \author{
@@ -176,6 +178,445 @@ CPU is a non-synthesisable HDL test-bench that:
 Simulation is done! 
 
 You can turn the output into human-readable json using output-formatting script.
-    
-\end{document}
 
+\section{Specifications}
+
+\subsection{Memory Mapping}
+The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
+
+The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
+
+If address bus is loaded with an address \emph{Adr} that some module \emph{M} is not assigned to, module \emph{M} must ignore the data and address bus so the rest can communicate.
+
+This way communication is simplified.
+
+\emph{A} column for module \emph{M} is the action of the address taken at module \emph{M} when it sees that address. It's either:
+
+\begin{itemize}
+    \item \emph{W}: \textbf{Write to} module \emph{M}. Module \emph{M} is expected to \textbf{read} the data bus and store data internally, so the other module \emph{wrote} to module \emph{M}.
+    \item \emph{R}: \textbf{Read from} module \emph{M}. Module \emph{M} is expected to \textbf{write} some data to the data bus as response to this address, so the other module \textbf{reads} from it.
+\end{itemize}
+
+\subsubsection{Solver Memory Mapping}
+Solver module listens at the following addresses:
+
+\begin{center}
+ \begin{tabular}{||c c c c c c||} 
+ \hline
+ Address & A & Type & \#Words & Name & Description  \\ [0.5ex] 
+ \hline\hline
+  0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
+ \hline
+ 0xXXXX  & W & f64 & 4 & H & Timestep (variable step mode)  \\
+ \hline
+ 0xXXXX  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
+ \hline
+ 0xXXXX  & W & f64[50][50] & 10000 & A & Matrix A \\
+ \hline
+ 0xXXXX  & W & f64[50][50] & 10000 & B & Matrix B \\
+ \hline
+ 0xXXXX  & W & f64[50] & 200 & X & Initial value of X \\
+ \hline
+ 0xXXXX  & R & f64[50][64] & 12800 & Xout & Final Output X \\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Interpolator Memory Mapping}
+Interpolator module listens at the following addresses:
+
+\begin{center}
+ \begin{tabular}{||c c c c c c||} 
+ \hline
+ Address & A & Type & \#Words & Name & Description  \\ [0.5ex] 
+ \hline\hline
+  0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
+ \hline
+ 0xXXXX  & W & f64[64] & 256 & T & Time points where solutions are required  \\
+ \hline
+ 0xXXXX  & W & f64[50] & 200 & U0 & Initial U vector \\
+ \hline
+ 0xXXXX  & W & f64[50][64] & 12800 & Us & U vector at required time steps \\
+ \hline
+ 0xXXXX  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
+ \hline
+ 0xXXXX  & W & f32 & 2 & K & Time to calculate U at \\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+\textbf{TODO: size of K and its name} \\
+\textbf{TODO: figure out the addresses}
+
+\section{Modules}
+
+\subsection{IO}
+
+\begin{figure}[hp]
+    \centering
+    \includegraphics[width=\textwidth]{IO}
+    \caption{I/O Design}
+    \label{fig:io}
+\end{figure}
+
+\begin{itemize}
+    \item Role:
+    \begin{itemize}
+        \item Receive backets of 32 bits from the CPUm through \emph{DATA} bus.
+        \item Decompress the data.
+        \item Send the data to other modules (Solver/Interpolation/RAM).
+    \end{itemize}
+    \item Ports:
+    \begin{itemize}
+        \item INOUT: 32bit data bus with other modules.
+        \item INOUT: 32bit data bus with CPU.
+        \item IN: 16bit address bus.
+        \item IN: CLOCK.
+        \item IN: Reset.
+        \item IN: 2bit Load/Process/Out.
+        \item OUT: Interrupt to CPU.
+        \item OUT: R/W to RAM.
+        \item OUT: Error to CPU.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{IO Job and sub-modules}
+
+\begin{itemize}
+    \item On a large scale, it receives 32bit streams and pass them to both \emph{Solver} and \emph{Interpolator}, and when \emph{CPU} requests output result, and they are available, sends them out.
+    \item \emph{Decompressor} \textbf{[Read here](\# Decompression)}.
+    \item \emph{Next Address Unit} is responsible for calculating the next address to push the data at, as you know the address bus is our describer to the data on the data bus, so in order to let the IO knows where the matrix of variable ended this unit decides this, furthermore, \emph{NAU} knows \emph{N} and \emph{M}, so when reading the matrix \emph{A} it knows where exactly it ends.
+    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
+\end{itemize}
+
+\subsection{Solver}
+
+\begin{figure}[hp]
+    \centering
+    \includegraphics[width=\textwidth]{solver}
+    \caption{Solver Design}
+    \label{fig:solver}
+\end{figure}
+
+\begin{itemize}
+    \item Role:
+    \begin{itemize}
+        \item Computes the upcoming X knowing h, the previous X and U.
+        \item Counts the error difference and the new h.
+        \item Checks for arithmetic errors that may occurs (e.g. div. by zero).
+        \item Outputs the final X's at the desired times to the RAM.
+    \end{itemize}
+    \item Ports:
+    \begin{itemize}
+        \item IN: Done signal from interpolator.
+        \item INOUT: 32bit data bus with other modules.
+        \item IN: 16bit address bus.
+        \item IN: CLOCK.
+        \item IN: Reset.
+        \item IN: 2bit Load/Process/Out.
+        \item OUT: Interrupt to CPU.
+        \item OUT: R/W to RAM.
+        \item OUT: Error to CPU.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Solver Memory Size}
+\begin{itemize}
+    \item Main Part: 40 KB --> 20009 (16 bits) Registers
+    \begin{itemize}
+        \item N, M, C = 16 bits
+        \item h = 64 bits
+        \item err = 64 bits
+        \item A = [50*50]*64 = 160000 bits
+        \item B = [50*50]*64 = 160000 bits
+    \end{itemize}
+    \item X\_current: 3200 bits --> 200 (16 bits) Registers
+    \begin{itemize}
+        \item X = 50*64 = 3200 bits
+        \item 50: max of M
+        \item 64: max of numbers
+    \end{itemize}
+    \item U\_current: 3200 bits --> 200 (16 bits) Registers
+    \begin{itemize}
+        \item U = 50*64 = 3200 bits
+        \item 50: max of M
+        \item 64: max of numbers
+    \end{itemize}
+    \item X\_out: 16000 bits --> 1000 (16 bits) Registers
+    \begin{itemize}
+        \item X = 5 * 50 * 64 = 16000 bits
+        \item 50: max of M
+        \item 64: max of numbers
+        \item 5: max of times answer is required
+    \end{itemize}
+\end{itemize}
+Please notice we are storing all the 5 output values and flushing them to the CPU.
+
+\subsubsection{Solver Job and sub-modules}
+\begin{itemize}
+    \item On a large scale it receives U\_h from interpolator, gives it another \emph{h} to compute U\_hnew at, then computes X\_h and decides to stop and flush output to I/O or continue.
+    \item At the beginning it receives its data from I/O such as N, M, err, h ...,etc.
+    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
+    \item \emph{Arithmetic Solver} on which the absolute mathematical operations rely.
+    \item \emph{Error Unit} to detect any error in sizes, h, numbers ...,etc.
+    \item \emph{Next Step Unit} helps create the upcoming h\_new so that when solver is busy calculating X\_h, interpolator is calculating U\_hnew, \textbf{(more about parallelism here)[\# Parallelism in design]}, this unit represents the stepper unit, holds the logic of calculating the adaptive \emph{h}, and detects when to stop, in summation it calculates the next \emph{h}, even if it was fixed step.
+    \item \emph{Counter Unit}, tells you when to calculate more, when to advance to next time (in T\_s), and when to stop the whole operations.
+\end{itemize}
+
+\subsection{Interpolator}
+
+\begin{figure}[hp]
+    \centering
+    \includegraphics[width=\textwidth]{interpolator}
+    \caption{Interpolator Design}
+    \label{fig:interpolator}
+\end{figure}
+
+\begin{itemize}
+    \item Role:
+    \begin{itemize}
+        \item Calculates the upcoming U knowing h, U initial and U final.
+    \end{itemize}
+    \item Ports:
+    \begin{itemize}
+        \item OUT: Done signal to Solver.
+        \item INOUT: 32bit data bus with other modules.
+        \item IN: 16bit address bus.
+        \item IN: CLOCK.
+        \item IN: Reset.
+        \item IN: 2bit Load/Process/Out.
+        \item OUT: Interrupt to CPU.
+        \item OUT: Error to CPU.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Interpolator Memory Size}
+\begin{itemize}
+    \item U\_s: 16000 bits --> 1000 (16 bits) Registers
+    \begin{itemize}
+        \item U\_s = 5*[50]*64 = 16000 bits
+        \item 50: max of M
+        \item 64: max of numbers
+        \item 5: max of times answer is required
+    \end{itemize}
+    \item T\_s: 320 bits --> 20 (16 bits) Registers
+    \begin{itemize}
+        \item T\_s = 5*64 = 320 bits
+        \item 5: max of times answer is required
+        \item 64: max of numbers
+    \end{itemize}
+    \item U\_out: 3200 bits --> 200 (16 bits) Registers
+    \begin{itemize}
+        \item U = 50*64 = 3200 bits
+        \item 50: max of M
+        \item 64: max of numbers
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Interpolator Job and sub-modules}
+\begin{itemize}
+    \item On a large scale, it only computes U at a specific time.
+    \item At the beginning it receives from IO the U\_s and T\_s fixed variables/data, and stores them.
+    \item Each U\_s is at most of size [64*50] = 3200 bits = 200 registers
+    \item Each T\_s is at most of size [64] bits = 4 regs.
+    \item T\_s keeps hold of the time where each U\_s represents, for example, T\_s = [1, 2, 3], there fore the first 200 regs. In U\_s are the value of U at time 1, and so on... 
+    \item You will need an iterator to target the appropriate U\_s from the array of memory, that's the \emph{Address pointer Unit}.
+    \item \emph{Arithmetic Solver} is where absolute mathematical operations exist.
+    \item \emph{Time Pointer Unit} helps you to identify which T of the T\_s array we are currently handling.
+    \item Please notice that, at the beginning of the program T\_init = 0, T\_final = T\_s[0], after a successful output, T\_init = T\_final, and T\_final = T\_s[1], and so on...
+    \item \emph{Error Unit} it's responsible for detecting when an arithmetic error may occur, like dividing by zero, \emph{h} is getting bigger every time, different sizes....etc.
+    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
+\end{itemize}
+
+\subsubsection{Fixed/Floating Point Unit (FPU)}
+
+\begin{figure}[hp]
+    \centering
+    \includegraphics[width=\textwidth]{FPU}
+    \caption{FP Unit}
+    \label{fig:fpu}
+\end{figure}
+
+\begin{itemize}
+    \item Role:
+    \begin{itemize}
+        \item Instantiated, in the rest modules, multiple times and for different purposes.
+        \item perform the following operations given in port \emph{OP}.
+        \item perform them in different modes given in \emph{MODE}.
+    \end{itemize}
+    \item Ports:
+    \begin{itemize}
+        \item MODE
+        \begin{itemize}
+            \item FIXED(0): operate on LOWEST 16bits of both A and B following Fixed point specifications.
+            \item F64(1): operate on ALL 64bits of both A and B following Floating point specifications.
+            \item F32(2): operate on LOWEST 32bits of both A and B following Floating point specifications.
+        \end{itemize}
+        \item OP
+        \begin{itemize}
+            \item 0: `A + B` 
+            \item 1: `A - B` 
+            \item 2: `A * B` 
+            \item 3: `A / B`  
+        \end{itemize}
+        \item CLK: FPU operates on POSITIVE edge.
+        \item DONE: one operation needs multiple clocks, so FPU must RAISE DONE to 1 when finished for EXACTLY ONE clock cycle.
+        \item ENABLE: FPU must only operate when ENABLE is set to 1.
+        \item A, B, C: input and output busses, all are 64bit wide.
+        \item ERROR
+        \begin{itemize}
+            \item FPU sets ERROR to 1 when an exception takes place. 
+            \item Each mode has its possible set of exceptions, see the corresponding specifications. 
+            \item MUST stay at 1 after setting it, until RESET is set to 1.
+        \end{itemize}
+        \item RESET: clears ERROR state REGARDLESS of ENABLE input.
+    \end{itemize}
+    \item Fixed point specifications
+    \begin{itemize}
+        \item 16bit input
+        \item 16bit output
+        \item CONSTANT scale factor for both input and output = 7. \textbf{See Scale Factor Definition}
+        \item in case of overflow or division by zero, ERROR MUST be set to 1 and MUST stay at 1 until RESET is set to 1.
+    \end{itemize}
+    \item Floating point specifications
+    \begin{itemize}
+        \item MUST follow [IEEE-754 2019-revision] (\url{https://en.wikipedia.org/wiki/IEEE_754}) for both fp32 and fp64 modes.
+        \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
+    \end{itemize}
+    \item Scale Factor Definition
+    Scale Factor is an integer used to obtain the real number from the fixed point number and vice versa using the following formula: 
+    $y = x \div 2^s$; where: 
+    \begin{itemize}
+        \item $x \in \mathbb{N}$ is the fixed point number stored as an integer.
+        \item $y \in \mathbb{R}$ is the real number that represents $x$ with some error.
+        \item $s \in \mathbb{N}$ is the scale factor.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Header Data Structure}
+
+\begin{center}
+ \begin{tabular}{||c c c c c||} 
+ \hline
+ Bit Index & Name & Description & Datatype & Total Size \\ [0.5ex] 
+ \hline\hline
+  15:10 & N & Dimension of X  & `uint` & 6 bits  \\ 
+ \hline
+ 9:4 & M & Dimension of U  & `uint` & 6 bits  \\ 
+ \hline
+ 3 & Solver Mode & Fixed Step or Variable Step  & `enum` & 1 bit \\ 
+ \hline
+ 2:1 & FPU Precision & fixed point, f64 or f32 & `enum` & 2 bits  \\ 
+ \hline
+ 0  & NOT USED &  ------ & ------ & 1 bit \\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+
+\subsection{Compression}
+Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to eight) [1:8] repeating bits and compressing them into four bits, using RLE (Run length encoding) algorithm.
+
+\subsubsection{Input}
+Bit stream of X bits.
+
+\subsubsection{Output}
+Y compressed 4bit packets, where X >= Y >= ceil(X/8)
+Each packet must follow this format:
+
+\begin{center}
+ \begin{tabular}{||c c c||} 
+ \hline
+ Bit Index & Description & Size \\ [0.5ex] 
+ \hline\hline
+  3:1 & Number of bits to generate - 1 & 3 bits  \\ 
+ \hline
+ 0  & Bit to generate &  1 bit \\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+NOTE: the 3 bits must be incremented before decode.
+\textbf{TOOO: encoding figure}
+
+\subsubsection{Example}
+
+\begin{center}
+ \begin{tabular}{||c c||} 
+ \hline
+ Original & Compressed \\ [0.5ex] 
+ \hline\hline
+  11111111 & 1111 \\ 
+ \hline
+ 0000  & 0110 \\ [1ex] 
+ \hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Pseudo-code}
+c = first bit in bit\_stream \\
+count = 0 \\
+for b in bit\_stream: \\
+    if c == b and count < 7: \\
+        count++ \\
+    else: \\
+        emit\_packet(count-1, c) \\
+        count = 1 \\
+        c = b \\
+
+\subsubsection{Reason for choosing this size}
+Because the occurence of more that 7 ones or zeros simultaneously is very rare.
+
+\subsubsection{Problem}
+This compression algorithm may not compress the data, rather than that it may increase the number of bits.
+
+\subsection{Decompression}
+Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
+
+for packet in packets: \\
+    \# bit to repeat \\
+    b = packet[0] \\
+
+    \# extract 3 bits \\
+    n = packet[3:1] \\
+
+    \# increment by 1 to get number of repetitions \\
+    n++ \\
+
+    \# generate n bit of b \\
+    for \_ in range(n): \\
+        buffer.push(b) \\
+
+    if buffer.full(): \\
+        buffer.flush() \\
+        
+\subsection{Parallelism in design}   
+\begin{itemize}
+    \item Parallelism in design is between Solver and Interpolator, happens when Solver is calculating the next X\_h, Interpolator is calculating U\_h2.
+    \item In fixed step algorithm, there's no problems, the only problem is when we reach the last X, then the upcoming h will be garbage or unwanted h, and program will terminate either ways.
+    \item In adaptive/variable step algorithm, when Solver is calculating X\_h, Interpolator is busy calculating U\_h/2, and when Solver is calculating X\_h/2 and X\_h, Interpolator will be calculating U\_h*, h* is the h from the algorithm equation, which is \textbf{h = (0.9*h$^$​2​*L)/(e)}, this U\_h* might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate U\_hnew.
+\end{itemize}
+
+\subsection{Communication between different modules}
+
+\subsubsection{IO and CPU}
+\begin{itemize}
+    \item CPU asks to Load, IO reads 32bits of data.
+    \item When CPU finishes, raises WAIT, when IO finishes that last package of data int the cpu with success.
+    \item CPU raises PROC, so that all of other components starts acting.
+    \item When output data is ready, CPU is interrupted with error or success, then CPU raises OUT signal which implies that it's ready to take out the resulting output from IO.
+    \item If there's an error, CPU should know which component sent it.
+\end{itemize}
+
+\subsubsection{IO and Solver/Interpolator}
+\begin{itemize}
+    \item IO puts the data and address on their busses, each component of them two reads that address and check if this address is within its range, if so this component reads the data and stores it.
+    \item When Solver is ready to flush the result it raises int and success or even error.
+\end{itemize}
+
+\subsubsection{Solver and Interpolator}
+\begin{itemize}
+    \item Please read the parallelism section first. \textbf{[link here!]}
+    \item Solver is working on X\_h so it needs U, solver checks on DONE signal, if raised, reads the U from the data bus, Interpolator has already placed it there.
+    \item Then Solver places h\_new at the data bus, interpolator reads it and they both work...
+    \item and repeat.
+\end{itemize}
+
+\end{document}
