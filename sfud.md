@@ -12,6 +12,22 @@ pagestyle: headings
 
 ![Overall Design](d1.png)
 
+### VARIABLES:
+
+* N : 6 bits [1:50]
+* M : 6 bits [1:50]
+* C : 3 bits [1:5]
+* h : 64 bits
+* err : 64 bits
+* mode : 1 bit [0,1]
+* fp: 2 bits [0,1,2]
+* A : 160000 bits, [N*N] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+* B : 160000 bits, [N*M] each number could be 16bit fixed point/ floating point 32/ or floating point 64
+* X : 3200 bits, [N*1] each number....
+* U : 3200 bits, [M*1] each number....
+* T_s : 320 bits, [5*1] each number....
+* X_out : 16000 bits [N*1]*5
+
 # Interfaces and HW Summary
 
 The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
