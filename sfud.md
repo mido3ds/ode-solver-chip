@@ -162,6 +162,8 @@ TODO: figure showing its ports
 
 ### IO
 
+![I/O Design](IO.png)
+
 * Role:
     - Receive backets of 32 bits from the CPUm through `DATA` bus.
     - Decompress the data
@@ -170,7 +172,7 @@ TODO: figure showing its ports
 * Ports:
     - INOUT: 32bit data bus with other modules
     - INOUT: 32bit data bus with CPU
-    - IN: 32bit address bus
+    - IN: 16bit address bus
     - IN: CLOCK
     - IN: Reset
     - IN: 2bit Load/Process/Out
@@ -181,15 +183,47 @@ TODO: figure showing its ports
 
 ### Solver
 
-TODO: role
-TODO: figure showing its ports
-TODO: ports
+![Solver Design](solver.png)
+
+* Role:
+    - Computes the upcoming X knowing h, the previous X and U.
+    - Counts the error difference and the new h.
+    - Checks for arithmetic errors that may occurs (e.g. div. by zero)
+    - Outputs the final X's at the desired times to the RAM.
+
+* Ports:
+    - IN: Done signal from interpolator
+    - INOUT: 32bit data bus with other modules
+    - IN: 16bit address bus
+    - IN: CLOCK
+    - IN: Reset
+    - IN: 2bit Load/Process/Out
+    - OUT: Interrupt to CPU
+    - OUT: R/W to RAM
+    - OUT: Error to CPU
 
 ### Interpolator
 
-TODO: role
-TODO: figure showing its ports
-TODO: ports
+![Interpolator Design](interpolator.png)
+
+* Role:
+    - Calculates the upcoming U knowing h, U initial and U final.
+
+* Role:
+    - OUT: Done signal to Solver
+    - INOUT: 32bit data bus with other modules
+    - IN: 16bit address bus
+    - IN: CLOCK
+    - IN: Reset
+    - IN: 2bit Load/Process/Out
+    - OUT: Interrupt to CPU
+    - OUT: Error to CPU
+
+* Interpolator component has its own cache, thus it doesnt interact with the RAM.
+* Its cache is 25 KB in size, 16bit Word length.
+* Stores the U_s at specified times read from the JSON file, to provide easier data accessing and parallelism.
+
+
 
 ### Fixed/Floating Point Unit (FPU)
 
