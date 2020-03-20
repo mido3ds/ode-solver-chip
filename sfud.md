@@ -177,21 +177,6 @@ TODO: figure out the addresses
 
 ## Modules
 
-### RAM
-
-TODO: figure showing its ports
-
-* Role: 
-    - Store input data for solver to access
-    - Store output data from solver that IO will later will transfer back to CPU
-* Ports:
-    - INOUT: 32bit data bus
-    - IN: 16 bit address bus
-    - IN: R/W control signal
-* Word: 16 bit
-* Size: 33265 words
-* Address Range: [0x0000, 0x81F0] all readable and writeable
-
 ## IO
 
 ![I/O Design](IO.png)
@@ -366,8 +351,6 @@ TODO: figure showing its ports
 * Floating point specifications:
     - MUST follow [IEEE-754 2019-revision](https://en.wikipedia.org/wiki/IEEE_754) for both fp32 and fp64 modes.
     - `ERROR` is set to `1` when *ANY* of the exceptions stated in the `IEEE-754` takes place, and stay at `1` until `RESET` is set to `1` .
-
-TODO: ports
 
 ## Header Data Structure
 
