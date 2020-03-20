@@ -181,6 +181,11 @@ TODO: figure showing its ports
     - OUT: Error to CPU
 
 
+## IO Job and sub_modules:
+
+* On a large scale, it receives 32bit streams and pass them to both `Solver` and `Interpolator`, and when `CPU` requests output result, and they are available, sends them out.
+* `Decompressor` component is discussed here [URI]
+
 ### Solver
 
 ![Solver Design](solver.png)
@@ -202,6 +207,16 @@ TODO: figure showing its ports
     - OUT: R/W to RAM
     - OUT: Error to CPU
 
+## Solver Job and sub_modules:
+
+* On a large scale it receives `U_h` from interpolator, gives it another `h` to compute `U_hnew` at, then computes `X_h` and decides to stop and flush output to I/O or continue.
+* At the begining it receives its data from I/O such as N,M,err,h...etc.
+* `FPU` helps knowing mode and fp.
+* `Arithmetic Solver` where the absolute mathemetical operations reley.
+* `Error Unit` to detect any error in sizes, h, numbers...etc.
+* `Next Step Unit` helps create the upcoming `h_new` so that when solver is busy calculating `X_h`, interpolator is calculating `U_hnew`, more here [URL], this unit represents teh stepper unit, holds the logic of calculating the adaptive `h`, and detects when to stop, in summation it calculates the next `h`, even if it was fixed step.
+* `Counter Unit`, tells you when to calculate more, when to advance to next time (in T_s), and when to stop the whole operations.
+
 ### Interpolator
 
 ![Interpolator Design](interpolator.png)
@@ -219,9 +234,19 @@ TODO: figure showing its ports
     - OUT: Interrupt to CPU
     - OUT: Error to CPU
 
-* Interpolator component has its own cache, thus it doesnt interact with the RAM.
-* Its cache is 25 KB in size, 16bit Word length.
-* Stores the U_s at specified times read from the JSON file, to provide easier data accessing and parallelism.
+## Interpolator Job and sub_modules:
+
+* On a large scale, it only computes U at a specific time.
+* At the begining it receives from `IO` the `U_s` and `T_s` fixed variables/data, and stores them.
+* Each U_s is at most of size [64*50] = 3200 bits = 200 registers
+* Each T_s is at most of size [64] bits = 4 regs.
+* T_s keeps hold of the time where each U_s represents, for example, T_s = [1,2,3], there fore the first 200 regs. in U_s are the value of `U` at time `1`, and so on...
+* You will need an iterator to target the appropriate U_s from the array of memory, that's the `Address pointer Unit`.
+* `Arithmetic Solver` is where you're absolute mathematical operations reley.
+* `Time Pointer Unit` helps you to identify which T of the T_s array we are currently handling.
+* Please notice that, at the begining of the program T_init = 0, T_final = T_s[0], after a successfull output, T_init = T_final, and T_final = T_s[1], and so on...
+* `Error Unit` it's responsible for detecting when an arithmetic error may occurr, like dividing by zero, `h` is getting bigger every time, different sizes....etc.
+* `FPU` helps you to know what mode are we in (fixed/variable step size), and what is type of fixed point operations.
 
 
 
