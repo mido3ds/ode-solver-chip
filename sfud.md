@@ -414,3 +414,22 @@ for packet in packets:
 * In fixed step algorithm, there's no problems, the only problem is when we reach the last `X`, then the upcoming `h` will be garbage or uunwanted `h`, and program will terminate either ways.
 * In adaptive/variable step algorithm, when `Solver` is calculating `X_h`, `Interpolator` is busy calculating `U_h/2`,
 and when Solver is calculating `X_h/2` and `X_h`, interpolator will be calculating `U_h*`, `h*` is the `h` from the algorithm equaiton, which is `h = (0.9*h^​2​*L)/(e)`, this `U_h*` might not even be used, and then, solver will interrupt the interpolator, and asks him to calculate `U_hnew`.
+
+## Communication between different modules
+
+### IO and CPU
+* CPU asks to `Load`, IO reads 32bits of data.
+* When CPU finishes, raises `WAIT`, when IO finishes that last package of data `int` the cpu with `success`.
+* CPU raises `PROC`, so that all of other components starts acting.
+* When output data is ready, CPU is interrupted with `error` or `success`, then CPU raises `OUT` signal which implies that it's ready to take out the resulting output from IO.
+* If there's an erro, CPU should know which component sent it.
+
+### IO and Solver/Interpolator
+* IO puts the data and address on their busses, each component of them two reads that address and check if this address is within its range, if so this component reads the data and stores it.
+* When Solver is ready to flush the result it raises `int` and `success` or even `error`.
+
+### Solver and Interpolator
+* Please read the parallelism section first. [link here!]
+* Solver is working on `X_h` so it needs `U`, solver checks on `DONE` signal, if raised, reads the `U` from the data bus, Interpolator has already placed it there.
+* Then Solver places `h_new` at the data bus, interpolator reads it and they both work...
+* and repeat. 
