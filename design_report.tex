@@ -1,7 +1,7 @@
 \documentclass[12pt]{report}
 \usepackage[utf8]{inputenc}
 \usepackage{cite}
-\usepackage{url}
+\usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
 \usepackage{amsfonts}
 \usepackage{mathtools}
@@ -9,7 +9,7 @@
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
-\title{ODE Solver Design Report}
+\title{\LARGE{ODE Solver Design Report}}
 \author{
   Mahmoud Adas\\
   \small\texttt{SEC:2, BN:21}
@@ -25,26 +25,36 @@
 }
 \date{\today}
 
+% TODO: add header and footer
+% TODO: add tables and figures index
+
 \begin{document}
 
 \maketitle
 \tableofcontents
 
 \part{Introduction}
-\textbf{TODO: introduction}
-\textbf{TODO: add tasks table}
+\section{Abstract}
+This is phase 1 design report for VLSI project. 
 
+This document is intended to be used as a comprehensive reference for the coming phases, and to be up-to-date with all future changes in the design.
+
+\section{Team and Tasks}
+% TODO: add tasks table
+
+\section{Interfaces and Actions}
 \begin{center}
     \begin{figure}[hp]
         \centering
         \includegraphics[width=\textwidth]{d1}
-        \caption{Overall Design}
+        \caption{Overall System Design}
         \label{fig:overall}
     \end{figure}
 \end{center}
 
-\section{Interfaces and Summary}
-The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
+The main module has the following ports that triggers some actions. 
+
+Ports and their actions are summarized below and detailed in the rest of the document.
 \begin{itemize}
     \item CLK: IN
     \item RESET: ASYNC IN
@@ -56,7 +66,7 @@ The hardware has the following interfaces that triggers some actions summarized 
             \item INTERRUPT resets to zero.
         \end{itemize}
         \item Memory at solver and interpolator are NOT cleared.
-        \item at next clock, CPU is expected to turn the \emph{LOAD / WAIT / PROC / OUT} into \emph{LOAD} state and we will start loading input again.
+        \item at next clock, CPU is expected to turn the {LOAD / WAIT / PROC / OUT} into {LOAD} state and we will start loading input again.
     \end{itemize}
     \item LOAD / WAIT / PROC / OUT (2bit): IN:
     \begin{itemize}
@@ -66,26 +76,26 @@ The hardware has the following interfaces that triggers some actions summarized 
             \item IO receives \textbf{compressed} data from the CPU.
             \item IO decompresses data into buffer.
             \item buffer is flushed into data bus with appropriate address.
-            \item ends when cpu finishes its data loading and switches to \emph{WAIT} state.
+            \item ends when cpu finishes its data loading and switches to {WAIT} state.
         \end{itemize}
         \item WAIT(1):
         \begin{itemize}
-            \item Same state as \emph{LOAD}, but IO doesn't receive anymore data from CPU.
-            \item ends when IO flushes all its buffer and raises \emph{INTERRUP} with either \emph{ERROR} or \emph{SUCCESS}.
+            \item Same state as {LOAD}, but IO doesn't receive anymore data from CPU.
+            \item ends when IO flushes all its buffer and raises {INTERRUP} with either {ERROR} or {SUCCESS}.
         \end{itemize}
         \item PROC(2):
         \begin{itemize}
-            \item SOLVER sends time step to calculate \emph{U} at.
+            \item SOLVER sends time step to calculate {U} at.
             \item SOLVER and INTERPOLATOR work concurrently to calculate their outputs.
-            \item INTERPOLATOR sends \emph{DONE} signal to SOLVER when it finishes the interpolated U.
-            \item SOLVER can request to copy the interpolated \emph{U}.
+            \item INTERPOLATOR sends {DONE} signal to SOLVER when it finishes the interpolated U.
+            \item SOLVER can request to copy the interpolated {U}.
             \item INTERPOLATOR waits for SOLVER to send next time step.
-            \item ends when either SOLVER or INTERP raises INTERRUPT with either \emph{SUCCESS} or \emph{ERROR}.
+            \item ends when either SOLVER or INTERP raises INTERRUPT with either {SUCCESS} or {ERROR}.
         \end{itemize}
         \item OUT(3):
         \begin{itemize}
             \item IO just copies final outputs to cpu from SOLVER memory.
-            \item ends when IO raises INTERRUPT with either \emph{SUCCESS} or \emph{ERROR}.
+            \item ends when IO raises INTERRUPT with either {SUCCESS} or {ERROR}.
         \end{itemize}
     \end{itemize}
     \item DATA (32bit): INOUT
@@ -95,11 +105,11 @@ The hardware has the following interfaces that triggers some actions summarized 
     \item INTERRUPT: OUT
     \begin{itemize}
         \item raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task.
-        \item if task finished with success the \emph{ERROR / SUCCESS} is set to \emph{SUCCESS}, otherwise it's \emph{ERROR}.
+        \item if task finished with success the {ERROR / SUCCESS} is set to {SUCCESS}, otherwise it's {ERROR}.
     \end{itemize}
     \item ERROR(0) / SUCCESS(1): OUT
     \begin{itemize}
-        \item CPU should operate on this value ONLY when \emph{INTERRUPT} is 1.
+        \item CPU should operate on this value ONLY when {INTERRUPT} is 1.
         \item errors that could happen include: divide by zero, H > 1, incomplete input.
     \end{itemize}
 \end{itemize}
@@ -107,20 +117,24 @@ The hardware has the following interfaces that triggers some actions summarized 
 \part{Simulation Workflow}
 \section{Input Preparing}
 This stage is the responsibility of a script that runs before the simulation:
+\subsubsection{Stage Input}
+JSON file that follows the format stated in the main \href{https://docs.google.com/document/d/10A55BSsqfsHDiRTdhKYW2H_w3TB4mgXQe5GLBEdv4iM/edit}{project document}.
+
+\subsubsection{Steps}
 \begin{itemize}
-    \item INPUT: json file that follows the format stated in main document.
-    \item create bit stream of the read data that follows the \emph{Input Data Structure} specifications.
-    \item encode the bits following the \emph{Compression} specifications.
+    \item create bit stream of the read data that follows the {Input Data Structure} specifications.
+    \item encode the bits following the {Compression} specifications.
     \item collect encoding output in ASCII string, each byte in string is either '0' or '1' in ASCII format.
     \item when the string reaches the length of 32 bytes, push it to output file.
-    \item if the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file.
-    \item OUTPUT:
-    \begin{itemize}
-        \item ASCII file that contains multiple lines of compressed data.
-        \item each line has exactly 32 '0' or '1' ASCII characters.
-        \item ONLY the ASCII characters 0 or 1 are permitted in the file and NOTHING ELSE.
-        \item there is NO EMPTY LINE/s in the file or spaces.
-    \end{itemize}
+    \item if the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file.    
+\end{itemize}
+
+\subsubsection{Stage Output}
+\begin{itemize}
+    \item ASCII file that contains multiple lines of compressed data.
+    \item each line has exactly 32 '0' or '1' ASCII characters.
+    \item ONLY the ASCII characters 0 or 1 are permitted in the file and NOTHING ELSE.
+    \item there is NO EMPTY LINE/s in the file or spaces.
 \end{itemize}
 
 \section{Instantiating Main Module}
@@ -145,27 +159,27 @@ CPU is a non-synthesisable HDL test-bench that:
     \begin{itemize}
         \item at the positive edge of CLK:
         \begin{itemize}
-            \item load vector into \emph{DATA} bus.
+            \item load vector into DATA bus.
         \end{itemize}
     \end{itemize}
     \item load DATA with 0s.
-    \item wait for the positive edge of \emph{INTERRUPT} signal.
-    \item check for \emph{ERROR / SUCCESS} and only proceed if it is SUCCESS.
+    \item wait for the positive edge of INTERRUPT signal.
+    \item check for ERROR / SUCCESS and only proceed if it is SUCCESS.
 \end{itemize}
 
 \section{Processing}
 \begin{itemize}
     \item put HW at PROCESS state.
-    \item wait for the \emph{INTERRUPT} positive edge.
-    \item check for \emph{ERROR / SUCCESS} and only proceed if it is SUCCESS.
+    \item wait for the {INTERRUPT} positive edge.
+    \item check for {ERROR / SUCCESS} and only proceed if it is SUCCESS.
 \end{itemize}
 
 \section{Output Extraction}
 \begin{itemize}
-    \item put high impedance on \emph{DATA} bus.
+    \item put high impedance on {DATA} bus.
     \item put HW at OUT state.
     \item keep receiving data into array of vectors and outputting them into file in the same format of the input file.
-    \item wait for the positive edge of \emph{INTERRUPT} signal. 
+    \item wait for the positive edge of {INTERRUPT} signal. 
 \end{itemize}
 Simulation is done! 
 
@@ -284,7 +298,7 @@ Interpolator module listens at the following addresses:
 \begin{figure}[hp]
     \centering
     \includegraphics[width=\textwidth]{IO}
-    \caption{I/O Design}
+    \caption{I/O Internal Design}
     \label{fig:io}
 \end{figure}
 
@@ -323,7 +337,7 @@ Interpolator module listens at the following addresses:
 \begin{figure}[hp]
     \centering
     \includegraphics[width=\textwidth]{solver}
-    \caption{Solver Design}
+    \caption{Solver Internal Design}
     \label{fig:solver}
 \end{figure}
 
@@ -383,13 +397,13 @@ Please notice we are storing all the 5 output values and flushing them to the CP
 
 \subsubsection{Solver Job and sub-modules}
 \begin{itemize}
-    \item On a large scale it receives U\_h from interpolator, gives it another \emph{h} to compute U\_hnew at, then computes X\_h and decides to stop and flush output to I/O or continue.
+    \item On a large scale it receives U\_h from interpolator, gives it another \emph{h} to compute U\_hnew at, then computes X$_h$ and decides to stop and flush output to I/O or continue.
     \item At the beginning it receives its data from I/O such as N, M, err, h ...,etc.
     \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
     \item \emph{Arithmetic Solver} on which the absolute mathematical operations rely.
     \item \emph{Error Unit} to detect any error in sizes, h, numbers ...,etc.
-    \item \emph{Next Step Unit} helps create the upcoming h\_new so that when solver is busy calculating X\_h, interpolator is calculating U\_hnew, \textbf{(more about parallelism here)[\# Parallelism in design]}, this unit represents the stepper unit, holds the logic of calculating the adaptive \emph{h}, and detects when to stop, in summation it calculates the next \emph{h}, even if it was fixed step.
-    \item \emph{Counter Unit}, tells you when to calculate more, when to advance to next time (in T\_s), and when to stop the whole operations.
+    \item \emph{Next Step Unit} helps create the upcoming h$_new$ so that when solver is busy calculating X$_h$, interpolator is calculating U\_hnew, \textbf{(more about parallelism here)[\# Parallelism in design]}, this unit represents the stepper unit, holds the logic of calculating the adaptive \emph{h}, and detects when to stop, in summation it calculates the next \emph{h}, even if it was fixed step.
+    \item \emph{Counter Unit}, tells you when to calculate more, when to advance to next time (in T$_s$), and when to stop the whole operations.
 \end{itemize}
 
 \section{Interpolator}
@@ -397,7 +411,7 @@ Please notice we are storing all the 5 output values and flushing them to the CP
 \begin{figure}[hp]
     \centering
     \includegraphics[width=\textwidth]{interpolator}
-    \caption{Interpolator Design}
+    \caption{Interpolator Internal Design}
     \label{fig:interpolator}
 \end{figure}
 
@@ -421,16 +435,16 @@ Please notice we are storing all the 5 output values and flushing them to the CP
 
 \subsection{Interpolator Memory Size}
 \begin{itemize}
-    \item U\_s: 16000 bits --> 1000 (16 bits) Registers
+    \item U$_s$: 16000 bits --> 1000 (16 bits) Registers
     \begin{itemize}
-        \item U\_s = 5*[50]*64 = 16000 bits
+        \item U$_s$ = 5*[50]*64 = 16000 bits
         \item 50: max of M
         \item 64: max of numbers
         \item 5: max of times answer is required
     \end{itemize}
-    \item T\_s: 320 bits --> 20 (16 bits) Registers
+    \item T$_s$: 320 bits --> 20 (16 bits) Registers
     \begin{itemize}
-        \item T\_s = 5*64 = 320 bits
+        \item T$_s$ = 5*64 = 320 bits
         \item 5: max of times answer is required
         \item 64: max of numbers
     \end{itemize}
@@ -445,21 +459,19 @@ Please notice we are storing all the 5 output values and flushing them to the CP
 \subsection{Interpolator Job and sub-modules}
 \begin{itemize}
     \item On a large scale, it only computes U at a specific time.
-    \item At the beginning it receives from IO the U\_s and T\_s fixed variables/data, and stores them.
-    \item Each U\_s is at most of size [64*50] = 3200 bits = 200 registers
-    \item Each T\_s is at most of size [64] bits = 4 regs.
-    \item T\_s keeps hold of the time where each U\_s represents, for example, T\_s = [1, 2, 3], there fore the first 200 regs. In U\_s are the value of U at time 1, and so on... 
-    \item You will need an iterator to target the appropriate U\_s from the array of memory, that's the \emph{Address pointer Unit}.
-    \item \emph{Arithmetic Solver} is where absolute mathematical operations exist.
-    \item \emph{Time Pointer Unit} helps you to identify which T of the T\_s array we are currently handling.
-    \item Please notice that, at the beginning of the program T\_init = 0, T\_final = T\_s[0], after a successful output, T\_init = T\_final, and T\_final = T\_s[1], and so on...
-    \item \emph{Error Unit} it's responsible for detecting when an arithmetic error may occur, like dividing by zero, \emph{h} is getting bigger every time, different sizes....etc.
-    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
+    \item At the beginning it receives from IO the U$_s$ and T$_s$ fixed variables/data, and stores them.
+    \item Each U$_s$ is at most of size [64*50] = 3200 bits = 200 registers
+    \item Each T$_s$ is at most of size [64] bits = 4 regs.
+    \item T$_s$ keeps hold of the time where each U$_s$ represents, for example, T$_s$ = [1, 2, 3], there fore the first 200 regs. In U$_s$ are the value of U at time 1, and so on... 
+    \item You will need an iterator to target the appropriate U$_s$ from the array of memory, that's the \textbf{Address pointer Unit}.
+    \item \textbf{Time Pointer Unit} helps you to identify which T of the T$_s$ array we are currently handling.
+    \item Please notice that, at the beginning of the program T\_init = 0, T\_final = T$_s$[0], after a successful output, T\_init = T\_final, and T\_final = T$_s$[1], and so on...
+    \item \textbf{Error Unit} it's responsible for detecting when an arithmetic error may occur, like dividing by zero, \textbf{h} is getting bigger every time, different sizes....etc.
+    \item \textbf{FPU} see \nameref{sec:fpu}.
 \end{itemize}
 
-\textbf{TODO: add link}
-
 \section{Fixed/Floating Point Unit (FPU)}
+\label{sec:fpu}
 
 \textbf{TODO: add logic to FPU}
 
@@ -515,7 +527,7 @@ Please notice we are storing all the 5 output values and flushing them to the CP
     \end{itemize}
     \item Floating point specifications
     \begin{itemize}
-        \item MUST follow [IEEE-754 2019-revision] (\url{https://en.wikipedia.org/wiki/IEEE_754}) for both fp32 and fp64 modes.
+        \item MUST adhere to \href{https://en.wikipedia.org/wiki/IEEE_754}{IEEE-754 2019-revision} for both fp32 and fp64 modes.
         \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
     \end{itemize}
     \item Scale Factor Definition
@@ -539,7 +551,7 @@ Y compressed 4bit packets, where $X \geq Y \geq \ceil{\frac{X}{8}}$
 Each packet must follow this format:
 
 \begin{center}
- \begin{tabular}{||c c c||} 
+ \begin{tabular}{||c |l |c||} 
  \hline
  Bit Index & Description & Size \\ [0.5ex] 
  \hline\hline
@@ -555,7 +567,7 @@ NOTE: the 3 bits must be incremented before decode.
 \subsubsection{Example}
 
 \begin{center}
- \begin{tabular}{||c c||} 
+ \begin{tabular}{||c |c||} 
  \hline
  Original & Compressed \\ [0.5ex] 
  \hline\hline
@@ -607,9 +619,10 @@ for packet in packets:
         buffer.flush()
 \end{verbatim}
         
-\section{Parallelism in Design}   
+\section{Parallelism in Design} 
+\label{sec:parallel}  
 \begin{itemize}
-    \item Parallelism in design is between Solver and Interpolator, happens when Solver is calculating the next X\_h, Interpolator is calculating U\_h2.
+    \item Parallelism in design is between Solver and Interpolator, happens when Solver is calculating the next X$_h$, Interpolator is calculating U\_h2.
     \item In fixed step algorithm, there's no problems, the only problem is when we reach the last X, then the upcoming h will be garbage or unwanted h, and program will terminate either ways.
     \item In adaptive/variable step algorithm, when Solver is calculating $X_h$, Interpolator is busy calculating $U_{h/2}$, and when Solver is calculating $X_{h/2}$ and $X_{h}$, Interpolator will be calculating $U_{h}*$, $h*$ is the h from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and asks it to calculate $U_{hnew}$.
 \end{itemize}
@@ -633,9 +646,9 @@ for packet in packets:
 
 \subsection{Solver and Interpolator}
 \begin{itemize}
-    \item Please read the parallelism section first. \textbf{[link here!]}
-    \item Solver is working on X\_h so it needs U, solver checks on DONE signal, if raised, reads the U from the data bus, Interpolator has already placed it there.
-    \item Then Solver places h\_new at the data bus, interpolator reads it and they both work...
+    \item see \nameref{sec:parallel}.
+    \item Solver is working on X$_h$ so it needs U, solver checks on DONE signal, if raised, reads the U from the data bus, Interpolator has already placed it there.
+    \item Then Solver places h$_new$ at the data bus, interpolator reads it and they both work...
     \item and repeat.
 \end{itemize}
 
