@@ -4,6 +4,10 @@
 \usepackage{url}
 \usepackage{graphicx}
 \usepackage{amsfonts}
+\usepackage{mathtools}
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
 \title{ODE Solver Design Report}
 \author{
@@ -26,16 +30,20 @@
 \maketitle
 \tableofcontents
 
+\part{Introduction}
+\textbf{TODO: introduction}
+\textbf{TODO: add tasks table}
+
 \begin{center}
-\begin{figure}[hp]
-    \centering
-    \includegraphics[width=\textwidth]{d1}
-    \caption{Overall Design}
-    \label{fig:overall}
-\end{figure}
+    \begin{figure}[hp]
+        \centering
+        \includegraphics[width=\textwidth]{d1}
+        \caption{Overall Design}
+        \label{fig:overall}
+    \end{figure}
 \end{center}
 
-\part{Interfaces and Summary}
+\section{Interfaces and Summary}
 The hardware has the following interfaces that triggers some actions summarized below and detailed in the rest of the document.
 \begin{itemize}
     \item CLK: IN
@@ -96,9 +104,7 @@ The hardware has the following interfaces that triggers some actions summarized 
     \end{itemize}
 \end{itemize}
 
-
 \part{Simulation Workflow}
-
 \section{Input Preparing}
 This stage is the responsibility of a script that runs before the simulation:
 \begin{itemize}
@@ -117,7 +123,7 @@ This stage is the responsibility of a script that runs before the simulation:
     \end{itemize}
 \end{itemize}
 
-\section{Instantiating main module}
+\section{Instantiating Main Module}
 This stage and all the next ones are the responsibility of the CPU simulation code.
 
 CPU is a non-synthesisable HDL test-bench that:
@@ -130,7 +136,7 @@ CPU is a non-synthesisable HDL test-bench that:
     \item load output out from the HW and into a file.
 \end{itemize}
 
-\section{Loading Input}
+\section{Input Loading}
 \begin{itemize}
     \item load the output of the former script into array of vectors each is 32bit wide that will hold one line in the file.
     \item put HW at LOAD state.
@@ -154,7 +160,7 @@ CPU is a non-synthesisable HDL test-bench that:
     \item check for \emph{ERROR / SUCCESS} and only proceed if it is SUCCESS.
 \end{itemize}
 
-\section{Extracting Output}
+\section{Output Extraction}
 \begin{itemize}
     \item put high impedance on \emph{DATA} bus.
     \item put HW at OUT state.
@@ -167,7 +173,7 @@ You can turn the output into human-readable json using output-formatting script.
 
 \part{Specifications}
 
-\section{Variables}
+\section{System Variables}
 \begin{itemize}
     \item N : 6 bits [1:50]
     \item M : 6 bits [1:50]
@@ -180,9 +186,9 @@ You can turn the output into human-readable json using output-formatting script.
     \item B : 160000 bits, [N*M] each number could be 16bit fixed point/ floating point 32/ or floating point 64
     \item X : 3200 bits, [N*1] each number....
     \item U : 3200 bits, [M*1] each number....
-    \item $T_{s}$ : 320 bits, [5*1] each number....
-    \item $X_{out}$ : 16000 bits [N*1]*5
-    \item $U_s$ : 16000 bits [M*1]*5
+    \item T$_{s}$ : 320 bits, [5*1] each number....
+    \item X$_{out}$ : 16000 bits [N*1]*5
+    \item U$_s$ : 16000 bits [M*1]*5
 \end{itemize}
 
 \section{Memory Mapping}
@@ -231,9 +237,7 @@ Solver module listens at the following addresses:
 \subsection{Interpolator Memory Mapping}
 Interpolator module listens at the following addresses:
 
-%\begin{center}
-{
- \centering
+\begin{center}
  \begin{tabular}{||c |c| c| c| c| l||} 
  \hline
  Address & A & Type & \#Words & Name & Description  \\ [0.5ex] 
@@ -242,17 +246,16 @@ Interpolator module listens at the following addresses:
  \hline
  0x52D9  & W & f64[5] & 20 & T & Time points of solutions  \\
  \hline
- 0x52ED  & W & f64[50] & 200 & U0 & Initial U vector \\
+ 0x52ED  & W & f64[50] & 200 & U$_0$ & Initial U vector \\
  \hline
- 0x53B5  & W & f64[50][5] & 1000 & Us & U vector at required time steps \\
+ 0x53B5  & W & f64[50][5] & 1000 & U$_s$ & U vector at required time steps \\
  \hline
- 0x579D  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
+ 0x579D  & R & f64[50] & 200 & U$_{int}$ & Interpolated U Vector \\
  \hline
- 0x5865  & W & f64 & 4 & $h_{new}$ & Time to calculate U at \\ [1ex]
+ 0x5865  & W & f64 & 4 & h$_{new}$ & Time to calculate U at \\ [1ex]
  \hline
 \end{tabular}
-}
-%\end{center}
+\end{center}
 
 \section{Header Data Structure}
 
@@ -454,14 +457,20 @@ Please notice we are storing all the 5 output values and flushing them to the CP
     \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}.
 \end{itemize}
 
+\textbf{TODO: add link}
+
 \section{Fixed/Floating Point Unit (FPU)}
 
-\begin{figure}[hp]
-    \centering
-    \includegraphics[width=\textwidth]{FPU}
-    \caption{FP Unit}
-    \label{fig:fpu}
-\end{figure}
+\textbf{TODO: add logic to FPU}
+
+\begin{center}
+    \begin{figure}[hp]
+        \centering
+        \includegraphics[width=\textwidth]{FPU}
+        \caption{FP Unit}
+        \label{fig:fpu}
+    \end{figure}
+\end{center}
 
 \begin{itemize}
     \item Role:
@@ -526,7 +535,7 @@ Follow bit-level Run-length encoding to compress ram content before sending them
 Bit stream of X bits.
 
 \subsubsection{Output}
-Y compressed 4bit packets, where X >= Y >= ceil(X/8)
+Y compressed 4bit packets, where $X \geq Y \geq \ceil{\frac{X}{8}}$
 Each packet must follow this format:
 
 \begin{center}
@@ -558,15 +567,17 @@ NOTE: the 3 bits must be incremented before decode.
 \end{center}
 
 \subsubsection{Pseudo-code}
-c = first bit in bit\_stream \\
-count = 0 \\
-for b in bit\_stream: \\
-    if c == b and count < 7: \\
-        count++ \\
-    else: \\
-        emit\_packet(count-1, c) \\
-        count = 1 \\
-        c = b \\
+\begin{verbatim}
+c = first bit in bit_stream
+count = 0
+for b in bit_stream:
+    if c == b and count < 7:
+        count++
+    else:
+        emit_packet(count-1, c)
+        count = 1
+        c = b
+\end{verbatim}
 
 \subsubsection{Compression Design Justification}
 Because the occurence of more that 7 ones or zeros simultaneously is very rare.
@@ -577,22 +588,24 @@ This compression algorithm may not compress the data, rather than that it may in
 \section{Decompression}
 Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
 
-for packet in packets: \\
-    \# bit to repeat \\
-    b = packet[0] \\
+\begin{verbatim}
+for packet in packets:
+    # bit to repeat
+    b = packet[0]
 
-    \# extract 3 bits \\
-    n = packet[3:1] \\
+    # extract 3 bits
+    n = packet[3:1]
 
-    \# increment by 1 to get number of repetitions \\
-    n++ \\
+    # increment by 1 to get number of repetitions
+    n++
 
-    \# generate n bit of b \\
-    for \_ in range(n): \\
-        buffer.push(b) \\
+    # generate n bit of b
+    for _ in range(n):
+        buffer.push(b)
 
-    if buffer.full(): \\
-        buffer.flush() \\
+    if buffer.full():
+        buffer.flush()
+\end{verbatim}
         
 \section{Parallelism in Design}   
 \begin{itemize}
