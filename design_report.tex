@@ -162,7 +162,7 @@ Ports and their actions are summarized below and detailed in the rest of the doc
 \section{Input Preparing}
 This stage is the responsibility of a script that runs before the simulation:
 \subsubsection{Stage Input}
-JSON file that follows the format stated in the main \href{https://docs.google.com/document/d/10A55BSsqfsHDiRTdhKYW2H_w3TB4mgXQe5GLBEdv4iM/edit}{project document}. % TODO: add to references instead
+JSON file that follows the format stated in the main project document \cite{mainDoc}.
 
 \subsubsection{Steps}
 \begin{itemize}
@@ -585,7 +585,7 @@ Notice: main module stores all the 5 output values and flushes them to the CPU a
 
 \subsection{Floating point specifications}
 \begin{itemize}
-    \item MUST adhere to \href{https://en.wikipedia.org/wiki/IEEE_754}{IEEE-754 2019-revision} for both fp32 and fp64 modes. % TODO: add to references instead
+    \item MUST adhere to IEEE-754 2019-revision \cite{ieee754} for both fp32 and fp64 modes.
     \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
 \end{itemize}
 
@@ -713,5 +713,14 @@ for packet in packets:
     \item Then Solver places h$_new$ at the data bus, interpolator reads it and they both work...
     \item and repeat.
 \end{itemize}
+
+\begin{thebibliography}{9}
+    \bibitem{mainDoc}
+    \textit{ODE Solver -- System Description}. CMP Engineering Department, Cairo University. Spring 2020.
+    \\\textit{\url{https://docs.google.com/document/d/1eHHQ9NC2HlrqLECSz6iQl5c6tR_y5AxtJBdxklAY5g4}}
+
+    \bibitem{ieee754}
+    Wikipedia contributors. (2020, March 15). IEEE 754. In Wikipedia, The Free Encyclopedia. Retrieved 19:00, March 21, 2020, from \\\textit{\url{https://en.wikipedia.org/w/index.php?title=IEEE_754&oldid=945680688}}
+\end{thebibliography}
 
 \end{document}
