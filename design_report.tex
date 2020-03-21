@@ -337,10 +337,10 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 \subsubsection{IO Job and sub-modules}
 
 \begin{itemize}
-    \item On a large scale, it receives 32bit streams and pass them to both \emph{Solver} and \emph{Interpolator}, and when \emph{CPU} requests output result, and they are available, sends them out.
-    \item \emph{Decompressor} \textbf{[Read here](\# Decompression)}. % TODO
-    \item \emph{Next Address Unit} is responsible for calculating the next address to push the data at, as you know the address bus is our describer to the data on the data bus, so in order to let the IO knows where the matrix of variable ended this unit decides this, furthermore, \emph{NAU} knows \emph{N} and \emph{M}, so when reading the matrix \emph{A} it knows where exactly it ends.
-    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}. % TODO
+    \item On a large scale, it receives 32bit streams and pass them to both {Solver} and {Interpolator}, and when {CPU} requests output result, and they are available, sends them out.
+    \item {Decompressor} see Section \ref{sec:decomp}.
+    \item {Next Address Unit} is responsible for calculating the next address to push the data at, as you know the address bus is our describer to the data on the data bus, so in order to let the IO knows where the matrix of variable ended this unit decides this, furthermore, {NAU} knows {N} and {M}, so when reading the matrix {A} it knows where exactly it ends.
+    \item {FPU} see Section \ref{sec:fpu}.
 \end{itemize}
 
 \subsection{Solver}
@@ -405,18 +405,17 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
     \end{itemize}
 \end{itemize}
 
-Notice: module stores all the 5 output values and flushes them to the CPU all at once at the end.
+Notice: main module stores all the 5 output values and flushes them to the CPU all at once at the end.
 
 \subsubsection{Solver Job and sub-modules}
 \begin{itemize}
-    \item On a large scale it receives $U_h$ from interpolator, gives it another \emph{h} to compute $U_{h_{new}}$ at, then computes $X_h$ and decides to stop and flush output to I/O or continue.
-    \item At the beginning it receives its data from I/O such as N, M, err, h ...,etc.
-    \item \emph{FPU} \textbf{[LINK HERE to \#\# Fixed/Floating Point Unit (FPU)]}. % TODO
-    \item \emph{Arithmetic Solver} on which the absolute mathematical operations rely.
-    \item \emph{Error Unit} to detect any error in sizes, h, numbers ...,etc.
-    \item \emph{Next Step Unit} helps create the upcoming h$_new$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$, \textbf{(more about parallelism here)[\# Parallelism in design]}, this unit represents the stepper unit, holds the logic of calculating the adaptive \emph{h}, and detects when to stop, in summation it calculates the next \emph{h}, even if it was fixed step.
-    \item \emph{Counter Unit}, tells you when to calculate more, when to advance to next time (in $T_s$), and when to stop the whole operations.
-    % TODO
+    \item On a large scale it receives $U_h$ from interpolator, gives it another $h$ to compute $U_{h_{new}}$ at, then computes $X_h$ and decides to stop and flush output to I/O or continue.
+    \item At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dots etc.
+    \item {FPU} see Section \ref{sec:fpu}.
+    \item {Arithmetic Solver} on which the absolute mathematical operations rely.
+    \item {Error Unit} to detect any error in sizes, h, numbers \dots etc.
+    \item {Next Step Unit} helps create the upcoming $h_{new}$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$, see Section \ref{sec:parallel}, this unit represents the stepper unit, holds the logic of calculating the adaptive $h$, and detects when to stop, in summation it calculates the next $h$, even if it was fixed step.
+    \item {Counter Unit}, tells you when to calculate more, when to advance to next time (in $T_s$), and when to stop the whole operations.
 \end{itemize}
 
 \section{Interpolator}
@@ -620,6 +619,7 @@ Because the occurence of more that 7 ones or zeros simultaneously is very rare.
 This compression algorithm may not compress the data, rather than that it may increase the number of bits.
 
 \section{Decompression}
+\label{sec:decomp}
 Follow this simple algorithm to fill the buffer, once its full (has 32bits) flush it to data bus and update the address.
 
 \begin{verbatim}
