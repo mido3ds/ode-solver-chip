@@ -6,6 +6,13 @@
 \usepackage{amsfonts}
 \usepackage{mathtools}
 \usepackage{caption}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{ODE Solver Design}
+\lhead{\thesection}
+\rfoot{\thepage}
 
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
@@ -26,8 +33,6 @@
 }
 \date{\today}
 
-% TODO: add header and footer
-
 \begin{document}
 
 \thispagestyle{empty}
@@ -47,7 +52,9 @@ This is phase 1 design report for VLSI project.
 This document is intended to be used as a comprehensive reference for the coming phases, and to be up-to-date with all future changes in the design.
 
 \section{Team and Tasks}
-\begin{center}
+Table \ref{tab:tasks} contains all tasks, the team-member who took that task and the time it took them to finish.
+\begin{table}
+    \captionof{table}{Tasks Distribution\label{tab:tasks}}
  \begin{tabular}{||p{30mm}| p{40mm}| p{15mm}| p{40mm}||} 
  \hline
  Task & Members & Duration \newline (hours) & Challenges  \\ [0.5ex] 
@@ -75,7 +82,7 @@ This document is intended to be used as a comprehensive reference for the coming
  Styling the documentation & Mahmoud Othman \newline Mohamed Shawky & 4-5 & --------------------------- \\
  \hline\hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \section{Interfaces and Actions}
 \begin{center}
@@ -87,9 +94,11 @@ This document is intended to be used as a comprehensive reference for the coming
     \end{figure}
 \end{center}
 
-The main module has the following ports that triggers some actions. 
+The main module, as shown in Figure \ref{fig:overall}, has the ports listed in Subsection \ref{sec:interface:ports} that triggers some actions. 
 
 Ports and their actions are summarized below and detailed in the rest of the document.
+
+\subsection{Ports}\label{sec:interface:ports}
 \begin{itemize}
     \item CLK: IN
     \item RESET: ASYNC IN
@@ -442,7 +451,7 @@ Notice: main module stores all the 5 output values and flushes them to the CPU a
     \item {FPU} see Section \ref{sec:fpu}.
     \item {Arithmetic Solver} on which the absolute mathematical operations rely.
     \item {Error Unit} to detect any error in sizes, h, numbers \dots etc.
-    \item {Next Step Unit} helps create the upcoming $h_{new}$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$, see Section \ref{sec:parallel}, this unit represents the stepper unit, holds the logic of calculating the adaptive $h$, and detects when to stop, in summation it calculates the next $h$, even if it was fixed step.
+    \item {Next Step Unit} helps create the upcoming $h_{new}$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$ \footnote{See Section \ref{sec:parallel} to learn more about parallelism.}, this unit represents the stepper unit, holds the logic of calculating the adaptive $h$, and detects when to stop, in summation it calculates the next $h$, even if it was fixed step.
     \item {Counter Unit}, tells you when to calculate more, when to advance to next time (in $T_s$), and when to stop the whole operations.
 \end{itemize}
 
@@ -570,17 +579,20 @@ Notice: main module stores all the 5 output values and flushes them to the CPU a
 \begin{itemize}
     \item 16bit input
     \item 16bit output
-    \item CONSTANT scale factor for both input and output = 7. \textbf{See Scale Factor Definition}
+    \item CONSTANT scale factor for both input and output = 7. see Subsection \ref{sec:fpu:scale}.
     \item in case of overflow or division by zero, ERROR MUST be set to 1 and MUST stay at 1 until RESET is set to 1.
 \end{itemize}
+
 \subsection{Floating point specifications}
 \begin{itemize}
     \item MUST adhere to \href{https://en.wikipedia.org/wiki/IEEE_754}{IEEE-754 2019-revision} for both fp32 and fp64 modes. % TODO: add to references instead
     \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
 \end{itemize}
+
 \subsection{Scale Factor Definition}
+\label{sec:fpu:scale}
 Scale Factor is an integer used to obtain the real number from the fixed point number and vice versa using the following formula: 
-$y = x \div 2^s$; where: 
+$y = \frac{x}{2^s}$; where: 
 \begin{itemize}
     \item $x \in \mathbb{N}$ is the fixed point number stored as an integer.
     \item $y \in \mathbb{R}$ is the real number that represents $x$ with some error.
