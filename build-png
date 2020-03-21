@@ -1,3 +1,2 @@
 drawio d1.drawio -x -f png -o d1.png -b 8
 drawio FPU.drawio -x -f png -o FPU.png -b 8
-pandoc sfud.md -t latex -o sfud.pdf
