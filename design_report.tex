@@ -163,16 +163,25 @@ Set the current major state of the machine.
     \item Errors that could happen include: divide by zero, H > 1, incomplete input.
 \end{itemize}
 
-\section{Parallelism in Design} 
-\label{sec:parallel}  
-Parallelism takes place when the solver is calculating the next $X_h$ and interpolator is calculating $U_h2$.
+\section{Pipelining} 
+\label{sec:pipeline}
+Main module has only one pipeline with 2 stages, the solver and the interpolator.
+The solver calculates the next $X_h$ while the interpolator calculates $U_{h2}$.
 
-\subsection{Possible Problems}
+\subsection{Possible Hazards}
 \subsubsection{In Fixed Step Mode} 
 The only problem is when the unit reachs the last $X$, then the upcoming $h$ will be garbage or unwanted $h$, and the unit will terminate either ways.
 
 \subsubsection{In Adaptive/Variable Step Mode} 
 When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, and when solver is calculating $X_{h/2}$ and $X_{h}$, interpolator will be calculating $U_{h}*$, $h*$ is the $h$ from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and orders it to calculate $U_{hnew}$.
+
+\section{Parallelism}
+\label{sec:parallel}
+\begin{verse}
+    Parallelism: having multiple instances of module $M$ as $m_0, m_1, m_2 \dots$, and splitting inputs $x_0, x_1, x_2 \dots$ between them, so each module $m_i$ takes input $x_i$.
+\end{verse}
+Based on the previous definition, this design doesn't implement parallelism. As the solver only solves one and only one $X_{out}$ at a given time. And the main module has one instance of the solver and interpolator.
+
 
 \section{Inter-module Communication}
 
@@ -193,7 +202,7 @@ When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, an
 
 \subsection{Solver and Interpolator}
 \begin{itemize}
-    \item See Section \ref{sec:parallel}.
+    \item See Section \ref{sec:pipeline}.
     \item Solver is working on $X_h$ so it needs U, solver checks on DONE signal, if raised, reads the U from the data bus, Interpolator has already placed it there.
     \item Then Solver places h$_new$ at the data bus, interpolator reads it and they both work...
     \item and repeat.
@@ -473,7 +482,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 \begin{itemize}
     \item {FPU}: see Section \ref{sec:fpu}.
     \item {Error Unit}: to detect any error in sizes, h, numbers \dots etc.
-    \item {Next Step Unit}: helps create the upcoming $h_{new}$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$ \footnote{See Section \ref{sec:parallel} to learn more about parallelism.}, this unit represents the stepper unit, holds the logic of calculating the adaptive $h$, and detects when to stop, in summation it calculates the next $h$, even if it was fixed step.
+    \item {Next Step Unit}: helps create the upcoming $h_{new}$ so that when solver is busy calculating $X_h$, interpolator is calculating $U_{h_{new}}$ \footnote{See Section \ref{sec:pipeline} to learn more about pipelining in design.}, this unit represents the stepper unit, holds the logic of calculating the adaptive $h$, and detects when to stop, in summation it calculates the next $h$, even if it was fixed step.
     \item {Counter Unit}: tells you when to calculate more, when to advance to next time (in $T_s$), and when to stop the whole operations.
 \end{itemize}
 
