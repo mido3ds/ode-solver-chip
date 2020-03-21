@@ -46,6 +46,7 @@
     \item U : 3200 bits, [M*1] each number....
     \item T\_s : 320 bits, [5*1] each number....
     \item X\_out : 16000 bits [N*1]*5
+    \item U\_s : 16000 bits [M*1]*5
 \end{itemize}
 
 
@@ -217,9 +218,9 @@ Solver module listens at the following addresses:
  \hline
  0x4E29  & W & f64[50] & 200 & X & Initial value of X \\
  \hline
- 0x4EF1  & R & f64[50][64] & 12800 & Xout & Final Output X \\ [1ex] 
+ 0x4EF1  & R & f64[50][5] & 1000 & Xout & Final Output X \\ [1ex] 
  \hline
- 0x81F1  & W & f64[50] & 200 & U & Initial U vector \\
+ 0x579D  & W & f64[50] & 200 & Uint & Initial U vector \\
  \hline
 \end{tabular}
 \end{center}
@@ -234,15 +235,15 @@ Interpolator module listens at the following addresses:
  \hline\hline
   0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0x80F1  & W & f64[64] & 256 & T & Time points where solutions are required  \\
+ 0x52D9  & W & f64[5] & 20 & T & Time points where solutions are required  \\
  \hline
- 0x81F1  & W & f64[50] & 200 & U0 & Initial U vector \\
+ 0x52ED  & W & f64[50] & 200 & U0 & Initial U vector \\
  \hline
- 0x82B9  & W & f64[50][64] & 12800 & Us & U vector at required time steps \\
+ 0x53B5  & W & f64[50][5] & 1000 & Us & U vector at required time steps \\
  \hline
- 0xB4B9  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
+ 0x579D  & R & f64[50] & 200 & Uint & Interpolated U Vector \\
  \hline
- 0xB581  & W & f32 & 2 & h_new & Time to calculate U at \\ [1ex] 
+ 0x5865  & W & f64 & 4 & h_new & Time to calculate U at \\ [1ex] 
  \hline
 \end{tabular}
 \end{center}
