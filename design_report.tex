@@ -125,7 +125,7 @@ Ports and their actions are summarized below and detailed in the rest of the doc
 \section{Input Preparing}
 This stage is the responsibility of a script that runs before the simulation:
 \subsubsection{Stage Input}
-JSON file that follows the format stated in the main \href{https://docs.google.com/document/d/10A55BSsqfsHDiRTdhKYW2H_w3TB4mgXQe5GLBEdv4iM/edit}{project document}.
+JSON file that follows the format stated in the main \href{https://docs.google.com/document/d/10A55BSsqfsHDiRTdhKYW2H_w3TB4mgXQe5GLBEdv4iM/edit}{project document}. % TODO: add to references instead
 
 \subsubsection{Steps}
 \begin{itemize}
@@ -486,8 +486,6 @@ Notice: module stores all the 5 output values and flushes them to the CPU all at
 \section{Fixed/Floating Point Unit (FPU)}
 \label{sec:fpu}
 
-\textbf{TODO: add logic to FPU}
-
 \begin{center}
     \begin{figure}[hp]
         \centering
@@ -497,69 +495,78 @@ Notice: module stores all the 5 output values and flushes them to the CPU all at
     \end{figure}
 \end{center}
 
+\subsection{Role}
 \begin{itemize}
-    \item Role:
+    \item Instantiated, in the rest modules, multiple times and for different purposes.
+    \item perform the following operations given in port \emph{OP}.
+    \item perform them in different modes given in \emph{MODE}.
+\end{itemize}
+\subsection{Ports}
+\begin{itemize}
+    \item MODE: IN
     \begin{itemize}
-        \item Instantiated, in the rest modules, multiple times and for different purposes.
-        \item perform the following operations given in port \emph{OP}.
-        \item perform them in different modes given in \emph{MODE}.
+        \item FIXED(0): operate on LOWEST 16bits of both A and B following Fixed point specifications.
+        \item F64(1): operate on ALL 64bits of both A and B following Floating point specifications.
+        \item F32(2): operate on LOWEST 32bits of both A and B following Floating point specifications.
     \end{itemize}
-    \item Ports:
+    \item OP: IN
     \begin{itemize}
-        \item MODE
-        \begin{itemize}
-            \item FIXED(0): operate on LOWEST 16bits of both A and B following Fixed point specifications.
-            \item F64(1): operate on ALL 64bits of both A and B following Floating point specifications.
-            \item F32(2): operate on LOWEST 32bits of both A and B following Floating point specifications.
-        \end{itemize}
-        \item OP
-        \begin{itemize}
-            \item 0: `A + B` 
-            \item 1: `A - B` 
-            \item 2: `A * B` 
-            \item 3: `A / B`  
-        \end{itemize}
-        \item CLK: FPU operates on POSITIVE edge.
-        \item DONE: one operation needs multiple clocks, so FPU must RAISE DONE to 1 when finished for EXACTLY ONE clock cycle.
-        \item ENABLE: FPU must only operate when ENABLE is set to 1.
-        \item A, B, C: input and output busses, all are 64bit wide.
-        \item ERROR
-        \begin{itemize}
-            \item FPU sets ERROR to 1 when an exception takes place. 
-            \item Each mode has its possible set of exceptions, see the corresponding specifications. 
-            \item MUST stay at 1 after setting it, until RESET is set to 1.
-        \end{itemize}
-        \item RESET: clears ERROR state REGARDLESS of ENABLE input.
+        \item 0: $C = A + B$ 
+        \item 1: $C = A - B$ 
+        \item 2: $C = A * B$ 
+        \item 3: $C = \frac{A}{B}$  
     \end{itemize}
-    \item Fixed point specifications
+    \item CLK: IN\\
+        FPU operates on POSITIVE edge.
+    \item DONE: OUT\\ 
+    one operation needs multiple clocks, so FPU must RAISE DONE to 1 when finished for EXACTLY ONE clock cycle.
+    \item ENABLE: IN\\
+    FPU must only operate when ENABLE is set to 1.
+    \item A, B: IN\\
+    Input busses, all are 64bit wide.
+    \item C: OUT\\
+    Output bus, 64bit widw.
+    \item ERROR: OUT
     \begin{itemize}
-        \item 16bit input
-        \item 16bit output
-        \item CONSTANT scale factor for both input and output = 7. \textbf{See Scale Factor Definition}
-        \item in case of overflow or division by zero, ERROR MUST be set to 1 and MUST stay at 1 until RESET is set to 1.
+        \item FPU sets ERROR to 1 when an exception takes place. 
+        \item Each mode has its possible set of exceptions, see the corresponding specifications. 
+        \item MUST stay at 1 after setting it, until RESET is set to 1.
     \end{itemize}
-    \item Floating point specifications
-    \begin{itemize}
-        \item MUST adhere to \href{https://en.wikipedia.org/wiki/IEEE_754}{IEEE-754 2019-revision} for both fp32 and fp64 modes.
-        \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
-    \end{itemize}
-    \item Scale Factor Definition
-    Scale Factor is an integer used to obtain the real number from the fixed point number and vice versa using the following formula: 
-    $y = x \div 2^s$; where: 
-    \begin{itemize}
-        \item $x \in \mathbb{N}$ is the fixed point number stored as an integer.
-        \item $y \in \mathbb{R}$ is the real number that represents $x$ with some error.
-        \item $s \in \mathbb{N}$ is the scale factor.
-    \end{itemize}
+    \item RESET: IN\\
+    clears ERROR state REGARDLESS of ENABLE input.
+    \item ZERO: OUT\\
+    Set when output $C$ is zero.
+    \item POSITIVE: OUT\\
+    Set when output $C$ is positive, otherwise cleared.
+\end{itemize}
+\subsection{Fixed point specifications}
+\begin{itemize}
+    \item 16bit input
+    \item 16bit output
+    \item CONSTANT scale factor for both input and output = 7. \textbf{See Scale Factor Definition}
+    \item in case of overflow or division by zero, ERROR MUST be set to 1 and MUST stay at 1 until RESET is set to 1.
+\end{itemize}
+\subsection{Floating point specifications}
+\begin{itemize}
+    \item MUST adhere to \href{https://en.wikipedia.org/wiki/IEEE_754}{IEEE-754 2019-revision} for both fp32 and fp64 modes. % TODO: add to references instead
+    \item ERROR is set to 1 when ANY of the exceptions stated in the IEEE-754 takes place, and stay at 1 until RESET is set to 1.
+\end{itemize}
+\subsection{Scale Factor Definition}
+Scale Factor is an integer used to obtain the real number from the fixed point number and vice versa using the following formula: 
+$y = x \div 2^s$; where: 
+\begin{itemize}
+    \item $x \in \mathbb{N}$ is the fixed point number stored as an integer.
+    \item $y \in \mathbb{R}$ is the real number that represents $x$ with some error.
+    \item $s \in \mathbb{N}$ is the scale factor.
 \end{itemize}
 
 \section{Compression}
 Follow bit-level Run-length encoding to compress ram content before sending them, by taking each (one to eight) [1:8] repeating bits and compressing them into four bits, using RLE (Run length encoding) algorithm.
 
-\subsubsection{Input}
-Bit stream of X bits.
+\subsection{Input}
+Bit stream input data to IO.
 
-\subsubsection{Output}
+\subsection{Output}
 Y compressed 4bit packets, where $X \geq Y \geq \ceil{\frac{X}{8}}$
 Each packet must follow the format in Table \ref{tab:comp-out}.
 
@@ -578,7 +585,7 @@ Each packet must follow the format in Table \ref{tab:comp-out}.
 NOTE: the 3 bits must be incremented before decode.
 \textbf{TOOO: encoding figure}
 
-\subsubsection{Example}
+\subsection{Example}
 
 \begin{center}
     \captionof{table}{Compression Example\label{tab:comp-exmp}}
@@ -593,7 +600,7 @@ NOTE: the 3 bits must be incremented before decode.
 \end{tabular}
 \end{center}
 
-\subsubsection{Pseudo-code}
+\subsection{Algorithm}
 \begin{verbatim}
 c = first bit in bit_stream
 count = 0
