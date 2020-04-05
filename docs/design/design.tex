@@ -17,20 +17,7 @@
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
-\title{\textbf{ODE Solver Design Report}\\Team \#5}
-\author{
-  Mahmoud Adas\\
-  \small\texttt{SEC:2, BN:21}
-  \and
-  Evram Youssef\\
-  \small\texttt{SEC:1, BN:9}
-  \and
-  Remonda Talaat\\
-  \small\texttt{SEC:1, BN:20}
-  \and
-  Mohamed Shawky\\
-  \small\texttt{SEC:2, BN:16}
-}
+\title{\textbf{ODE Solver Design Reference}\\Team \#5}
 \date{\today}
 
 \begin{document}
@@ -47,48 +34,13 @@
 
 \part{Introduction}
 \section{Abstract}
-This is phase 1 design report for VLSI project. 
-
 This document is intended to be used as a comprehensive reference for the coming phases, and to be up-to-date with all future changes in the design.
-
-\section{Tasks Distribution}
-Table \ref{tab:tasks} contains all tasks, the team-member who took that task and the time it took them to finish.
-\begin{table}
-    \captionof{table}{Tasks Distribution\label{tab:tasks}}
- \begin{tabular}{||p{30mm}| p{40mm}| p{15mm}| p{40mm}||} 
- \hline
- Task & Members & Duration \newline (hours) & Challenges  \\ [0.5ex] 
- \hline\hline
- Overall system design & Mahmoud Othman \newline Evram Youssef \newline Remonda Talaat \newline Mohamed Shawky & 20-25 & - Understanding the problem definition. \newline - Making a lot of assumptions. \\
- \hline
- External Interface of Each component & Mohamed Shawky & 3-4 & Redesigning interface with internal changes. \\ 
- \hline
- Assumption and limitation & Remonda Talaat  & 2-3 & Recalculation with every change made. \\
- \hline
- Overall system scenario & Mahmoud Othman & 2-3 & The tool to use to illustrate the design with. \\
- \hline
- Memory sizes & Evram Youssef & 1-2 & Making large/huge assumptions where it's not required. \\
- \hline
- Parallelism and Pipeline & Evram Youssef & 1-2 & Not knowing for sure if a proposal will work or not. \\
- \hline
- Communication between modules & Mahmoud Othman & 2-3 & Deciding the necessary sizes. \\
- \hline
- Address mapping & Remonda Talaat & 2-3 & Redesigning. \\
- \hline
- Sub-components and Buses & Evram Youssef & 2-3 & Understanding in details the job of each module. \\
- \hline
- Creating the documentation & Mahmoud Othman \newline Evram Youssef \newline Remonda Talaat \newline Mohamed Shawky & 8-10 & - Redundancy. \newline - Unifying style. \\
- \hline
- Styling the documentation & Mahmoud Othman \newline Mohamed Shawky & 4-5 & --------------------------- \\
- \hline\hline
-\end{tabular}
-\end{table}
 
 \section{Interfaces and Actions}
 \begin{center}
     \begin{figure}[hp]
         \centering
-        \includegraphics[width=\textwidth]{d1}
+        \includegraphics[width=\textwidth]{images/d1}
         \caption{Overall System Design}
         \label{fig:overall}
     \end{figure}
@@ -377,7 +329,7 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 
 \begin{figure}[hp]
     \centering
-    \includegraphics[width=\textwidth]{IO}
+    \includegraphics[width=\textwidth]{images/IO}
     \caption{I/O Internal Design}
     \label{fig:io}
 \end{figure}
@@ -414,7 +366,7 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 
 \begin{figure}[hp]
     \centering
-    \includegraphics[width=\textwidth]{solver}
+    \includegraphics[width=\textwidth]{images/solver}
     \caption{Solver Internal Design}
     \label{fig:solver}
 \end{figure}
@@ -490,7 +442,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 
 \begin{figure}[hp]
     \centering
-    \includegraphics[width=\textwidth]{interpolator}
+    \includegraphics[width=\textwidth]{images/interpolator}
     \caption{Interpolator Internal Design}
     \label{fig:interpolator}
 \end{figure}
@@ -559,7 +511,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 \begin{center}
     \begin{figure}[hp]
         \centering
-        \includegraphics[width=\textwidth]{FPU}
+        \includegraphics[width=\textwidth]{images/FPU}
         \caption{FP Unit}
         \label{fig:fpu}
     \end{figure}
