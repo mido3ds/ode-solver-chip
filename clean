@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm -rf out &>/dev/null
+docker kill ghdld &>/dev/null && echo killed daemon

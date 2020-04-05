@@ -1,0 +1,76 @@
+#!/bin/bash
+
+UNIT=$1
+SUBDIR=$2
+
+if [[ "$#" -lt "1" ]]; then
+    echo "Usage: new unit-name [subdir]"
+    exit 1
+fi
+
+mkdir -p src/${SUBDIR} test/${SUBDIR}
+
+if [[ -s "src/$SUBDIR/$UNIT.vhdl" ]]; then
+    echo "src file exists!"
+else
+    cat >src/${SUBDIR}/${UNIT}.vhdl <<EOF
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity ${UNIT} is
+    port (
+
+    );
+end entity; 
+
+architecture rtl of ${UNIT} is
+begin
+
+end architecture;
+EOF
+
+fi
+
+if [[ -s "test/$SUBDIR/$UNIT.vhdl" ]]; then
+    echo "src file exists!"
+else
+    cat >test/${SUBDIR}/${UNIT}_tb.vhdl <<EOF
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library vunit_lib;
+context vunit_lib.vunit_context;
+
+entity ${UNIT}_tb is
+    generic (runner_cfg: string);
+end entity; 
+
+architecture tb of ${UNIT}_tb is
+    constant CLK_FREQ: integer := 100e6; -- 100 MHz
+    constant CLK_PERD: time    := 1000 ms / CLK_FREQ;
+
+    signal clk: std_logic := '0';
+begin
+    clk <= not clk after CLK_PERD / 2;
+
+    ${UNIT}: entity work.${UNIT} port map ( );
+
+    main: process
+    begin
+        test_runner_setup(runner, runner_cfg);
+        set_stop_level(failure);
+
+        if run("test_case_name") then
+
+        end if;
+
+        wait for CLK_PERD/2;
+        test_runner_cleanup(runner);
+        wait;
+    end process;
+end architecture;
+EOF
+
+fi

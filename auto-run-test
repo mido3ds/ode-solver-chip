@@ -1,0 +1,3 @@
+#!/bin/bash
+set -eu
+find . | grep vhdl | entr -c ./run-test $1

@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+
+run-daemon() {
+    if [[ `docker ps|grep ghdld|wc -l` = 0 ]]; then
+        echo running container daemon...
+        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld ghdl/ext sleep 1h >/dev/null
+        echo daemon is up
+    fi
+}
+
+main() {
+    run-daemon
+
+    mkdir -p out/waves
+    cd out
+
+    docker exec -w "$PWD" ghdld bash -c "
+        find ../src/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
+
+        set -e
+
+        ghdl --gen-makefile --ieee=synopsys -fexplicit ${UNIT} > Makefile.${UNIT}
+        sed -i 's/\$(GHDL) -r /timeout 2s .\//' Makefile.${UNIT}
+        
+        make -f Makefile.${UNIT} all GHDLFLAGS='-g -Wbinding -Wreserved -Wlibrary -Wvital-generic -Wdelayed-checks -Wbody -Wspecs -Wunused --mb-comments --std=08 --ieee=synopsys -fexplicit'
+        make -f Makefile.${UNIT} run GHDLRUNFLAGS+=--vcd=waves/${UNIT}.vcd GHDLRUNFLAGS+=--stop-time=1000ns GHDLRUNFLAGS+=--assert-level=failure # if in test mode, assert-level=error
+    "
+}
+
+
+if [[ "$#" -lt "1" ]]; then
+    echo "Usage: run unit-name"
+    exit 1
+fi
+
+UNIT=$1
+main
