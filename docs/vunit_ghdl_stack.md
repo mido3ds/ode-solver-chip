@@ -36,6 +36,8 @@ Without any arguments, the script runs all available `vunit` tests.
 
 To specify a test, write the test file name without the `.vhdl` part.e.g. If the testbench is `ayhabal.vhdl` , then you need to type `$ ./run-test anyhabal` 
 
+Ignores files starting with `--%IGNORE%--`
+
 ## wave
 
 Opens the signal dump of given testbench name.
@@ -61,6 +63,8 @@ Compiles and runs any non-vunit vhdl files (either in src or test).
 e.g. `$ ./run foo` will compile src/foo.vhdl
 and `$ ./run bar_tb` will compile and run src/bar_tb.vhdl
 
+DOES NOT ignore files starting with `--%IGNORE%--`
+
 ## auto-run
 
 Watch `src` and `test` directories for any change and run `run <unit name>` 
@@ -73,3 +77,8 @@ Same as `auto-run` , but runs `vunit` tests instead of general ghdl files.
 
 Clean all outputs(waves, logs, compiled files) and removes the ghdld container daemon.
 
+## list-tests
+
+List test cases for given testbench name, or for all project testbenches if no argument is specified.
+
+Ignores files starting with `--%IGNORE%--`

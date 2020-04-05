@@ -22,5 +22,48 @@ end entity;
 
 architecture rtl of fpu is
 begin
--- TODO
+    -- TODO
+
+    adder: entity work.fpu_adder port map (
+        clk => clk, 
+        operation => operation,
+        rst => rst, 
+        enbl => enbl, 
+        in_a => in_a, 
+        in_b => in_b, 
+        out_c => out_c, 
+        done => done, 
+        err => err, 
+        zero => zero, 
+        posv => posv
+    );
+
+    multiplier: entity work.fpu_multiplier port map (
+        clk => clk, 
+        operation => operation,
+        rst => rst, 
+        enbl => enbl, 
+        in_a => in_a, 
+        in_b => in_b, 
+        out_c => out_c, 
+        done => done, 
+        err => err, 
+        zero => zero, 
+        posv => posv
+    );
+
+    divider: entity work.fpu_divider port map (
+        clk => clk, 
+        operation => operation,
+        rst => rst, 
+        enbl => enbl, 
+        in_a => in_a, 
+        in_b => in_b, 
+        out_c => out_c, 
+        done => done, 
+        err => err, 
+        zero => zero, 
+        posv => posv
+    );
+
 end architecture;
