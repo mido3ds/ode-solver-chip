@@ -17,6 +17,7 @@ main() {
 
     docker exec -w "$PWD" ghdld bash -c "
         find ../src/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
+        test `echo ${UNIT} | grep _tb`  && find ../test/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit
 
         set -e
 
