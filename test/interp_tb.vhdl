@@ -5,11 +5,11 @@ use ieee.numeric_std.all;
 library vunit_lib;
 context vunit_lib.vunit_context;
 
-entity solver_tb is
+entity interp_tb is
     generic (runner_cfg: string);
 end entity; 
 
-architecture tb of solver_tb is
+architecture tb of interp_tb is
     constant CLK_FREQ: integer := 100e6; -- 100 MHz
     constant CLK_PERD: time    := 1000 ms / CLK_FREQ;
 
@@ -17,17 +17,17 @@ architecture tb of solver_tb is
 
     signal in_state: std_logic_vector(1 downto 0);
     signal rst: std_logic;
-    signal interp_done: std_logic;
-
+    
     signal in_data: std_logic_vector(31 downto 0);
     
+    signal interp_done: std_logic;
     signal adr: std_logic_vector(15 downto 0);
     signal interrupt: std_logic;
     signal error_success: std_logic;
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    solver: entity work.solver port map (
+    interp: entity work.interp port map (
         in_state => in_state, 
         clk => clk, 
         rst => rst, 
