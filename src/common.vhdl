@@ -3,6 +3,17 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package common is
+    -- operations of fpu
+    constant FPU_OP_ADD : std_logic_vector(1 downto 0) := "00";
+    constant FPU_OP_SUB : std_logic_vector(1 downto 0) := "01";
+    constant FPU_OP_MUL : std_logic_vector(1 downto 0) := "10";
+    constant FPU_OP_DIV : std_logic_vector(1 downto 0) := "11";
+
+    -- modes of fpu
+    constant FPU_MODE_FXD : std_logic_vector(1 downto 0) := "00";
+    constant FPU_MODE_F64 : std_logic_vector(1 downto 0) := "01";
+    constant FPU_MODE_F32 : std_logic_vector(1 downto 0) := "10";
+
     function to_vec(i: integer; size: integer := 16) return std_logic_vector;
     function to_vec(i: std_logic; size: integer := 16) return std_logic_vector;
     function to_vec(i: std_logic_vector; size: integer := 16) return std_logic_vector;
