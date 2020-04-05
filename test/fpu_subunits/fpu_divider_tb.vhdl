@@ -14,7 +14,7 @@ architecture tb of fpu_divider_tb is
     constant CLK_PERD: time    := 1000 ms / CLK_FREQ;
 
     signal clk: std_logic := '0';
-    signal operation: std_logic_vector(1 downto 0);
+    signal mode: std_logic_vector(1 downto 0);
     signal rst: std_logic;
     signal enbl: std_logic;
     signal in_a: std_logic_vector(63 downto 0);
@@ -30,7 +30,7 @@ begin
 
     fpu_divider: entity work.fpu_divider port map (
         clk => clk, 
-        operation => operation, 
+        mode => mode, 
         rst => rst, 
         enbl => enbl, 
         in_a => in_a, 

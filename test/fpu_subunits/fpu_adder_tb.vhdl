@@ -14,7 +14,7 @@ architecture tb of fpu_adder_tb is
     constant CLK_PERD: time    := 1000 ms / CLK_FREQ;
 
     signal clk: std_logic := '0';
-    signal operation: std_logic_vector(1 downto 0);
+    signal mode: std_logic_vector(1 downto 0);
     signal rst: std_logic;
     signal add_sub: std_logic;
     signal enbl: std_logic;
@@ -31,7 +31,7 @@ begin
 
     fpu_adder: entity work.fpu_adder port map (
         clk => clk, 
-        operation => operation, 
+        mode => mode, 
         rst => rst, 
         add_sub => add_sub,
         enbl => enbl, 
