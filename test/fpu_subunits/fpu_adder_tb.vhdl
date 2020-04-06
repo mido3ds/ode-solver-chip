@@ -29,7 +29,8 @@ architecture tb of fpu_adder_tb is
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    fpu_adder: entity work.fpu_adder port map (
+    -- TODO: add tests for sec_algo
+    fpu_adder: entity work.fpu_adder(first_algo) port map (
         clk => clk, 
         mode => mode, 
         rst => rst, 

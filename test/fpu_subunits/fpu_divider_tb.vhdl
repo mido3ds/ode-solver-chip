@@ -27,8 +27,9 @@ architecture tb of fpu_divider_tb is
     signal posv: std_logic;
 begin
     clk <= not clk after CLK_PERD / 2;
-
-    fpu_divider: entity work.fpu_divider port map (
+    
+    -- TODO: add tests for sec_algo
+    fpu_divider: entity work.fpu_divider(first_algo) port map (
         clk => clk, 
         mode => mode, 
         rst => rst, 

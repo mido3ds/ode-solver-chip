@@ -29,7 +29,8 @@ architecture tb of fpu_tb is
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    fpu: entity work.fpu port map (
+    -- TODO: add tests for sec_algo
+    fpu: entity work.fpu(first_algo) port map (
         clk => clk, 
         operation => operation, 
         mode => mode, 

@@ -19,7 +19,20 @@ entity fpu_multiplier is
     );
 end entity; 
 
-architecture rtl of fpu_multiplier is
+-- Multiplier implementation with operators
+-- Used by other components temporarily until other algos architectures are done
+architecture with_operators of fpu_multiplier is
 begin
--- TODO
+-- TODO: copy phase-1 multiplier here and adjust the ports names to match this interface
+end architecture;
+
+
+architecture first_algo of fpu_multiplier is
+begin
+-- TODO: implement first algo
+end architecture;
+
+architecture sec_algo of fpu_multiplier is
+begin
+-- TODO: implement second algo
 end architecture;

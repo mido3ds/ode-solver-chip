@@ -28,7 +28,8 @@ architecture tb of fpu_multiplier_tb is
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    fpu_multiplier: entity work.fpu_multiplier port map (
+    -- TODO: add tests for sec_algo
+    fpu_multiplier: entity work.fpu_multiplier(first_algo) port map (
         clk => clk, 
         mode => mode, 
         rst => rst, 
