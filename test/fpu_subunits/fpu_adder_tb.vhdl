@@ -21,16 +21,30 @@ architecture tb of fpu_adder_tb is
     signal in_a: std_logic_vector(63 downto 0);
     signal in_b: std_logic_vector(63 downto 0);
 
-    signal out_c: std_logic_vector(63 downto 0);
-    signal done: std_logic;
-    signal err: std_logic;
-    signal zero: std_logic;
-    signal posv: std_logic;
+    -- outputs for fpu_adder_with_operators instance
+    signal wo_out_c: std_logic_vector(63 downto 0);
+    signal wo_done: std_logic;
+    signal wo_err: std_logic;
+    signal wo_zero: std_logic;
+    signal wo_posv: std_logic;
+
+    -- outputs for fpu_adder_first_algo instance
+    signal fa_out_c: std_logic_vector(63 downto 0);
+    signal fa_done: std_logic;
+    signal fa_err: std_logic;
+    signal fa_zero: std_logic;
+    signal fa_posv: std_logic;
+
+    -- outputs for fpu_adder_sec_algo instance
+    signal sa_out_c: std_logic_vector(63 downto 0);
+    signal sa_done: std_logic;
+    signal sa_err: std_logic;
+    signal sa_zero: std_logic;
+    signal sa_posv: std_logic;
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    -- TODO: add tests for sec_algo
-    fpu_adder: entity work.fpu_adder(first_algo) port map (
+    fpu_adder_with_operators: entity work.fpu_adder(with_operators) port map (
         clk => clk, 
         mode => mode, 
         rst => rst, 
@@ -38,11 +52,41 @@ begin
         enbl => enbl, 
         in_a => in_a, 
         in_b => in_b, 
-        out_c => out_c, 
-        done => done, 
-        err => err, 
-        zero => zero, 
-        posv => posv
+        out_c => wo_out_c, 
+        done => wo_done, 
+        err => wo_err, 
+        zero => wo_zero, 
+        posv => wo_posv
+    );
+
+    fpu_adder_first_algo: entity work.fpu_adder(first_algo) port map (
+        clk => clk, 
+        mode => mode, 
+        rst => rst, 
+        add_sub => add_sub,
+        enbl => enbl, 
+        in_a => in_a, 
+        in_b => in_b, 
+        out_c => fa_out_c, 
+        done => fa_done, 
+        err => fa_err, 
+        zero => fa_zero, 
+        posv => fa_posv
+    );
+
+    fpu_adder_sec_algo: entity work.fpu_adder(sec_algo) port map (
+        clk => clk, 
+        mode => mode, 
+        rst => rst, 
+        add_sub => add_sub,
+        enbl => enbl, 
+        in_a => in_a, 
+        in_b => in_b, 
+        out_c => sa_out_c, 
+        done => sa_done, 
+        err => sa_err, 
+        zero => sa_zero, 
+        posv => sa_posv
     );
 
     main: process
