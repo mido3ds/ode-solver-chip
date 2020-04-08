@@ -2,7 +2,7 @@
 input simulation output
 output json file format of the simulation output
 
-$ python3 output_formatter.py <path/to/input.sout >path/to/output.json
+$ python3 output_formatter.py <path/to/simulation_output >path/to/output.json
 '''
 
 # TODO

@@ -1,42 +1,73 @@
 import struct
+import re
 
 
-def py_float_to_float32(f):
+def py_float_to_float32(f: float) -> float:
     return struct.unpack('<f', (struct.pack('<f', f)))[0]
 
 
-def py_float_to_float64(d):
+def py_float_to_float64(d: float) -> float:
     return struct.unpack('<d', (struct.pack('<d', d)))[0]
 
 
-def float_to_bits(f):
+def float_to_bits(f: float) -> str:
     s = struct.pack('<f', f)
     b = bin(struct.unpack('<L', s)[0])[2:]
     return '0'*(32-len(b))+b
 
 
-def bits_to_float(b):
+def bits_to_float(b: str) -> float:
     b = '0b'+b
     s = struct.pack('<L', int(b, 2))
     return struct.unpack('<f', s)[0]
 
 
-def double_to_bits(d):
+def double_to_bits(d: float) -> str:
     s = struct.pack('<d', d)
     b = bin(struct.unpack('<Q', s)[0])[2:]
     return '0'*(64-len(b))+b
 
 
-def bits_to_double(b):
+def bits_to_double(b: str) -> float:
     b = '0b'+b
     s = struct.pack('<Q', int(b, 2))
     return struct.unpack('<d', s)[0]
 
 
-def int_to_n_binary(i, n):
+def int_to_n_binary(i: int, n: int) -> str:
     # binary of integer `i` with `n` bits
     b = bin(i % (2**n))[2:]
     return '0'*(n-len(b)) + b
+
+
+def flatten(arr: [[]]) -> []:
+    # 2d array -> 1d array
+    # e.g. [[1,2,3], [4,5,6], [7,8,9]] -> [1,2,3,4,5,6,7,8,9]
+    return sum(arr, [])
+
+
+def compress_rle(s: str):
+    ptrn = re.compile('(0{1,8}|1{1,8})')
+
+    out = ''
+    for x in ptrn.finditer(s):
+        g = x.group()
+        assert type(g) == str and len(g) <= 8 and len(g) > 0
+        out += int_to_n_binary(len(g)-1, 3) + g[0]
+
+    return out
+
+
+def decompress_rle(s: str):
+    assert len(s) % 4 == 0
+
+    out = ''
+    for i in range(0, len(s), 4):
+        n = int('0b'+s[i:i+3], 2)+1
+        b = s[i+3]
+        out += b * n
+
+    return out
 
 
 # testing
@@ -60,3 +91,8 @@ if __name__ == "__main__":
 
             assert len(r) == n,\
                 f'len({r})={len(r)}'
+
+    test_str = '1010101000000000101011111110110100011011110101010000'
+    assert decompress_rle(compress_rle(test_str)) == test_str,\
+        f'compress_rle({test_str})={compress_rle(test_str)}, \
+            decompress={decompress_rle(compress_rle(test_str))}'
