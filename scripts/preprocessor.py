@@ -2,7 +2,7 @@
 input input json (stdin)
 ouput simulation input ready file (stdout)
 
-$ python3 preprocessor.py <path/to/input.json >path/to/simulation_input
+$ python3 preprocessor.py <path/to/input.json >path/to/simulation_input.in
 '''
 import json
 import sys

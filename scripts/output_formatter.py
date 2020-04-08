@@ -2,7 +2,7 @@
 input simulation output (stdin), simulation json to get the dimensinos (cli arg)
 output json file format of the simulation output (stdout)
 
-$ python3 output_formatter.py path/to/input.json <path/to/simulation_output
+$ python3 output_formatter.py path/to/input.json <path/to/simulation_output.out
 '''
 import argparse
 import json
