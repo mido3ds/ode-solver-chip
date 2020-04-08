@@ -40,6 +40,18 @@ def int_to_n_binary(i: int, n: int) -> str:
     return '0'*(n-len(b)) + b
 
 
+def float_to_fixed(f: float) -> int:
+    return int(f * (2**7))
+
+
+def fixed_to_float(i: int) -> float:
+    return i / (2**7)
+
+
+def fixed_to_bits(n):
+    return int_to_n_binary(float_to_fixed(n), 16)
+
+
 def flatten(arr: [[]]) -> []:
     # 2d array -> 1d array
     # e.g. [[1,2,3], [4,5,6], [7,8,9]] -> [1,2,3,4,5,6,7,8,9]

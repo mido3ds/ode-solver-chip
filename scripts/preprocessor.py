@@ -7,7 +7,7 @@ $ python3 preprocessor.py <path/to/input.json >path/to/simulation_input
 import json
 import sys
 
-from utils import double_to_bits, int_to_n_binary, flatten, compress_rle
+from utils import double_to_bits, fixed_to_bits, float_to_bits, int_to_n_binary, flatten, compress_rle
 
 # read file
 inp = json.load(sys.stdin)
@@ -41,7 +41,15 @@ if inp['Mode'] == 1:
     assert 'H' in inp
     assert 'Err' in inp
 
-assert inp['Fixedpoint'] in (0, 1, 2)
+assert inp['Fixedpoint'] in (1, 2, 3)
+
+# choose to_bits mapper
+if inp['Fixedpoint'] == 1:
+    to_bits = fixed_to_bits
+elif inp['Fixedpoint'] == 2:
+    to_bits = double_to_bits
+else:
+    to_bits = float_to_bits
 
 # prepare input to simulation
 # data structure here follows `Section 0.13 - Input Format`
@@ -50,34 +58,34 @@ out_arr = [
     int_to_n_binary(inp['N'], 6),
     int_to_n_binary(inp['M'], 6),
     int_to_n_binary(inp['Mode'], 1),
-    int_to_n_binary(inp['Fixedpoint'], 2),
+    int_to_n_binary(inp['Fixedpoint']-1, 2),
     '0',
     int_to_n_binary(inp['Count'], 3),
     '0'*13,
 
     # H
-    double_to_bits(inp['H']),
+    to_bits(inp['H']),
 
     # Error
-    double_to_bits(inp['Err']),
+    to_bits(inp['Err']),
 
     # A
-    *[double_to_bits(num) for num in flatten(inp['A'])],
+    *[to_bits(num) for num in flatten(inp['A'])],
 
     # B
-    *[double_to_bits(num) for num in flatten(inp['B'])],
+    *[to_bits(num) for num in flatten(inp['B'])],
 
     # X
-    *[double_to_bits(num) for num in inp['X0']],
+    *[to_bits(num) for num in inp['X0']],
 
     # U0
-    *[double_to_bits(num) for num in inp['U0']],
+    *[to_bits(num) for num in inp['U0']],
 
     # T
-    *[double_to_bits(num) for num in inp['T']],
+    *[to_bits(num) for num in inp['T']],
 
     # Us
-    *[double_to_bits(num) for num in flatten(inp['Us'])],
+    *[to_bits(num) for num in flatten(inp['Us'])],
 ]
 
 assert len(out_arr) > 0
