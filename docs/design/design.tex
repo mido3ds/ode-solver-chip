@@ -315,9 +315,9 @@ Table \ref{tab:header} shows the structure of header data. Note the whole struct
  \cline{2-6}
  & 9:4 & M & Dimension of U  & uint & 6 bits  \\ 
  \cline{2-6}
- & 3 & Solver Mode & Fixed Step or Variable Step  & enum & 1 bit \\ 
+ & 3 & Solver Mode & Fixed Step(0) or Variable Step(1)  & enum & 1 bit \\ 
  \cline{2-6}
- & 2:1 & FPU Precision & fixed point, f64 or f32 & enum & 2 bits  \\ 
+ & 2:1 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
  \cline{2-6}
  & 0  & NOT USED &  ------ & ------ & 1 bit \\
  \hline
