@@ -1,13 +1,13 @@
 '''
-read input json
-ouput simulation input ready file
+input input json (stdin)
+ouput simulation input ready file (stdout)
 
 $ python3 preprocessor.py <path/to/input.json >path/to/simulation_input
 '''
 import json
 import sys
 
-from utils import double_to_bits, fixed_to_bits, float_to_bits, int_to_n_binary, flatten, compress_rle
+import utils
 
 # read file
 inp = json.load(sys.stdin)
@@ -45,22 +45,22 @@ assert inp['Fixedpoint'] in (1, 2, 3)
 
 # choose to_bits mapper
 if inp['Fixedpoint'] == 1:
-    to_bits = fixed_to_bits
+    to_bits = utils.fixed_to_bits
 elif inp['Fixedpoint'] == 2:
-    to_bits = double_to_bits
+    to_bits = utils.double_to_bits
 else:
-    to_bits = float_to_bits
+    to_bits = utils.float_to_bits
 
 # prepare input to simulation
 # data structure here follows `Section 0.13 - Input Format`
 out_arr = [
     # Header
-    int_to_n_binary(inp['N'], 6),
-    int_to_n_binary(inp['M'], 6),
-    int_to_n_binary(inp['Mode'], 1),
-    int_to_n_binary(inp['Fixedpoint']-1, 2),
+    utils.int_to_n_binary(inp['N'], 6),
+    utils.int_to_n_binary(inp['M'], 6),
+    utils.int_to_n_binary(inp['Mode'], 1),
+    utils.int_to_n_binary(inp['Fixedpoint']-1, 2),
     '0',
-    int_to_n_binary(inp['Count'], 3),
+    utils.int_to_n_binary(inp['Count'], 3),
     '0'*13,
 
     # H
@@ -70,10 +70,10 @@ out_arr = [
     to_bits(inp['Err']),
 
     # A
-    *[to_bits(num) for num in flatten(inp['A'])],
+    *[to_bits(num) for num in utils.flatten(inp['A'])],
 
     # B
-    *[to_bits(num) for num in flatten(inp['B'])],
+    *[to_bits(num) for num in utils.flatten(inp['B'])],
 
     # X
     *[to_bits(num) for num in inp['X0']],
@@ -85,7 +85,7 @@ out_arr = [
     *[to_bits(num) for num in inp['T']],
 
     # Us
-    *[to_bits(num) for num in flatten(inp['Us'])],
+    *[to_bits(num) for num in utils.flatten(inp['Us'])],
 ]
 
 assert len(out_arr) > 0
@@ -96,7 +96,7 @@ out_stream = ''.join(out_arr)
 assert len(out_stream) > 0
 
 # compress binary stream
-out_compressed = compress_rle(out_stream)
+out_compressed = utils.compress_rle(out_stream)
 
 assert len(out_compressed) > 0
 

@@ -40,22 +40,35 @@ def int_to_n_binary(i: int, n: int) -> str:
     return '0'*(n-len(b)) + b
 
 
-def float_to_fixed(f: float) -> int:
+def py_float_to_fixed(f: float) -> int:
     return int(f * (2**7))
 
 
-def fixed_to_float(i: int) -> float:
+def fixed_to_py_float(i: int) -> float:
     return i / (2**7)
 
 
-def fixed_to_bits(n):
-    return int_to_n_binary(float_to_fixed(n), 16)
+def fixed_to_bits(n: float) -> str:
+    return int_to_n_binary(py_float_to_fixed(n), 16)
+
+
+def bits_to_fixed(b: str) -> float:
+    return fixed_to_py_float(int('0b'+b, 2))
 
 
 def flatten(arr: [[]]) -> []:
     # 2d array -> 1d array
     # e.g. [[1,2,3], [4,5,6], [7,8,9]] -> [1,2,3,4,5,6,7,8,9]
-    return sum(arr, [])
+    for subarr in arr:
+        for x in subarr:
+            yield x
+
+
+def unflatten(arr: [], cols: int) -> [[]]:
+    # 1d array -> 2d arry
+    # e.g. assert unflatten(flatten(xs)) == xs
+    assert len(arr) % cols == 0
+    return [arr[i:i+cols] for i in range(0, len(arr), cols)]
 
 
 def compress_rle(s: str):
@@ -108,3 +121,7 @@ if __name__ == "__main__":
     assert decompress_rle(compress_rle(test_str)) == test_str,\
         f'compress_rle({test_str})={compress_rle(test_str)}, \
             decompress={decompress_rle(compress_rle(test_str))}'
+
+    test_arr = [[i for i in range(100)] for _ in range(10)]
+    flattened = [x for x in flatten(test_arr)]
+    assert unflatten(flattened, 100) == test_arr
