@@ -7,6 +7,7 @@
 \usepackage{mathtools}
 \usepackage{caption}
 \usepackage{fancyhdr}
+\usepackage{multirow}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -255,25 +256,25 @@ Solver module listens at the addresses listed in Table \ref{tab:solver-mem}.
 
 \begin{center}
     \captionof{table}{Solver Memory Mapping\label{tab:solver-mem}}
- \begin{tabular}{||c| c| c| c| c| l||} 
+ \begin{tabular}{||l| c| c| c| c| l||} 
  \hline
  Address & A & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0x0001  & W & f64 & 4 & H & Timestep (variable step mode)  \\
+ 0x0002  & W & f64 & 4 & H & Timestep (variable step mode)  \\
  \hline
- 0x0005  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
+ 0x0006  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
  \hline
- 0x0009  & W & f64[50][50] & 10000 & A & Matrix A \\
+ 0x000A  & W & f64[50][50] & 10000 & A & Matrix A \\
  \hline
- 0x2719  & W & f64[50][50] & 10000 & B & Matrix B \\
+ 0x271A  & W & f64[50][50] & 10000 & B & Matrix B \\
  \hline
- 0x4E29  & W & f64[50] & 200 & X & Initial value of X \\
+ 0x4E2A  & W & f64[50] & 200 & X & Initial value of X \\
  \hline
- 0x4EF1  & R & f64[50][5] & 1000 & Xout & Final Output X \\ [1ex] 
+ 0x4EF2  & R & f64[50][5] & 1000 & X$_{out}$ & Final Output X \\
  \hline
- 0x579D  & W & f64[50] & 200 & Uint & Initial U vector \\
+ 0x52DA  & W & f64[50] & 200 & U$_{0}$ & Initial U vector \\
  \hline
 \end{tabular}
 \end{center}
@@ -283,44 +284,77 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 
 \begin{center}
     \captionof{table}{Interpolator Memory Mapping\label{tab:interp-mem}}
- \begin{tabular}{||c |c| c| c| c| l||} 
+ \begin{tabular}{||l |c| c| c| c| l||} 
  \hline
  Address & A & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & \emph{struct Header} & 1 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
+  \hline
+  0x52DA  & W & f64[50] & 200 & U$_0$ & Initial U vector \\
  \hline
- 0x52D9  & W & f64[5] & 20 & $T$ & Time points of solutions  \\
+ 0x53A2  & W & f64[5] & 20 & T & Time points of solutions  \\
  \hline
- 0x52ED  & W & f64[50] & 200 & $U_0$ & Initial U vector \\
+ 0x53B6  & W & f64[50][5] & 1000 & U$_s$ & U vector at required time steps \\
  \hline
- 0x53B5  & W & f64[50][5] & 1000 & $U_s$ & U vector at required time steps \\
+ 0x579E  & R & f64[50] & 200 & U$_{int}$ & Interpolated U Vector \\
  \hline
- 0x579D  & R & f64[50] & 200 & $U_{int}$ & Interpolated U Vector \\
- \hline
- 0x5865  & W & f64 & 4 & $h_{new}$ & Time to calculate U at \\ [1ex]
+ 0x5866  & W & f64 & 4 & h$_{new}$ & Time to calculate U at \\
  \hline
 \end{tabular}
 \end{center}
 
 \section{Header Data Structure}
-
+Table \ref{tab:header} shows the structure of header data. Note the whole struct takes 2 words.
 \begin{center}
     \captionof{table}{Header Data Structure\label{tab:header}}
- \begin{tabular}{||c |c| c| c| c||} 
+ \begin{tabular}{||l |c |c| c| c| c||} 
  \hline
- Bit Index & Name & Description & Datatype & Total Size \\ [0.5ex] 
+ Address & Bit & Name & Description & Datatype & Total Size \\ [0.5ex] 
  \hline\hline
-  15:10 & N & Dimension of X  & `uint` & 6 bits  \\ 
+ \multirow{5}{*}{0x0000} & 15:10 & N & Dimension of X  & uint & 6 bits  \\ 
+ \cline{2-6}
+ & 9:4 & M & Dimension of U  & uint & 6 bits  \\ 
+ \cline{2-6}
+ & 3 & Solver Mode & Fixed Step or Variable Step  & enum & 1 bit \\ 
+ \cline{2-6}
+ & 2:1 & FPU Precision & fixed point, f64 or f32 & enum & 2 bits  \\ 
+ \cline{2-6}
+ & 0  & NOT USED &  ------ & ------ & 1 bit \\
  \hline
- 9:4 & M & Dimension of U  & `uint` & 6 bits  \\ 
- \hline
- 3 & Solver Mode & Fixed Step or Variable Step  & `enum` & 1 bit \\ 
- \hline
- 2:1 & FPU Precision & fixed point, f64 or f32 & `enum` & 2 bits  \\ 
- \hline
- 0  & NOT USED &  ------ & ------ & 1 bit \\ [1ex] 
+ \multirow{2}{*}{0x0001} & 15:13 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
+ \cline{2-6}
+ & 14:0 & NOT USED &  ------ & ------ & 13 bits \\
  \hline
 \end{tabular}
+\end{center}
+
+\section{Input Format}
+Table \ref{tab:input_format} shows the IO input structure. IO reads the header and figures out the addresses.
+\begin{center}
+    \captionof{table}{Inputs Specifications\label{tab:input_format}}
+    \begin{tabular}{||l| c| c| c||} 
+        \hline
+        Address & Type & Max Words & Name  \\ [0.5ex] 
+        \hline\hline
+        0x0000 & struct Header & 2 & Header\\ 
+        \hline
+        0x0002 & f64 & 4 & H\\
+        \hline
+        0x0006 & f64 & 4 & Error\\
+        \hline
+        0x000A & f64[50][50] & 10000 & A\\
+        \hline
+        0x271A & f64[50][50] & 10000 & B\\
+        \hline
+        0x4E2A & f64[50] & 200 & X\\
+        \hline
+        0x52DA & f64[50] & 200 & U$_0$\\
+        \hline
+        0x53A2 & f64[5] & 20 & T\\
+        \hline
+        0x53B6 & f64[50][5] & 1000 & U$_s$\\
+        \hline
+       \end{tabular}
 \end{center}
 
 \section{Modules}
