@@ -577,7 +577,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
     \item DONE: OUT\\ 
     one operation needs multiple clocks, so FPU must RAISE DONE to 1 when finished for EXACTLY ONE clock cycle.
     \item ENABLE: IN\\
-    FPU must only operate when ENABLE is set to 1.
+    FPU must only operate when ENABLE is set to 1 AND there is NO ERROR.
     \item A, B: IN\\
     Input busses, all are 64bit wide.
     \item C: OUT\\
@@ -588,7 +588,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
         \item Each mode has its possible set of exceptions, see the corresponding specifications. 
         \item MUST stay at 1 after setting it, until RESET is set to 1.
     \end{itemize}
-    \item RESET: IN\\
+    \item RESET: ASYNC IN\\
     clears ERROR state REGARDLESS of ENABLE input.
     \item ZERO: OUT\\
     Set when output $C$ is zero.
