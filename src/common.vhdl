@@ -24,6 +24,10 @@ package common is
     constant STATE_WAIT : std_logic_vector(1 downto 0) := to_vec(1, 2);
     constant STATE_PROC : std_logic_vector(1 downto 0) := to_vec(2, 2);
     constant STATE_OUT  : std_logic_vector(1 downto 0) := to_vec(3, 2);
+	
+	-- operations constants
+	constant FIXED_SCALE_FACTOR : integer := 7;
+
 end package;
 
 package body common is

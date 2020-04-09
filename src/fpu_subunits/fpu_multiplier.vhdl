@@ -22,8 +22,46 @@ end entity;
 -- Multiplier implementation with operators
 -- Used by other components temporarily until other algos architectures are done
 architecture with_operators of fpu_multiplier is
+
+constant scale_factor : integer := 7;																		-- fixed point fixed scale factor
+signal error : std_logic := '0';																			-- latched error bit
+
 begin
--- TODO: copy phase-1 multiplier here and adjust the ports names to match this interface
+	PROCESS(in_a,in_b,clk,rst,enbl)
+	variable output : std_logic_vector(31 downto 0);
+	variable out64  : std_logic_vector(63 downto 0);
+	variable zero_flag , posv_flag : std_logic;
+	variable error_local : std_logic := error;
+	begin
+		-- these initializations are for reset and enable 
+		-- when enbl is 0 all outputs except err are reset , when rst is 1 all outputs are reset
+		zero_flag := '0';
+		posv_flag := '0';
+		out64	  := (others => '0');
+		if(rst = '1') then																					-- reset signal
+			error_local := '0';
+		elsif(enbl = '1' and error = '0' and rising_edge(clk)) then											-- enabled 
+			output(31 downto 0) := std_logic_vector(signed(in_a(15 downto 0))*signed(in_b(15 downto 0)));	-- fixed point multiplication output
+			
+			out64(15 downto 0)  := output((scale_factor+15) downto scale_factor);							-- taking the right bits
+			
+			error_local := not((((output(31) and output(30)) and (output(29) and output(28))) and ((output(27) and output(26)) and (output(25) and output(24))) and (output(23) and output(22))) 
+				 or not (((output(31) or output(30)) or (output(29) or output(28))) or ((output(27) or output(26)) or (output(25) or output(24))) or (output(23) or output(22))));
+																											-- overflow flag (error flag)
+			out64(63 downto 16) := (others => output(31));													-- extending the signbit
+			
+			if(unsigned(output((scale_factor+15) downto scale_factor)) = 0) then							-- zero flag 
+				zero_flag := '1';
+			end if;
+			posv_flag := not output(15) and not zero_flag;													-- positive output?
+		end if;
+		err <= error_local;																					-- storing the error for output
+		error <= error_local;																				-- storing the error for latching 
+		zero <= zero_flag;																					
+		posv <= posv_flag;																					
+		done <= enbl;
+		out_c <= out64;
+	end PROCESS;
 end architecture;
 
 
