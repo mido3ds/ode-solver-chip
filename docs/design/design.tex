@@ -370,30 +370,30 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
 
 \subsubsection{Role}
 \begin{itemize}
-    \item Receive backets of 32 bits from the CPUm through \emph{DATA} bus.
+    \item Receive packets of 32 bits from the CPU through \emph{DATA} bus.
     \item Decompress the data.
-    \item Send the data to other modules (Solver/Interpolation/RAM).
+    \item Send the decompressed data to the data-bus.
 \end{itemize}
 
 \subsubsection{Ports}
 \begin{itemize}
     \item INOUT: 32bit data bus with other modules.
     \item INOUT: 32bit data bus with CPU.
-    \item IN: 16bit address bus.
+    \item OUT: 16bit address bus.
     \item IN: CLOCK.
-    \item IN: Reset.
-    \item IN: 2bit Load/Process/Out.
+    \item ASYNC IN: Reset.
+    \item IN: 2bit Load/Wait/Process/Out.
     \item OUT: Interrupt to CPU.
-    \item OUT: R/W to RAM.
-    \item OUT: Error to CPU.
+    \item OUT: Error/Success to CPU.
 \end{itemize}
 
 \subsubsection{Sub-modules}
 
 \begin{itemize}
-    \item {Decompressor}: see Section \ref{sec:decomp}.
-    \item {Next Address Unit}: is responsible for calculating the next address to push the data at, as you know the address bus is our describer to the data on the data bus, so in order to let the IO knows where the matrix of variable ended this unit decides this, furthermore, {NAU} knows {N} and {M}, so when reading the matrix {A} it knows where exactly it ends.
-    \item {FPU}: see Section \ref{sec:fpu}.
+    \item {Decompressor}: For decompression, see section \ref{sec:decomp}.
+    \item {Next Address Unit}: Calculates the next address to load at the address bus.
+    
+    {NAU} has the header (the first 32 input data) that contains N, M and T$_{size}$. When reading data (e.g. matrix A) it calculates where it will end and proceeds with the next address.
 \end{itemize}
 
 \subsection{Solver}
@@ -422,13 +422,12 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 \begin{itemize}
     \item IN: Done signal from interpolator.
     \item INOUT: 32bit data bus with other modules.
-    \item IN: 16bit address bus.
+    \item INOUT: 16bit address bus.
     \item IN: CLOCK.
-    \item IN: Reset.
-    \item IN: 2bit Load/Process/Out.
+    \item ASYNC IN: Reset.
+    \item IN: 2bit Load/Wait/Process/Out.
     \item OUT: Interrupt to CPU.
-    \item OUT: R/W to RAM.
-    \item OUT: Error to CPU.
+    \item OUT: Error/Success to CPU.
 \end{itemize}
 
 \subsubsection{Solver Memory}
@@ -502,12 +501,12 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 \begin{itemize}
     \item OUT: Done signal to Solver.
     \item INOUT: 32bit data bus with other modules.
-    \item IN: 16bit address bus.
+    \item INOUT: 16bit address bus.
     \item IN: CLOCK.
-    \item IN: Reset.
-    \item IN: 2bit Load/Process/Out.
+    \item ASYNC IN: Reset.
+    \item IN: 2bit Load/Wait/Process/Out.
     \item OUT: Interrupt to CPU.
-    \item OUT: Error to CPU.
+    \item OUT: Error/Success to CPU.
 \end{itemize}
 
 \subsubsection{Interpolator Memory}
