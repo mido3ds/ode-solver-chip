@@ -10,8 +10,8 @@ entity solver is
         interp_done: in std_logic;
 
         in_data: inout std_logic_vector(31 downto 0);
+        adr: inout std_logic_vector(15 downto 0);
         
-        adr: out std_logic_vector(15 downto 0);
         interrupt: out std_logic;
         error_success: out std_logic
     );

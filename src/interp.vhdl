@@ -7,11 +7,11 @@ entity interp is
         in_state: in std_logic_vector(1 downto 0);
         clk: in std_logic;
         rst: in std_logic;
+        adr: in std_logic_vector(15 downto 0);
         
         in_data: inout std_logic_vector(31 downto 0);
         
         interp_done: out std_logic;
-        adr: out std_logic_vector(15 downto 0);
         interrupt: out std_logic;
         error_success: out std_logic
     );
