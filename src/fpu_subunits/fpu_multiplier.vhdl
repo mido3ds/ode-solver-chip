@@ -88,7 +88,7 @@ begin
 		out64	  := (others => '0');
 		if(rst = '1') then																			-- reset signal
 			error_local := '0';
-		elsif(enbl = '1' and error = '0' and clk='1') then											-- enabled 
+		elsif(enbl = '1' and error = '0' and rising_edge(clk)) then									-- enabled 
 		
 			-- booth algorithm
 			multiplier(size downto 1) := in_b(size-1 downto 0);
