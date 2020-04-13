@@ -60,7 +60,7 @@ begin
 		error <= error_local;																				-- storing the error for latching 
 		zero <= zero_flag;																					
 		posv <= posv_flag;																					
-		done <= enbl;
+		done <= enbl or rst;
 		out_c <= out64;
 	end PROCESS;
 end architecture;
@@ -118,7 +118,7 @@ begin
 		error <= error_local;																		-- storing the error for latching 
 		zero <= zero_flag;																					
 		posv <= posv_flag;																					
-		done <= enbl;
+		done <= enbl or rst;
 		out_c <= out64;
 	end PROCESS;
 end architecture;
