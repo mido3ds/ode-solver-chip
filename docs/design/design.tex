@@ -170,7 +170,9 @@ JSON file that follows the format stated in the main project document \cite{main
 \subsubsection{Steps}
 \begin{itemize}
     \item Create bit stream of the read data that follows the {Input Data Structure} specifications.
-    \item encode the bits following the {Compression} specifications.
+
+        \textbf{NOTE}:  if the mode is 16 bit (fixed), then each 16bit number must be padded with 16 bits of zeros, so that the number is in the lowest part (bits 0..15 -> num, 16 -> 31 -> 0 padding.)
+    \item Encode the bits following the {Compression} specifications.
     \item Collect encoding output in ASCII string, each byte in string is either '0' or '1' in ASCII format.
     \item When the string reaches the length of 32 bytes, push it to output file.
     \item If the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file.    
@@ -330,6 +332,8 @@ Table \ref{tab:header} shows the structure of header data. Note the whole struct
 
 \section{Input Format}
 Table \ref{tab:input_format} shows the IO input structure. IO reads the header and figures out the addresses.
+
+\textbf{NOTE}: if the mode is 16 bit (fixed), then each 16bit number is padded with 16 bits of zeros, so that the number is in the lowest part (bits 0..15 -> num, 16 -> 31 -> 0 padding.)
 \begin{center}
     \captionof{table}{Inputs Specifications\label{tab:input_format}}
     \begin{tabular}{||l| c| c| c||} 
