@@ -17,7 +17,9 @@ main() {
 
     docker exec -w "$PWD" ghdld bash -c "
         find ../src/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
-        test `echo ${UNIT} | grep _tb`  && find ../test/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit
+
+        # TODO: find better way to get the non-vunit tests
+        find ../test/ | grep .vhdl | xargs -I @ python3 -c 'if not \"vunit\" in open(\"@\").read(): print(\"@\")' 2>/dev/null | xargs -l ghdl -i --ieee=synopsys -fexplicit
 
         set -e
 
