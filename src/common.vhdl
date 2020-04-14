@@ -3,31 +3,30 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package common is
+    -- operations of fpu
+    constant FPU_OP_ADD : std_logic_vector(1 downto 0) := "00"; 
+    constant FPU_OP_SUB : std_logic_vector(1 downto 0) := "01";
+    constant FPU_OP_MUL : std_logic_vector(1 downto 0) := "10";
+    constant FPU_OP_DIV : std_logic_vector(1 downto 0) := "11";
+    
+    -- modes of fpu
+    constant FPU_MODE_FXD : std_logic_vector(1 downto 0) := "00"; 
+    constant FPU_MODE_F64 : std_logic_vector(1 downto 0) := "01";
+    constant FPU_MODE_F32 : std_logic_vector(1 downto 0) := "10";
+    
+    -- major states
+    constant STATE_LOAD : std_logic_vector(1 downto 0) := "00"; 
+    constant STATE_WAIT : std_logic_vector(1 downto 0) := "01";
+    constant STATE_PROC : std_logic_vector(1 downto 0) := "10";
+    constant STATE_OUT  : std_logic_vector(1 downto 0) := "11";
+	
+	-- operations constants
+    constant FIXED_SCALE_FACTOR : integer := 7;
+    
     function to_vec(i: integer; size: integer := 16) return std_logic_vector;
     function to_vec(i: std_logic; size: integer := 16) return std_logic_vector;
     function to_vec(i: std_logic_vector; size: integer := 16) return std_logic_vector;
     function to_string(a: std_logic_vector) return string;
-
-    -- operations of fpu
-    constant FPU_OP_ADD : std_logic_vector(1 downto 0) := to_vec(0, 2); 
-    constant FPU_OP_SUB : std_logic_vector(1 downto 0) := to_vec(1, 2);
-    constant FPU_OP_MUL : std_logic_vector(1 downto 0) := to_vec(2, 2);
-    constant FPU_OP_DIV : std_logic_vector(1 downto 0) := to_vec(3, 2);
-
-    -- modes of fpu
-    constant FPU_MODE_FXD : std_logic_vector(1 downto 0) := to_vec(0, 2); 
-    constant FPU_MODE_F64 : std_logic_vector(1 downto 0) := to_vec(1, 2);
-    constant FPU_MODE_F32 : std_logic_vector(1 downto 0) := to_vec(2, 2);
-
-    -- major states
-    constant STATE_LOAD : std_logic_vector(1 downto 0) := to_vec(0, 2); 
-    constant STATE_WAIT : std_logic_vector(1 downto 0) := to_vec(1, 2);
-    constant STATE_PROC : std_logic_vector(1 downto 0) := to_vec(2, 2);
-    constant STATE_OUT  : std_logic_vector(1 downto 0) := to_vec(3, 2);
-	
-	-- operations constants
-	constant FIXED_SCALE_FACTOR : integer := 7;
-
 end package;
 
 package body common is
