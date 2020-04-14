@@ -17,7 +17,7 @@ end entity;
 
 architecture rtl of main is
     signal in_data: std_logic_vector(31 downto 0);
-    signal interp_done: std_logic;
+    signal interp_done: std_logic_vector(1 downto 0);
     signal adr: std_logic_vector(15 downto 0);
     signal io_interr, solver_interr, interp_interr: std_logic;
     signal io_err_sucs, solver_err_sucs, interp_err_sucs: std_logic;

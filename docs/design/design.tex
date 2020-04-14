@@ -118,15 +118,20 @@ Set the current major state of the machine.
 
 \section{Pipelining} 
 \label{sec:pipeline}
-Main module has only one pipeline with 2 stages, the solver and the interpolator.
-The solver calculates the next $X_h$ while the interpolator calculates $U_{h2}$.
+% Main module has only one pipeline with 2 stages, the solver and the interpolator.
+% The solver calculates the next $X_h$ while the interpolator calculates $U_{h2}$.
+Solver's main equation to calulate is Xn+1 = Xn + hAXn + hBUn, so we can divide it into two parts, 
+part 1: Xn + hAXn, and part 2: hBUn, so our approach is that at the begining of operating that equation
+Solver sends 'h' to the interpolator, at which it (interpolator) will calculate U, meanwhile, solver is calculcating the first part (part 1), and when interpolator is finished, it sends 'done' signal to solver and raises the value at the bus,
+solver then proceed with the second part of the equation (part 2).
 
-\subsection{Possible Hazards}
-\subsubsection{In Fixed Step Mode} 
-The only problem is when the unit reachs the last $X$, then the upcoming $h$ will be garbage or unwanted $h$, and the unit will terminate either ways.
+\subsection{Possible Pitfalls}
+% \subsubsection{In Fixed Step Mode} 
+% The only problem is when the unit reachs the last $X$, then the upcoming $h$ will be garbage or unwanted $h$, and the unit will terminate either ways.
 
-\subsubsection{In Adaptive/Variable Step Mode} 
-When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, and when solver is calculating $X_{h/2}$ and $X_{h}$, interpolator will be calculating $U_{h}*$, $h*$ is the $h$ from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and orders it to calculate $U_{hnew}$.
+% \subsubsection{In Adaptive/Variable Step Mode} 
+% When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, and when solver is calculating $X_{h/2}$ and $X_{h}$, interpolator will be calculating $U_{h}*$, $h*$ is the $h$ from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and orders it to calculate $U_{hnew}$.
+That whole assumption is built based on that part 1 of the solver's main equation is polynomial wrt. N (no. of elements at X), while the interpolator's whole equation is Linear in (M), that's why most of the time no delay will occur or be noticeable.
 
 \section{Parallelism}
 \label{sec:parallel}

@@ -11,7 +11,7 @@ entity interp is
         
         in_data: inout std_logic_vector(31 downto 0);
         
-        interp_done: out std_logic;
+        interp_done_op: out std_logic_vector(1 downto 0);
         interrupt: out std_logic;
         error_success: out std_logic
     );
