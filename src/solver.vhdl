@@ -4,20 +4,20 @@ use ieee.numeric_std.all;
 
 entity solver is
     port (
-        in_state: in std_logic_vector(1 downto 0);
-        clk: in std_logic;
-        rst: in std_logic;
-        interp_done: in std_logic;
+        in_state      : in std_logic_vector(1 downto 0);
+        clk           : in std_logic;
+        rst           : in std_logic;
+        interp_done   : in std_logic;
 
-        in_data: inout std_logic_vector(31 downto 0);
-        adr: inout std_logic_vector(15 downto 0);
-        
-        interrupt: out std_logic;
-        error_success: out std_logic
+        in_data       : inout std_logic_vector(31 downto 0);
+        adr           : inout std_logic_vector(15 downto 0);
+
+        interrupt     : out std_logic;
+        error_success : out std_logic
     );
-end entity; 
+end entity;
 
 architecture rtl of solver is
 begin
--- TODO
+    -- TODO
 end architecture;
