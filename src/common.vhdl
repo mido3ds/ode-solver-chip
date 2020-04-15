@@ -26,6 +26,7 @@ package common is
     function to_vec(i : integer; size : integer                := 16) return std_logic_vector;
     function to_vec(i : std_logic; size : integer              := 16) return std_logic_vector;
     function to_vec(i : std_logic_vector; size : integer       := 16) return std_logic_vector;
+    function to_int(i           : std_logic_vector) return integer;
     function to_string(a        : std_logic_vector) return string;
 end package;
 
@@ -67,5 +68,10 @@ package body common is
         end loop;
 
         return b;
+    end function;
+
+    function to_int(i : std_logic_vector) return integer is
+    begin
+        return to_integer(unsigned(i));
     end function;
 end package body;
