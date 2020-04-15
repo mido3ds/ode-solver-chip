@@ -7,20 +7,14 @@ entity solver is
     generic (word : integer := 32; adds : integer := 16; max_length: integer := 64);
     port (
         --state signal sent from CPU
-        in_state: in std_logic_vector(1 downto 0);
-        clk: in std_logic;
-        rst: in std_logic;
-        --signals sent from interpolator
-        --done: Un+1 is done and at the bus right now
-        --o/p point: the upcoming U will be an output point
+        in_state:       in std_logic_vector(1 downto 0);
+        clk:            in std_logic;
+        rst:            in std_logic;
         interp_done_op: in std_logic_vector(1 downto 0);
-
-
-        in_data: inout std_logic_vector(word-1 downto 0);
-        adr: inout std_logic_vector(adds-1 downto 0);
-        
-        interrupt: out std_logic;
-        error_success: out std_logic
+        in_data:        inout std_logic_vector(word-1 downto 0);
+        adr:            inout std_logic_vector(adds-1 downto 0);
+        interrupt:      out std_logic;
+        error_success:  out std_logic
     );
 end entity; 
 
@@ -76,14 +70,20 @@ architecture rtl of solver is
     signal b_coeff_data_in,         b_coeff_data_out:           std_logic_vector(word-1 downto 0) := (others => '0');
     signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(word-1 downto 0) := (others => '0');
     signal error_data_in,           error_data_out:             std_logic_vector(word-1 downto 0) := (others => '0');
-    
+
+    --Solver module's signals:
+
+    --range [0:5], acts like a pointer to X_ware
+    signal counter: std_logic_vector(1 downto 0) := "00";
+    --fp16, fp32, fp64
+    signal mode_sig: std_logic_vector(1 downto 0) := "00";
 begin
     --ENTITIES:
     --FPU's:
     fpu_unit_1: entity work.fpu(rtl) port map (
         clk => clk, 
         rst => rst, 
-        mode => mode,
+        mode => mode_sig,
         enbl => enable_sig_1, 
         in_a => fpu_1_in_1, 
         in_b => fpu_1_in_2, 
@@ -97,7 +97,7 @@ begin
     fpu_unit_2: entity work.fpu(rtl) port map (
         clk => clk, 
         rst => rst, 
-        mode => mode,
+        mode => mode_sig,
         enbl => enable_sig_2, 
         in_a => fpu_2_in_1, 
         in_b => fpu_2_in_2, 
@@ -209,6 +209,48 @@ begin
     );
     --Many more register may be added....
 
+    --PROCESSES:
+        --1- RESET, almost done
+        --2- initialize
+        --3- error occured
+        --4- fixed step size
+        --5- variable step size
+        --6- output is ready
 
+    --1- RESET
+    process (clk, rst)
+    begin
+        if rising_edge(clk) and rst = '1' then  
+            --RESET fpu's:
+            enable_sig_1 <= '1';
+            enable_sig_2 <= '1';
+            
+            --Reset memory
+            address_pointer_address <= (others => '0');
+            address_pointer_data_in <= (others => '0');
+            address_pointer_wr <= '1';
+            --Reset system's signals
+            counter <= "00";
+            h_main_address          <= (others => '0');
+            h_doubler_address       <= (others => '0');
+            L_tol_address           <= (others => '0');
+            header_address          <= (others => '0');
+            U_main_address          <= (others => '0');
+            U_sub_address           <= (others => '0');
+            X_ware_address          <= (others => '0');
+            a_coeff_address         <= (others => '0');
+            b_coeff_address         <= (others => '0');
+            address_pointer_address <= (others => '0');
+            error_address           <= (others => '0');
 
+        end if;
+    end process;
+
+    process (clk, rst,in_state, in_data, adr)
+    begin
+        -- if in_State is LOAD or WAIT I can read..
+        if rising_edge(clk) and rst = '1' and (in_state = "00" or in_state = "01") then  
+            
+        end if;
+    end process;
 end architecture;
