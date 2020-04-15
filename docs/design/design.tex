@@ -267,21 +267,21 @@ Solver module listens at the addresses listed in Table \ref{tab:solver-mem}.
  \hline
  Address & A & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & W & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0x0002  & W & f64 & 4 & H & Timestep (variable step mode)  \\
+ 0x0001  & W & f64 & 2 & H & Timestep (variable step mode)  \\
  \hline
- 0x0006  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
+ 0x0003  & W & f64 & 2 & Error & Error Tolerance (variable step mode) \\
  \hline
- 0x000A  & W & f64[50][50] & 10000 & A & Matrix A \\
+ 0x0005  & W & f64[50][50] & 5000 & A & Matrix A \\
  \hline
- 0x271A  & W & f64[50][50] & 10000 & B & Matrix B \\
+ 0x138D  & W & f64[50][50] & 5000 & B & Matrix B \\
  \hline
- 0x4E2A  & W & f64[50] & 200 & X & Initial value of X \\
+ 0x2715  & W & f64[50] & 100 & X & Initial value of X \\
  \hline
- 0x4EF2  & R & f64[50][5] & 1000 & X$_{out}$ & Final Output X \\
+ 0x2779  & R & f64[50][5] & 500 & X$_{out}$ & Final Output X \\
  \hline
- 0x52DA  & W & f64[50] & 200 & U$_{0}$ & Initial U vector \\
+ 0x296D  & W & f64[50] & 100 & U$_{0}$ & Initial U vector \\
  \hline
 \end{tabular}
 \end{center}
@@ -295,17 +295,17 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
  \hline
  Address & A & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & W & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
   \hline
-  0x52DA  & W & f64[50] & 200 & U$_0$ & Initial U vector \\
+  0x296D  & W & f64[50] & 100 & U$_0$ & Initial U vector \\
  \hline
- 0x53A2  & W & f64[5] & 20 & T & Time points of solutions  \\
+ 0x29D1  & W & f64[5] & 10 & T & Time points of solutions  \\
  \hline
- 0x53B6  & W & f64[50][5] & 1000 & U$_s$ & U vector at required time steps \\
+ 0x29D8  & W & f64[50][5] & 500 & U$_s$ & U vector at required time steps \\
  \hline
- 0x579E  & R & f64[50] & 200 & U$_{int}$ & Interpolated U Vector \\
+ 0x2BCF  & R & f64[50] & 100 & U$_{int}$ & Interpolated U Vector \\
  \hline
- 0x5866  & W & f64 & 4 & h$_{new}$ & Time to calculate U at \\
+ 0x2C33  & W & f64 & 2 & h$_{new}$ & Time to calculate U at \\
  \hline
 \end{tabular}
 \end{center}
