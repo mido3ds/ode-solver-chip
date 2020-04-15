@@ -42,7 +42,7 @@ architecture rtl of solver is
     signal X_ware_rd,           X_ware_wr:          std_logic := '0';
     signal a_coeff_rd,          a_coeff_wr:         std_logic := '0';
     signal b_coeff_rd,          b_coeff_wr:         std_logic := '0';
-    signal address_pointer_rd,  address_pointer_wr: std_logic := '0';
+    --signal address_pointer_rd,  address_pointer_wr: std_logic := '0';
     signal error_rd,            error_wr:           std_logic := '0';
 
     --Address:
@@ -55,7 +55,7 @@ architecture rtl of solver is
     signal X_ware_address:          std_logic_vector(adds-1 downto 0) := (others => '0');
     signal a_coeff_address:         std_logic_vector(adds-1 downto 0) := (others => '0');
     signal b_coeff_address:         std_logic_vector(adds-1 downto 0) := (others => '0');
-    signal address_pointer_address: std_logic_vector(adds-1 downto 0) := (others => '0');
+    --signal address_pointer_address: std_logic_vector(adds-1 downto 0) := (others => '0');
     signal error_address:           std_logic_vector(adds-1 downto 0) := (others => '0');
     
     --DATA in and out:
@@ -68,7 +68,7 @@ architecture rtl of solver is
     signal X_ware_data_in,          X_ware_data_out:            std_logic_vector(word-1 downto 0) := (others => '0');
     signal a_coeff_data_in,         a_coeff_data_out:           std_logic_vector(word-1 downto 0) := (others => '0');
     signal b_coeff_data_in,         b_coeff_data_out:           std_logic_vector(word-1 downto 0) := (others => '0');
-    signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(word-1 downto 0) := (others => '0');
+    --signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(word-1 downto 0) := (others => '0');
     signal error_data_in,           error_data_out:             std_logic_vector(word-1 downto 0) := (others => '0');
 
     --Solver module's signals:
@@ -77,6 +77,9 @@ architecture rtl of solver is
     signal counter: std_logic_vector(1 downto 0) := "00";
     --fp16, fp32, fp64
     signal mode_sig: std_logic_vector(1 downto 0) := "00";
+    --address pointer: Do I need this signal?
+    --or can I compare adr port with abolute values 3la tool!
+    --signal address_pointer: std_logic_vector(adds-1 downto 0) := (others => '0');
 begin
     --ENTITIES:
     --FPU's:
@@ -190,14 +193,14 @@ begin
         data_out => b_coeff_data_out
     );
     -- address_pointer
-    address_pointer: entity work.ram(rtl) generic map (WORD_LENGTH=>word, NUM_WORDS=>1) port map(
-        clk => clk,
-        rd => address_pointer_rd,
-        wr => address_pointer_wr,
-        address => address_pointer_address,
-        data_in => address_pointer_data_in,
-        data_out => address_pointer_data_out
-    );
+    --address_pointer: entity work.ram(rtl) generic map (WORD_LENGTH=>word, NUM_WORDS=>1) port map(
+    --    clk => clk,
+    --    rd => address_pointer_rd,
+    --    wr => address_pointer_wr,
+    --    address => address_pointer_address,
+    --    data_in => address_pointer_data_in,
+    --    data_out => address_pointer_data_out
+    --);
     -- error
     error: entity work.ram(rtl) generic map (WORD_LENGTH=>word, NUM_WORDS=>2) port map(
         clk => clk,
@@ -250,7 +253,7 @@ begin
     begin
         -- if in_State is LOAD or WAIT I can read..
         if rising_edge(clk) and rst = '1' and (in_state = "00" or in_state = "01") then  
-            
+            --Switch case on ads and address_pointer...TBC
         end if;
     end process;
 end architecture;
