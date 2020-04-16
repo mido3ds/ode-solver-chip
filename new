@@ -55,7 +55,10 @@ architecture tb of ${UNIT}_tb is
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    ${UNIT}: entity work.${UNIT} port map ( );
+    ${UNIT}: entity work.${UNIT} 
+        port map ( 
+            
+        );
 
     main: process
     begin
