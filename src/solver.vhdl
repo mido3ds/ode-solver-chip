@@ -89,13 +89,19 @@ architecture rtl of solver is
     signal thisIsAdder : std_logic  := '0';
     signal thisIsSub : std_logic  := '1';
     --N, used in looping at X, A, B
-    signal N_X_A_B : std_logic_vector(5 downto 0)  := "000000";
+    signal N_X_A_B : integer range 1 to 50 ;
     --M, used in looping at B, U
-    signal M_U_B : std_logic_vector(5 downto 0)  := "000000";
+    signal M_U_B :  integer range 1 to 50 ;
     --FIXED or VAR
     signal fixed_or_var : std_logic  := '0';
     --T_size
-    signal t_size :  std_logic_vector(2 downto 0)               := "000";
+    signal t_size :  std_logic_vector(2 downto 0) := "000";
+    --N*M, needed in looping at B
+    signal N_M:  integer range 1 to 2500 ;
+    --N*N, needed in looping at A
+    signal N_N:integer range 1 to 2500 ;
+    
+
 begin
     --ENTITIES:
     --FPU's:
@@ -260,7 +266,7 @@ begin
             address_pointer <= (others => '0');
 
             --Reset system's signals
-            counter                 <= "00";
+            --counter                 <= "00";
             h_main_address          <= (others => '0');
             h_doubler_address       <= (others => '0');
             L_tol_address           <= (others => '0');
@@ -287,18 +293,25 @@ begin
             case adr_var is
                 --Header
                 when X"0000" =>
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
                     address_pointer <= "001";
                 --H
                 when X"0001" =>
                     --Dont write at 'header' any more..
                     header_wr <= '0';
-                    address_pointer <= "010";
                     h_main_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
+
+                    address_pointer <= "010";
                 --error ie. Tolerance
                 when X"0003" =>
                     h_main_wr <= '0';
                     h_main_address <= (others => '0');
                     L_tol_address <= (others => '0');
+                    enable_mul_1 <= '0';
+                    enable_add_1 <= '0';
 
                     address_pointer <= "011";
                 --A
@@ -306,14 +319,17 @@ begin
                     L_tol_wr <= '0';
                     L_tol_address <= (others => '0');
                     a_coeff_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
 
                     address_pointer <= "100";
-
                 --B
                 when X"138D" =>
                     a_coeff_wr <= '0';
                     a_coeff_address <= (others => '0');
                     b_coeff_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
 
                     address_pointer <= "101";
                 --X0 ie. X_w[0]
@@ -321,6 +337,8 @@ begin
                     b_coeff_wr <= '0';
                     b_coeff_address <= (others => '0');
                     X_ware_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
 
                     address_pointer <= "110";
                 --U0 ie. Umain
@@ -328,27 +346,43 @@ begin
                     X_ware_wr <= '0';
                     X_ware_address <= (others => '0');
                     U_main_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
 
                     address_pointer <= "111";
                 --X_out, not mine
                 when X"2779" =>
+                    enable_mul_1 <= '0';
                     U_main_address <= (others => '0');
+
                     address_pointer <= "000";
                 --T, not mine
                 when X"29D1" =>
                     U_main_address <= (others => '0');
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
+
                     address_pointer <= "000";
                 --Us, not mine
                 when X"29D8" =>
+                    enable_add_1 <= '0';
                     address_pointer <= "000";
                 --Uint
                 when X"2BCF" =>
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
+
                     address_pointer <= "000";
                 --h_new
                 when X"2C33" =>
+                    enable_add_1 <= '0';
+                    enable_mul_1 <= '0';
+
                     address_pointer <= "000";
                 -- Not our address :D
-                when others => 
+                when others =>
+                    enable_mul_1 <= '0';
+                    enable_add_1 <= '0'; 
                     null;
             end case;
         end if;
@@ -367,8 +401,9 @@ begin
                     header_wr <= '1';
                     header_rd <= '0';
                     --Up till now, 'header' register is useless
-                    N_X_A_B <= in_data(31 downto 26);
-                    M_U_B <= in_data(25 downto 20);
+                    N_X_A_B <= to_int(in_data(31 downto 26));
+                    M_U_B <= to_int(in_data(25 downto 20));
+
                     fixed_or_var <= in_data(19);
                     mode_sig <= in_data(18 downto 17);
                     t_size <= in_data(16 downto 14);
@@ -385,6 +420,12 @@ begin
                     fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     h_main_address <= fpu_add_1_out;
+                    --I can prepare N_M here using fpu_mul_1
+                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
+                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(M_U_B, fpu_mul_1_in_2'length));
+                    enable_mul_1 <= '1';
+                    N_M <= to_integer(unsigned(fpu_mul_1_out));
+
                 when "011" =>
                     --error tolerance
                     L_tol_data_in <= in_data;
@@ -395,6 +436,11 @@ begin
                     fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     L_tol_address <= fpu_add_1_out;
+                    --I can prepare N_N using fpu_mul_1
+                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
+                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_2'length));
+                    enable_mul_1 <= '1';
+                    N_N <= to_integer(unsigned(fpu_mul_1_out));
                 when "100" =>
                     --a coefficient
                     a_coeff_data_in <= in_data;
@@ -463,7 +509,7 @@ begin
     --4- Fixed Step size :D
     FIXED : process(clk, fixed_or_var, interp_done_op) 
     begin
-        
+        null;
     end process ; -- FIXED
 
 
