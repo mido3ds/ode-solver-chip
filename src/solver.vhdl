@@ -27,14 +27,14 @@ architecture rtl of solver is
     --constants:
 
     --SIGNALS:
-    --FPU 1
-    signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
-    signal fpu_1_in_1, fpu_1_in_2, fpu_1_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_sig_1, err_sig_1, zero_sig_1, posv_sig_1, enable_sig_1 : std_logic                                  := '0';
-    --FPU 2
-    signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
-    signal fpu_2_in_1, fpu_2_in_2, fpu_2_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_sig_2, err_sig_2, zero_sig_2, posv_sig_2, enable_sig_2 : std_logic                                  := '0';
+    --FPU MUL 1
+    --signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
+    --FPU ADD 1
+    --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1 : std_logic                                  := '0';
 
     --Memory signals:
     --RD/WR:
@@ -79,44 +79,42 @@ architecture rtl of solver is
     --Solver module's signals:
 
     --range [0:5], acts like a pointer to X_ware
-    signal counter                                                     : std_logic_vector(1 downto 0)               := "00";
+    signal counter      : std_logic_vector(1 downto 0)               := "00";
     --fp16, fp32, fp64
-    signal mode_sig                                                    : std_logic_vector(1 downto 0)               := "00";
-    --address pointer: Do I need this signal?
-    --or can I compare adr port with abolute values 3la tool!
-    --signal address_pointer: std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
+    signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
+    --address pointer: keeps track when initializing
+    signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
+
 begin
     --ENTITIES:
     --FPU's:
-    fpu_unit_1 : entity work.fpu(rtl)
+    fpu_mul_1 : entity work.fpu_multiplier(rtl)
         port map(
             clk       => clk,
             rst       => rst,
             mode      => mode_sig,
-            enbl      => enable_sig_1,
-            in_a      => fpu_1_in_1,
-            in_b      => fpu_1_in_2,
-            out_c     => fpu_1_out,
-            operation => operation_sig_1,
-            done      => done_sig_1,
-            err       => err_sig_1,
-            zero      => zero_sig_1,
-            posv      => posv_sig_1
+            enbl      => enable_mul_1,
+            in_a      => fpu_mul_1_in_1,
+            in_b      => fpu_mul_1_in_2,
+            out_c     => fpu_mul_1_out,
+            done      => done_mul_1,
+            err       => err_mul_1,
+            zero      => zero_mul_1,
+            posv      => posv_mul_1
         );
-    fpu_unit_2 : entity work.fpu(rtl)
+    fpu_add_1 : entity work.fpu_adder(rtl)
         port map(
             clk       => clk,
             rst       => rst,
             mode      => mode_sig,
-            enbl      => enable_sig_2,
-            in_a      => fpu_2_in_1,
-            in_b      => fpu_2_in_2,
-            out_c     => fpu_2_out,
-            operation => operation_sig_2,
-            done      => done_sig_2,
-            err       => err_sig_2,
-            zero      => zero_sig_2,
-            posv      => posv_sig_2
+            enbl      => enable_add_1,
+            in_a      => fpu_add_1_in_1,
+            in_b      => fpu_add_1_in_2,
+            out_c     => fpu_add_1_out,
+            done      => done_add_1,
+            err       => err_add_1,
+            zero      => zero_add_1,
+            posv      => posv_add_1
         );
     --Memo:
     -- h_main--> two (32) regs.
@@ -241,15 +239,17 @@ begin
     --1- RESET
     process (rst)
     begin
-        if rst = '1' then
+        if rising_edge(clk) and rst = '1' then
             --RESET fpu's:
-            enable_sig_1            <= '1';
-            enable_sig_2            <= '1';
+            enable_mul_1            <= '1';
+            enable_add_1            <= '1';
 
             --Reset memory
-            address_pointer_address <= (others => '0');
-            address_pointer_data_in <= (others => '0');
-            address_pointer_wr      <= '1';
+            --address_pointer_address <= (others => '0');
+            --address_pointer_data_in <= (others => '0');
+            --address_pointer_wr      <= '1';
+            address_pointer <= (others => '0');
+
             --Reset system's signals
             counter                 <= "00";
             h_main_address          <= (others => '0');
@@ -267,11 +267,160 @@ begin
         end if;
     end process;
 
-    process (rst, in_state, in_data, adr)
+    --2- Init:
+        --It's divided into two processes:
+        --2.1: to detect what type of addresses it this!
+        --2.2: to enable reading on my address...
+    process (in_state, in_data, adr)
     begin
-        -- if in_State is LOAD or WAIT I can read..
-        if rst = '1' and (in_state = "00" or in_state = "01") then
-            --Switch case on ads and address_pointer...TBC
+        -- if in_State is           LOAD         or            WAIT      I can read..
+        if rising_edge(clk) and (in_state = "00" or in_state = "01") then
+            case adr is
+                --Header
+                when X"0000" =>
+                    address_pointer <= "001";
+                --H
+                when X"0001" =>
+                    --Dont write at 'header' any more..
+                    header_wr <= '0';
+                    address_pointer <= "010";
+                    h_main_address <= (others => '0');
+                --error ie. Tolerance
+                when X"0003" =>
+                    h_main_wr <= '0';
+                    h_main_address <= (others => '0');
+                    L_tol_address <= (others => '0');
+
+                    address_pointer <= "011";
+                --A
+                when X"0005" =>
+                    L_tol_wr <= '0';
+                    L_tol_address <= (others => '0');
+                    a_coeff_address <= (others => '0');
+
+                    address_pointer <= "100";
+
+                --B
+                when X"138D" =>
+                    a_coeff_wr <= '0';
+                    a_coeff_address <= (others => '0');
+                    b_coeff_address <= (others => '0');
+
+                    address_pointer <= "101";
+                --X0 ie. X_w[0]
+                when X"2715" =>
+                    b_coeff_wr <= '0';
+                    b_coeff_address <= (others => '0');
+                    X_ware_address <= (others => '0');
+
+                    address_pointer <= "110";
+                --U0 ie. Umain
+                when X"296D" =>
+                    X_ware_wr <= '0';
+                    X_ware_address <= (others => '0');
+                    U_main_address <= (others => '0');
+
+                    address_pointer <= "111";
+                --X_out, not mine
+                when X"2779" =>
+                    U_main_address <= (others => '0');
+                    address_pointer <= "000";
+                --T, not mine
+                when X"2779" =>
+                    U_main_address <= (others => '0');
+                    address_pointer <= "000";
+                --Us, not mine
+                when X"29D8" =>
+                    address_pointer <= "000";
+                --Uint
+                when X"2BCF" =>
+                    address_pointer <= "000";
+                --h_new
+                when X"2C33" =>
+                    address_pointer <= "000";
+                -- Not our address :D
+                when others => 
+                    null;
+            end case;
+        end if;
+    end process;
+
+    process (in_state, in_data, adr)
+    begin
+        -- if in_State is           LOAD         or            WAIT      I can read..
+        if rising_edge(clk) and (in_state = "00" or in_state = "01") then
+            case address_pointer is
+                when "001" =>
+                    --Header only one clock for one variable:
+                    --adapt header register to store its data:
+                    header_data_in <= in_data;
+                    header_address <= (others => '0');
+                    header_wr <= '1';
+                    header_rd <= '0';
+                when "010" =>
+                    --H
+                    --write in_data at address [adr]
+                    h_main_data_in <= in_data;
+                    h_main_wr <= '1';
+                    h_main_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= h_main_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    h_main_address <= fpu_add_1_out;
+                when "011" =>
+                    --error tolerance
+                    L_tol_data_in <= in_data;
+                    L_tol_wr <= '1';
+                    L_tol_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= L_tol_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    L_tol_address <= fpu_add_1_out;
+                when "100" =>
+                    --a coefficient
+                    a_coeff_data_in <= in_data;
+                    a_coeff_wr <= '1';
+                    a_coeff_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= a_coeff_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    a_coeff_address <= fpu_add_1_out;
+                when "101" =>
+                    --b coefficient
+                    b_coeff_data_in <= in_data;
+                    b_coeff_wr <= '1';
+                    b_coeff_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= b_coeff_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    b_coeff_address <= fpu_add_1_out;
+                when "110" =>
+                    --X0
+                    X_ware_data_in <= in_data;
+                    X_ware_wr <= '1';
+                    X_ware_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= X_ware_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    X_ware_address <= fpu_add_1_out;
+                when "111" =>
+                    --U0
+                    U_main_data_in <= in_data;
+                    U_main_wr <= '1';
+                    U_main_rd <= '0';
+                    --then increment adr+=1
+                    fpu_add_1_in_1 <= U_main_address;
+                    fpu_add_1_in_2 <= '1';
+                    enable_add_1 <= '1';
+                    U_main_address <= fpu_add_1_out;
+                when others =>
+                    null;
+            end case;
         end if;
     end process;
 end architecture;
