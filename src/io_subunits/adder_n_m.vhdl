@@ -10,9 +10,10 @@ entity adder_n_m is
     );
 
     port (
-        a : in std_logic_vector(N - 1 downto 0);
-        b : in std_logic_vector(M - 1 downto 0);
-        c : out std_logic_vector(N - 1 downto 0)
+        a   : in std_logic_vector(N - 1 downto 0);
+        b   : in std_logic_vector(M - 1 downto 0);
+        cin : in std_logic;
+        c   : out std_logic_vector(N - 1 downto 0)
     );
 end entity;
 
@@ -32,5 +33,5 @@ begin
     adder_b(N - 1 downto 3) <= (others => '0');
 
     -- cin
-    adder_carrys(0)         <= '0';
+    adder_carrys(0)         <= cin;
 end architecture;
