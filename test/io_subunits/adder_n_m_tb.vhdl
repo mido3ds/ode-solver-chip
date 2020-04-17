@@ -21,15 +21,17 @@ architecture tb of adder_n_m_tb is
     signal a          : std_logic_vector(N - 1 downto 0);
     signal b          : std_logic_vector(M - 1 downto 0);
     signal c          : std_logic_vector(N - 1 downto 0);
+    signal cin        : std_logic;
 begin
     clk <= not clk after CLK_PERD / 2;
 
     adder_n_m : entity work.adder_n_m
         generic map(N => N, M => M)
         port map(
-            a => a,
-            b => b,
-            c => c
+            a   => a,
+            b   => b,
+            cin => cin,
+            c   => c
         );
 
     main : process
@@ -37,25 +39,52 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        if run("basic") then
-            a <= to_vec(30, a'length);
-            b <= to_vec(3, b'length);
+        if run("c0_basic") then
+            cin <= '0';
+            a   <= to_vec(30, a'length);
+            b   <= to_vec(3, b'length);
             wait for CLK_PERD;
             check_equal(c, to_vec(33, c'length));
         end if;
 
-        if run("overflow") then
-            a <= to_vec(127, a'length);
-            b <= to_vec(2, b'length);
+        if run("c0_overflow") then
+            cin <= '0';
+            a   <= to_vec(127, a'length);
+            b   <= to_vec(2, b'length);
             wait for CLK_PERD;
             check_equal(c, to_vec(1, c'length));
         end if;
 
-        if run("zero") then
-            a <= to_vec(0, a'length);
-            b <= to_vec(0, b'length);
+        if run("c0_zero") then
+            cin <= '0';
+            a   <= to_vec(0, a'length);
+            b   <= to_vec(0, b'length);
             wait for CLK_PERD;
             check_equal(c, to_vec(0, c'length));
+        end if;
+
+        if run("c1_basic") then
+            cin <= '1';
+            a   <= to_vec(30, a'length);
+            b   <= to_vec(3, b'length);
+            wait for CLK_PERD;
+            check_equal(c, to_vec(33 + 1, c'length));
+        end if;
+
+        if run("c1_overflow") then
+            cin <= '1';
+            a   <= to_vec(127, a'length);
+            b   <= to_vec(2, b'length);
+            wait for CLK_PERD;
+            check_equal(c, to_vec(1 + 1, c'length));
+        end if;
+
+        if run("c1_zero") then
+            cin <= '1';
+            a   <= to_vec(0, a'length);
+            b   <= to_vec(0, b'length);
+            wait for CLK_PERD;
+            check_equal(c, to_vec(0 + 1, c'length));
         end if;
 
         wait for CLK_PERD/2;
