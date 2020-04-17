@@ -318,20 +318,18 @@ Table \ref{tab:header} shows the structure of header data. Note the whole struct
  \hline
  Address & Bit & Name & Description & Datatype & Total Size \\ [0.5ex] 
  \hline\hline
- \multirow{5}{*}{0x0000} & 15:10 & N & Dimension of X  & uint & 6 bits  \\ 
+ \multirow{5}{*}{0x0000} & 31:26 & N & Dimension of X  & uint & 6 bits  \\ 
  \cline{2-6}
- & 9:4 & M & Dimension of U  & uint & 6 bits  \\ 
+ & 25:20 & M & Dimension of U  & uint & 6 bits  \\ 
  \cline{2-6}
- & 3 & Solver Mode & Fixed Step(0) or Variable Step(1)  & enum & 1 bit \\ 
+ & 19 & Solver Mode & Fixed Step(0) or Variable Step(1)  & enum & 1 bit \\ 
  \cline{2-6}
- & 2:1 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
+ & 18:17 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
  \cline{2-6}
- & 0  & NOT USED &  ------ & ------ & 1 bit \\
+ & 16:14 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
+ & 13:0 & NOT USED &  ------ & ------ & 14 bits \\
  \hline
- \multirow{2}{*}{0x0001} & 15:13 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
- \cline{2-6}
- & 14:0 & NOT USED &  ------ & ------ & 13 bits \\
- \hline
+ 
 \end{tabular}
 \end{center}
 
