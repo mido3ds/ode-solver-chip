@@ -327,6 +327,7 @@ Table \ref{tab:header} shows the structure of header data. Note the whole struct
  & 18:17 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
  \cline{2-6}
  & 16:14 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
+ \cline{2-6}
  & 13:0 & NOT USED &  ------ & ------ & 14 bits \\
  \hline
  
@@ -343,23 +344,23 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
         \hline
         Address & Type & Max Words & Name  \\ [0.5ex] 
         \hline\hline
-        0x0000 & struct Header & 2 & Header\\ 
+        0x0000 & struct Header & 1 & Header\\ 
         \hline
-        0x0002 & f64 & 4 & H\\
+        0x0001 & f64 & 2 & H\\
         \hline
-        0x0006 & f64 & 4 & Error\\
+        0x0003 & f64 & 2 & Error\\
         \hline
-        0x000A & f64[50][50] & 10000 & A\\
+        0x0005 & f64[50][50] & 5000 & A\\
         \hline
-        0x271A & f64[50][50] & 10000 & B\\
+        0x138D & f64[50][50] & 5000 & B\\
         \hline
-        0x4E2A & f64[50] & 200 & X\\
+        0x2715 & f64[50] & 100 & X\\
         \hline
-        0x52DA & f64[50] & 200 & U$_0$\\
+        0x296D & f64[50] & 100 & U$_0$\\
         \hline
-        0x53A2 & f64[5] & 20 & T\\
+        0x29D1 & f64[5] & 10 & T\\
         \hline
-        0x53B6 & f64[50][5] & 1000 & U$_s$\\
+        0x29D8 & f64[50][5] & 500 & U$_s$\\
         \hline
        \end{tabular}
 \end{center}
