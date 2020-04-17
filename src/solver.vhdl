@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.common.all;
+--use std.env.stop;
 
 entity solver is
     generic (
@@ -84,6 +85,8 @@ architecture rtl of solver is
     signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
     --address pointer: keeps track when initializing
     signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
+    signal thisIsAdder : std_logic  := '0';
+    signal thisIsSub : std_logic  := '0';
 
 begin
     --ENTITIES:
@@ -114,7 +117,8 @@ begin
             done      => done_add_1,
             err       => err_add_1,
             zero      => zero_add_1,
-            posv      => posv_add_1
+            posv      => posv_add_1,
+            add_sub   => thisIsAdder
         );
     --Memo:
     -- h_main--> two (32) regs.
@@ -171,7 +175,7 @@ begin
         port map(
             clk      => clk,
             rd       => U_sub_rd,
-            wr       => Usub_wr,
+            wr       => U_sub_wr,
             address  => U_sub_address,
             data_in  => U_sub_data_in,
             data_out => U_sub_data_out
@@ -237,7 +241,7 @@ begin
     --6- output is ready
 
     --1- RESET
-    process (rst)
+    process (clk, rst)
     begin
         if rising_edge(clk) and rst = '1' then
             --RESET fpu's:
@@ -245,9 +249,6 @@ begin
             enable_add_1            <= '1';
 
             --Reset memory
-            --address_pointer_address <= (others => '0');
-            --address_pointer_data_in <= (others => '0');
-            --address_pointer_wr      <= '1';
             address_pointer <= (others => '0');
 
             --Reset system's signals
@@ -261,7 +262,6 @@ begin
             X_ware_address          <= (others => '0');
             a_coeff_address         <= (others => '0');
             b_coeff_address         <= (others => '0');
-            address_pointer_address <= (others => '0');
             error_address           <= (others => '0');
 
         end if;
@@ -269,13 +269,15 @@ begin
 
     --2- Init:
         --It's divided into two processes:
-        --2.1: to detect what type of addresses it this!
-        --2.2: to enable reading on my address...
-    process (in_state, in_data, adr)
+    --2.1: to detect what type of addresses it this!
+        
+    process (clk, in_state, in_data, adr)
+    variable adr_var :unsigned(15 downto 0); 
     begin
+        adr_var := resize(unsigned(adr),16);
         -- if in_State is           LOAD         or            WAIT      I can read..
         if rising_edge(clk) and (in_state = "00" or in_state = "01") then
-            case adr is
+            case adr_var is
                 --Header
                 when X"0000" =>
                     address_pointer <= "001";
@@ -326,7 +328,7 @@ begin
                     U_main_address <= (others => '0');
                     address_pointer <= "000";
                 --T, not mine
-                when X"2779" =>
+                when X"29D1" =>
                     U_main_address <= (others => '0');
                     address_pointer <= "000";
                 --Us, not mine
@@ -344,8 +346,8 @@ begin
             end case;
         end if;
     end process;
-
-    process (in_state, in_data, adr)
+    --2.2: to enable reading on my address...
+    process (clk, in_state, in_data, adr)
     begin
         -- if in_State is           LOAD         or            WAIT      I can read..
         if rising_edge(clk) and (in_state = "00" or in_state = "01") then
@@ -365,7 +367,7 @@ begin
                     h_main_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= h_main_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     h_main_address <= fpu_add_1_out;
                 when "011" =>
@@ -375,7 +377,7 @@ begin
                     L_tol_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= L_tol_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     L_tol_address <= fpu_add_1_out;
                 when "100" =>
@@ -385,7 +387,7 @@ begin
                     a_coeff_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= a_coeff_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     a_coeff_address <= fpu_add_1_out;
                 when "101" =>
@@ -395,7 +397,7 @@ begin
                     b_coeff_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= b_coeff_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     b_coeff_address <= fpu_add_1_out;
                 when "110" =>
@@ -405,7 +407,7 @@ begin
                     X_ware_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= X_ware_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     X_ware_address <= fpu_add_1_out;
                 when "111" =>
@@ -415,7 +417,7 @@ begin
                     U_main_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= U_main_address;
-                    fpu_add_1_in_2 <= '1';
+                    fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     U_main_address <= fpu_add_1_out;
                 when others =>
@@ -423,4 +425,25 @@ begin
             end case;
         end if;
     end process;
+
+    --3- Error process:
+    --add here any other error_out signal that might occur
+    errorOccured : process(clk, err_mul_1, err_add_1)
+    begin
+        if rising_edge(clk) then
+            if (err_mul_1 = '1'
+            or err_add_1 = '1')
+            then
+                error_success <= '0';
+                interrupt <= '1';
+                -- "wait" is not applicable with process
+                -- std.env.stop;, std.env package does not exist
+                -- you cant write: clk <= '0';
+                -- you may try another solution if you wish 
+                
+            end if;
+        end if;
+    end process ;
+
+
 end architecture;
