@@ -80,14 +80,22 @@ architecture rtl of solver is
     --Solver module's signals:
 
     --range [0:5], acts like a pointer to X_ware
-    signal counter      : std_logic_vector(1 downto 0)               := "00";
+    --signal counter      : std_logic_vector(2 downto 0)               := "000";
     --fp16, fp32, fp64
     signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
     --address pointer: keeps track when initializing
     signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
+    --declaring this fpu_adder unit as adder or subtractor
     signal thisIsAdder : std_logic  := '0';
-    signal thisIsSub : std_logic  := '0';
-
+    signal thisIsSub : std_logic  := '1';
+    --N, used in looping at X, A, B
+    signal N_X_A_B : std_logic_vector(5 downto 0)  := "000000";
+    --M, used in looping at B, U
+    signal M_U_B : std_logic_vector(5 downto 0)  := "000000";
+    --FIXED or VAR
+    signal fixed_or_var : std_logic  := '0';
+    --T_size
+    signal t_size :  std_logic_vector(2 downto 0)               := "000";
 begin
     --ENTITIES:
     --FPU's:
@@ -233,9 +241,9 @@ begin
     --Many more register may be added....
 
     --PROCESSES:
-    --1- RESET, almost done
-    --2- initialize
-    --3- error occured
+    --1- RESET, done
+    --2- initialize, done
+    --3- error occured, done
     --4- fixed step size
     --5- variable step size
     --6- output is ready
@@ -269,8 +277,7 @@ begin
 
     --2- Init:
         --It's divided into two processes:
-    --2.1: to detect what type of addresses it this!
-        
+    --2.1: to detect what type of addresses it this!  
     process (clk, in_state, in_data, adr)
     variable adr_var :unsigned(15 downto 0); 
     begin
@@ -359,6 +366,14 @@ begin
                     header_address <= (others => '0');
                     header_wr <= '1';
                     header_rd <= '0';
+                    --Up till now, 'header' register is useless
+                    N_X_A_B <= in_data(31 downto 26);
+                    M_U_B <= in_data(25 downto 20);
+                    fixed_or_var <= in_data(19);
+                    mode_sig <= in_data(18 downto 17);
+                    t_size <= in_data(16 downto 14);
+                    --NOTE: You can use the adder unit untill the next clock cycle
+                    --and you don't need to use it anyways...
                 when "010" =>
                     --H
                     --write in_data at address [adr]
@@ -444,6 +459,12 @@ begin
             end if;
         end if;
     end process ;
+
+    --4- Fixed Step size :D
+    FIXED : process(clk, fixed_or_var, interp_done_op) 
+    begin
+        
+    end process ; -- FIXED
 
 
 end architecture;
