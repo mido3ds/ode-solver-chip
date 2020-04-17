@@ -12,9 +12,9 @@ entity range_extractor is
 end entity;
 
 architecture rtl of range_extractor is
-    signal incremented_a : std_logic_vector(6 downto 0);
+    signal incremented_a : std_logic_vector(out_a'range);
 begin
-    inc : entity work.incrementer
+    inc : entity work.incrementor
         generic map(N => 7)
         port map(
             a => in_a,

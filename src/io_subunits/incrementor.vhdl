@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity incrementer is
+entity incrementor is
     generic (N : integer := 7);
 
     port (
@@ -11,7 +11,7 @@ entity incrementer is
     );
 end entity;
 
-architecture rtl of incrementer is
+architecture rtl of incrementor is
     signal adder_carrys : std_logic_vector(N downto 0);
 begin
     half_adder_0 : for i in 0 to N - 1 generate

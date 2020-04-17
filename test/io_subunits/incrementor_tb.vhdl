@@ -6,11 +6,11 @@ use work.common.all;
 library vunit_lib;
 context vunit_lib.vunit_context;
 
-entity incrementer_tb is
+entity incrementor_tb is
     generic (runner_cfg : string);
 end entity;
 
-architecture tb of incrementer_tb is
+architecture tb of incrementor_tb is
     constant CLK_FREQ : integer   := 100e6; -- 100 MHz
     constant CLK_PERD : time      := 1000 ms / CLK_FREQ;
 
@@ -21,7 +21,7 @@ architecture tb of incrementer_tb is
 begin
     clk <= not clk after CLK_PERD / 2;
 
-    incrementer : entity work.incrementer
+    incrementor : entity work.incrementor
         generic map(N => 7)
         port map(
             a => a,
