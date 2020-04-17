@@ -26,8 +26,14 @@ package common is
     function to_vec(i : integer; size : integer                := 16) return std_logic_vector;
     function to_vec(i : std_logic; size : integer              := 16) return std_logic_vector;
     function to_vec(i : std_logic_vector; size : integer       := 16) return std_logic_vector;
+    function to_vec(i : unsigned; size : integer               := 16) return std_logic_vector;
+
     function to_int(i           : std_logic_vector) return integer;
-    function to_string(a        : std_logic_vector) return string;
+    function to_int(i           : unsigned) return integer;
+
+    function to_str(a           : std_logic_vector) return string;
+    function to_str(a           : unsigned) return string;
+    function to_str(a           : integer) return string;
 end package;
 
 package body common is
@@ -58,9 +64,14 @@ package body common is
         return v;
     end function;
 
-    function to_string(a : std_logic_vector) return string is
-        variable b           : string (1 to a'length) := (others => NUL);
-        variable stri        : integer                := 1;
+    function to_vec(i : unsigned; size : integer := 16) return std_logic_vector is
+    begin
+        return std_logic_vector(i);
+    end function;
+
+    function to_str(a : std_logic_vector) return string is
+        variable b        : string (1 to a'length) := (others => NUL);
+        variable stri     : integer                := 1;
     begin
         for i in a'range loop
             b(stri) := std_logic'image(a((i)))(2);
@@ -70,8 +81,23 @@ package body common is
         return b;
     end function;
 
+    function to_str(a : unsigned) return string is
+    begin
+        return to_str(std_logic_vector(a));
+    end function;
+
+    function to_str(a : integer) return string is
+    begin
+        return integer'image(a);
+    end function;
+
     function to_int(i : std_logic_vector) return integer is
     begin
         return to_integer(unsigned(i));
+    end function;
+
+    function to_int(i : unsigned) return integer is
+    begin
+        return to_integer(i);
     end function;
 end package body;
