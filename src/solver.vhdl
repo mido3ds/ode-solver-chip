@@ -28,60 +28,60 @@ architecture rtl of solver is
 
     --SIGNALS:
     --FPU 1
-    signal operation_sig_1                                             : std_logic_vector(1 downto 0)              := "00";
-    signal fpu_1_in_1, fpu_1_in_2, fpu_1_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
-    signal done_sig_1, err_sig_1, zero_sig_1, posv_sig_1, enable_sig_1 : std_logic                                 := '0';
+    signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_1_in_1, fpu_1_in_2, fpu_1_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_sig_1, err_sig_1, zero_sig_1, posv_sig_1, enable_sig_1 : std_logic                                  := '0';
     --FPU 2
-    signal operation_sig_2                                             : std_logic_vector(1 downto 0)              := "00";
-    signal fpu_2_in_1, fpu_2_in_2, fpu_2_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
-    signal done_sig_2, err_sig_2, zero_sig_2, posv_sig_2, enable_sig_2 : std_logic                                 := '0';
+    signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_2_in_1, fpu_2_in_2, fpu_2_out                           : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_sig_2, err_sig_2, zero_sig_2, posv_sig_2, enable_sig_2 : std_logic                                  := '0';
 
     --Memory signals:
     --RD/WR:
-    signal h_main_rd, h_main_wr                                        : std_logic                                 := '0';
-    signal h_doubler_rd, h_doubler_wr                                  : std_logic                                 := '0';
-    signal L_tol_rd, L_tol_wr std_logic                                                                            := '0';
-    signal header_rd, header_wr                  : std_logic                                                       := '0';
-    signal U_main_rd, U_main_wr                  : std_logic                                                       := '0';
-    signal U_sub_rd, U_sub_wr                    : std_logic                                                       := '0';
-    signal X_ware_rd, X_ware_wr                  : std_logic                                                       := '0';
-    signal a_coeff_rd, a_coeff_wr                : std_logic                                                       := '0';
-    signal b_coeff_rd, b_coeff_wr                : std_logic                                                       := '0';
+    signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
+    signal h_doubler_rd, h_doubler_wr                                  : std_logic                                  := '0';
+    signal L_tol_rd, L_tol_wr                                          : std_logic                                  := '0';
+    signal header_rd, header_wr                                        : std_logic                                  := '0';
+    signal U_main_rd, U_main_wr                                        : std_logic                                  := '0';
+    signal U_sub_rd, U_sub_wr                                          : std_logic                                  := '0';
+    signal X_ware_rd, X_ware_wr                                        : std_logic                                  := '0';
+    signal a_coeff_rd, a_coeff_wr                                      : std_logic                                  := '0';
+    signal b_coeff_rd, b_coeff_wr                                      : std_logic                                  := '0';
     --signal address_pointer_rd,  address_pointer_wr: std_logic := '0';
-    signal error_rd, error_wr                    : std_logic                                                       := '0';
+    signal error_rd, error_wr                                          : std_logic                                  := '0';
 
     --Address:
-    signal h_main_address                        : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal h_doubler_address                     : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal L_tol_address                         : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal header_address                        : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal U_main_address                        : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal U_sub_address                         : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal X_ware_address                        : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal a_coeff_address                       : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
-    signal b_coeff_address                       : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
+    signal h_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal h_doubler_address                                           : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal L_tol_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal header_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal U_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal U_sub_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal X_ware_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal a_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    signal b_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     --signal address_pointer_address: std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
-    signal error_address                         : std_logic_vector(ADDR_LENGTH - 1 downto 0)                      := (others => '0');
+    signal error_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
 
     --DATA in and out:
-    signal h_main_data_in, h_main_data_out       : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal h_doubler_data_in, h_doubler_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal L_tol_data_in, L_tol_data_out         : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal header_data_in, header_data_out       : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal U_main_data_in, U_main_data_out       : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal U_sub_data_in, U_sub_data_out         : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal X_ware_data_in, X_ware_data_out       : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal a_coeff_data_in, a_coeff_data_out     : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
-    signal b_coeff_data_in, b_coeff_data_out     : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
+    signal h_main_data_in, h_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal h_doubler_data_in, h_doubler_data_out                       : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal L_tol_data_in, L_tol_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal header_data_in, header_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal U_main_data_in, U_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal U_sub_data_in, U_sub_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal X_ware_data_in, X_ware_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal a_coeff_data_in, a_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    signal b_coeff_data_in, b_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     --signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(WORD_LENGTH-1 downto 0) := (others => '0');
-    signal error_data_in, error_data_out         : std_logic_vector(WORD_LENGTH - 1 downto 0)                      := (others => '0');
+    signal error_data_in, error_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 
     --Solver module's signals:
 
     --range [0:5], acts like a pointer to X_ware
-    signal counter                               : std_logic_vector(1 downto 0)                                    := "00";
+    signal counter                                                     : std_logic_vector(1 downto 0)               := "00";
     --fp16, fp32, fp64
-    signal mode_sig                              : std_logic_vector(1 downto 0)                                    := "00";
+    signal mode_sig                                                    : std_logic_vector(1 downto 0)               := "00";
     --address pointer: Do I need this signal?
     --or can I compare adr port with abolute values 3la tool!
     --signal address_pointer: std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
