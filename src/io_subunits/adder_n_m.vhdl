@@ -12,27 +12,35 @@ entity adder_n_m is
     );
 
     port (
-        a   : in std_logic_vector(N - 1 downto 0);
-        b   : in std_logic_vector(M - 1 downto 0);
-        cin : in std_logic;
-        c   : out std_logic_vector(N - 1 downto 0)
+        a    : in std_logic_vector(N - 1 downto 0);
+        b    : in std_logic_vector(M - 1 downto 0);
+        cin  : in std_logic;
+        enbl : in std_logic;
+
+        c    : out std_logic_vector(N - 1 downto 0);
+        cout : out std_logic
     );
 end entity;
 
 architecture rtl of adder_n_m is
-    signal adder_b      : std_logic_vector(N - 1 downto 0) := (others => '0');
+    signal adder_b      : std_logic_vector(a'range) := (others => '0');
     signal adder_carrys : std_logic_vector(N downto 0);
+    signal temp_c       : std_logic_vector(c'range);
 begin
     full_adder_0 : for i in 0 to N - 1 generate
         full_adder_0_i : entity work.full_adder
             port map(
                 a => a(i), b => adder_b(i), cin => adder_carrys(i),
-                cout => adder_carrys(i + 1), f => c(i)
+                cout => adder_carrys(i + 1), f => temp_c(i)
             );
     end generate;
 
     adder_b(M - 1 downto 0) <= b;
 
-    -- cin
+    -- carry
     adder_carrys(0)         <= cin;
+    cout                    <= adder_carrys(N);
+
+    -- output
+    c                       <= temp_c when enbl = '1';
 end architecture;

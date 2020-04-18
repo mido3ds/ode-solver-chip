@@ -18,20 +18,24 @@ architecture tb of incrementor_tb is
 
     signal a          : std_logic_vector(6 downto 0);
     signal c          : std_logic_vector(6 downto 0);
+    signal enbl       : std_logic;
 begin
     clk <= not clk after CLK_PERD / 2;
 
     incrementor : entity work.incrementor
         generic map(N => 7)
         port map(
-            a => a,
-            c => c
+            a    => a,
+            enbl => enbl,
+            c    => c
         );
 
     main : process
     begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
+
+        enbl <= '1';
 
         if run("basic") then
             a <= to_vec(30, a'length);
@@ -49,6 +53,16 @@ begin
             a <= to_vec(0, a'length);
             wait for CLK_PERD;
             check_equal(c, to_vec(1, c'length));
+        end if;
+
+        if run("enbl") then
+            a <= to_vec(30, a'length);
+            wait for CLK_PERD;
+            check_equal(c, to_vec(31, c'length));
+
+            enbl <= '0';
+            a    <= to_vec(0, a'length);
+            check_equal(c, to_vec(31, c'length));
         end if;
 
         wait for CLK_PERD/2;

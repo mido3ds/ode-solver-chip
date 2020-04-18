@@ -28,10 +28,11 @@ begin
     adder_n_m : entity work.adder_n_m
         generic map(N => N, M => M)
         port map(
-            a   => a,
-            b   => b,
-            cin => cin,
-            c   => c
+            a    => a,
+            b    => b,
+            enbl => '1',
+            cin  => cin,
+            c    => c
         );
 
     main : process
