@@ -66,7 +66,9 @@ package common is
     function to_vec(i : integer; size : integer                 := 16) return std_logic_vector;
     function to_vec(i : std_logic; size : integer               := 16) return std_logic_vector;
     function to_vec(i : std_logic_vector; size : integer        := 16) return std_logic_vector;
-    function to_vec(i : unsigned; size : integer                := 16) return std_logic_vector;
+    function u_to_vec(i : unsigned; size : integer              := 16) return std_logic_vector;
+
+    function to_std_logic(i     : integer) return std_logic;
 
     function to_int(i           : std_logic_vector) return integer;
     function to_int(i           : unsigned) return integer;
@@ -74,6 +76,9 @@ package common is
     function to_str(a           : std_logic_vector) return string;
     function to_str(a           : unsigned) return string;
     function to_str(a           : integer) return string;
+    function to_str(a           : std_logic) return string;
+
+    function flip(v             : std_logic_vector) return std_logic_vector;
 end package;
 
 package body common is
@@ -104,7 +109,7 @@ package body common is
         return v;
     end function;
 
-    function to_vec(i : unsigned; size : integer := 16) return std_logic_vector is
+    function u_to_vec(i : unsigned; size : integer := 16) return std_logic_vector is
     begin
         return std_logic_vector(i);
     end function;
@@ -131,6 +136,11 @@ package body common is
         return integer'image(a);
     end function;
 
+    function to_str(a : std_logic) return string is
+    begin
+        return std_logic'image(a);
+    end function;
+
     function to_int(i : std_logic_vector) return integer is
     begin
         return to_integer(unsigned(i));
@@ -139,5 +149,25 @@ package body common is
     function to_int(i : unsigned) return integer is
     begin
         return to_integer(i);
+    end function;
+
+    function flip (v  : std_logic_vector) return std_logic_vector is
+        alias rev_range_v : std_logic_vector(v'reverse_range) is v;
+        variable rev_v    : std_logic_vector(v'range);
+    begin
+        for i in rev_range_v'range loop
+            rev_v(i) := rev_range_v(i);
+        end loop;
+
+        return rev_v;
+    end;
+
+    function to_std_logic(i : integer) return std_logic is
+    begin
+        if i = 1 then
+            return '1';
+        end if;
+
+        return '0';
     end function;
 end package body;
