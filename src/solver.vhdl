@@ -50,6 +50,11 @@ architecture rtl of solver is
     signal fpu_sub_1_in_1, fpu_sub_1_in_2, fpu_sub_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     signal done_sub_1, err_sub_1, zero_sub_1, posv_sub_1, enable_sub_1 : std_logic                                  := '0';
 
+    --ADDRESS INCREMENTOR 1, ADDR_LENGTH is the maximum..
+    signal address_inc_1_in, address_inc_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+    signal address_dec_1_in, address_dec_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+
+
     --Memory signals:
     --RD/WR:
     --signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
@@ -216,6 +221,22 @@ begin
             add_sub   => thisIsSub
         );
     
+
+    --Integer operators:
+    address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+        port map(
+            a      => address_inc_1_in,
+            c      => address_inc_1_out
+        );
+
+    address_dec_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+        port map(
+            a      => address_dec_1_in,
+            c      => address_dec_1_out
+        );
+    
+
+
     --Memory and Registers:
     -- h_main--> two (32) regs.
     --h_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
@@ -802,38 +823,28 @@ proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
 
         end if;
     end process ; -- proc_write_a_coeff
-inc_a_address : process( clk, increment_a_address, done_add_2 )
+inc_a_address : process( clk, increment_a_address )
     begin
-        if rising_edge (clk) and increment_a_address = '1' then
-            if done_add_2 = '0' then
-                fpu_add_2_in_1 <= a_coeff_address;
-                fpu_add_2_in_2 <= X"0001";
-                enable_add_2 <= '1';
-                --No reading or writing untill we update the address...
-                a_coeff_rd <= '0';
-                a_coeff_wr <= '0';
-            else
-                a_coeff_address <= fpu_add_2_out;
-                enable_add_2 <= '0';
-                increment_a_address <='0';
-            end if;
+        if rising_edge(clk) and increment_a_address = '1' then
+            address_inc_1_in <= a_coeff_address;
+            a_coeff_rd <= '0';
+            a_coeff_wr <= '0';
+        end if;       
+        if falling_edge(clk) and increment_a_address = '1' then
+            a_coeff_address <= address_inc_1_out;
+            increment_a_address <='0';
         end if;
     end process ; -- inc_a_address
-dec_a_address : process( clk, decrement_a_address, done_sub_1 )
+dec_a_address : process( clk, decrement_a_address)
     begin
-        if rising_edge (clk) and decrement_a_address = '1' then
-            if done_sub_1 = '0' then 
-                fpu_sub_1_in_1 <= a_coeff_address;
-                fpu_sub_1_in_2 <= X"0001";
-                enable_sub_1 <= '1';
-                a_coeff_rd <= '0';
-                a_coeff_wr <= '0';
-            else
-                a_coeff_address <= fpu_add_2_out;
-                enable_sub_1 <= '0';
-                decrement_a_address <='0';
-                
-            end if;
+        if rising_edge(clk) and decrement_a_address = '1' then
+            address_dec_1_in <= a_coeff_address;
+            a_coeff_rd <= '0';
+            a_coeff_wr <= '0';
+        end if;       
+        if falling_edge(clk) and decrement_a_address = '1' then
+            a_coeff_address <= address_dec_1_out;
+            decrement_a_address <='0';
         end if;
     end process ; -- dec_a_address
 
@@ -879,69 +890,59 @@ proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
                         write_b_coeff <= '0';
                     end if;
                 end if;            
-
         end if;
     end process ; -- proc_write_b_coeff
-inc_b_address : process( clk, increment_b_address, done_add_2 )
+inc_b_address : process( clk, increment_b_address )
     begin
-        if rising_edge (clk) and increment_b_address = '1' then
-            if done_add_2 = '0' then
-                fpu_add_2_in_1 <= b_coeff_address;
-                fpu_add_2_in_2 <= X"0001";
-                enable_add_2 <= '1';
-                --No reading or writing untill we update the address...
-                b_coeff_rd <= '0';
-                b_coeff_wr <= '0';
-            else
-                b_coeff_address <= fpu_add_2_out;
-                enable_add_2 <= '0';
-                increment_b_address <='0';
-            end if;
+        if rising_edge(clk) and increment_b_address = '1' then
+            address_inc_1_in <= b_coeff_address;
+            b_coeff_rd <= '0';
+            b_coeff_wr <= '0';
+        end if;       
+        if falling_edge(clk) and increment_b_address = '1' then
+            b_coeff_address <= address_inc_1_out;
+            increment_b_address <='0';
         end if;
     end process ; -- inc_b_address
 
  --4.10: decrements address of part A
-dec_b_address : process( clk, decrement_b_address, done_sub_1 )
+dec_b_address : process( clk, decrement_b_address)
     begin
-        if rising_edge (clk) and decrement_b_address = '1' then
-            if done_sub_1 = '0' then 
-                fpu_sub_1_in_1 <= b_coeff_address;
-                fpu_sub_1_in_2 <= X"0001";
-                enable_sub_1 <= '1';
-                b_coeff_rd <= '0';
-                b_coeff_wr <= '0';
-            else
-                b_coeff_address <= fpu_add_2_out;
-                enable_sub_1 <= '0';
-                decrement_b_address <='0';
-            end if;
+        if rising_edge(clk) and decrement_b_address = '1' then
+            address_dec_1_in <= b_coeff_address;
+            b_coeff_rd <= '0';
+            b_coeff_wr <= '0';
+        end if;       
+        if falling_edge(clk) and decrement_b_address = '1' then
+            b_coeff_address <= address_dec_1_out;
+            decrement_b_address <='0';
         end if;
     end process ; -- dec_b_address
 
-    --4.13: responsible for reading current h (time sent to interpolator)
-    read_h_doubler : process(clk, h_doubler_read)
-    begin
-        if rising_edge(clk) and h_doubler_read = '1' then
-            if h__high = '0' then
-                --read the low part
-                h_doubler_rd <= '1';
-                h_doubler_temp(63 downto 32) <= h_doubler_data_out;
-                h_high <= '1';
-            else
-                --read the upper part
-                h_doubler_rd <= '1';
-                h_doubler_temp(31 downto 0) <= h_doubler_data_out;
-                h_high <= '0';
-            end if;
-            fpu_add_3_in_1 <= h_doubler_address;
-            fpu_add_3_in_2 <= X"0001";
-            enable_add_3 <= '1';
-            h_doubler_address <= fpu_add_2_out;
-        end if;
-        --reset signals
-        h_doubler_rd <= '0';
-        enable_add_3 <= '0';
-    end process ;
+    ----4.13: responsible for reading current h (time sent to interpolator)
+    --read_h_doubler : process(clk, h_doubler_read)
+    --begin
+    --    if rising_edge(clk) and h_doubler_read = '1' then
+    --        if h__high = '0' then
+    --            --read the low part
+    --            h_doubler_rd <= '1';
+    --            h_doubler_temp(63 downto 32) <= h_doubler_data_out;
+    --            h_high <= '1';
+    --        else
+    --            --read the upper part
+    --            h_doubler_rd <= '1';
+    --            h_doubler_temp(31 downto 0) <= h_doubler_data_out;
+    --            h_high <= '0';
+    --        end if;
+    --        fpu_add_3_in_1 <= h_doubler_address;
+    --        fpu_add_3_in_2 <= X"0001";
+    --        enable_add_3 <= '1';
+    --        h_doubler_address <= fpu_add_2_out;
+    --    end if;
+    --    --reset signals
+    --    h_doubler_rd <= '0';
+    --    enable_add_3 <= '0';
+    --end process ;
 
 
 end architecture;
