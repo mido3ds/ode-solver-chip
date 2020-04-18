@@ -12,8 +12,7 @@ entity solver is
     );
 
     port (
-        --state signal sent from CPU
-        in_state       : in std_logic_vector(1 downto 0);
+        in_state       : in std_logic_vector(1 downto 0); --state signal sent from CPU
         clk            : in std_logic;
         rst            : in std_logic;
         interp_done_op : in std_logic_vector(1 downto 0);
@@ -25,9 +24,8 @@ entity solver is
 end entity;
 
 architecture rtl of solver is
-    --constants:
-
     --SIGNALS:
+
     --FPU MUL 1
     --signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
     signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
@@ -93,7 +91,6 @@ architecture rtl of solver is
     signal error_data_in, error_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 
     --Solver module's signals:
-
     --range [0:5], acts like a pointer to X_ware
     --signal counter      : std_logic_vector(2 downto 0)               := "000";
     --fp16, fp32, fp64
@@ -133,12 +130,9 @@ architecture rtl of solver is
     signal b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
 
-
-
-
-
 begin
     --ENTITIES:
+
     --FPU's:
     fpu_mul_1 : entity work.fpu_multiplier(rtl)
         port map(
@@ -214,7 +208,8 @@ begin
             posv      => posv_sub_1,
             add_sub   => thisIsSub
         );
-    --Memo:
+    
+    --Memory and Registers:
     -- h_main--> two (32) regs.
     h_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
         port map(
@@ -326,18 +321,19 @@ begin
         );
     --Many more register may be added....
 
-    --PROCESSES:
-    --1- RESET, done
-    --2- initialize, done
-    --3- error occured, done
-    --4- fixed step size
-    --5- variable step size
-    --6- output is ready
-    --7- prepare A, run once
-    --8- prepare B, run once
 
+    --PROCESSES:
+    --1- RESET --> Done
+    --2- initialize --> Done
+    --3- error occured --> Done
+    --4- fixed step size --> TBD
+    --5- variable step size --> TBD
+    --6- output is ready --> TBD
+    --7- prepare A, run once --> TBD
+    --8- prepare B, run once --> TBD
 
     --1- RESET
+    -- handles reset signal for solver
     process (clk, rst)
     begin
         if rising_edge(clk) and rst = '1' then
@@ -365,8 +361,9 @@ begin
     end process;
 
     --2- Init:
-        --It's divided into two processes:
-    --2.1: to detect what type of addresses it this!  
+    --Divided into two processes:
+
+    --2.1: detects what type of addresses is this!  
     process (clk, in_state, in_data, adr)
     variable adr_var :unsigned(15 downto 0); 
     begin
@@ -470,7 +467,8 @@ begin
             end case;
         end if;
     end process;
-    --2.2: to enable reading on my address...
+
+    --2.2: enables reading on my address
     process (clk, in_state, in_data, adr)
     begin
         -- if in_State is           LOAD         or            WAIT      I can read..
@@ -539,7 +537,6 @@ begin
 
                     --I can read H here..
                     read_h_please <= '1';
-
                 when "101" =>
                     --since we got here, then A and H are ready
                     if fixed_or_var = '0' then 
@@ -600,18 +597,21 @@ begin
                 -- "wait" is not applicable with process
                 -- std.env.stop;, std.env package does not exist
                 -- you cant write: clk <= '0';
-                -- you may try another solution if you wish 
-                
+                -- you may try another solution if you wish  
             end if;
         end if;
     end process ;
 
-    --4- Fixed Step size :D
-    FIXED : process(clk, fixed_or_var, interp_done_op) 
+    --4- Fixed Step Size
+    --Divided into multiple processes
+
+    --4.1: main fixed step driver
+    fixed : process(clk, fixed_or_var, interp_done_op) 
     begin
         null;
-    end process ; -- FIXED
+    end process ;
 
+    --4.2: calculates the first part of fixed step equation (AX)
     runA : process(clk, run_a_loop, a_is_read, h_is_read, write_a_coeff)
     variable proceed:std_logic  := '0';
     variable with_one: std_logic  := '0';
@@ -655,13 +655,11 @@ begin
                     a_is_read <= '0'; --read another one, after this one is written
                 end if;
             end if;
-
         end if;
-
     end process ; -- runA
 
-    --This process responsible for reading coeff A at addresses [x,x+1]
-    --and update the address pointer for furhter adu
+    --4.3: responsible for reading coeff A at addresses [x,x+1]
+    --and update the address pointer
     read_a_coeff : process(clk, run_a_loop, a_is_read, write_a_coeff)
     begin
         if rising_edge(clk) and run_a_loop = '1' and a_is_read = '0' and write_a_coeff = '0' then
@@ -687,6 +685,7 @@ begin
         a_coeff_rd <= '0';
     end process ; -- read_a_coeff
 
+    --4.4: responsible for reading initial h
     read_h_main : process(clk, h_is_read, read_h_please)
     begin
         if rising_edge(clk) and h_is_read = '0' and read_h_please='1' then
@@ -711,10 +710,8 @@ begin
         enable_add_3 <= '0';
     end process ; -- read_a_coeff
 
-
-
-    --PROCESS to write result_A_temp --> A[i,i+1]
-    write_a : process(clk, run_a_loop, write_a_coeff )
+    --4.5: writes result_A_temp --> A[i,i+1]
+    write_a : process(clk, run_a_loop, write_a_coeff)
     begin
         -- result is at result_a_temp
         -- we can't read and write at the same time, so add_2 is free
@@ -738,11 +735,11 @@ begin
         a_coeff_wr <= '0';
     end process ; -- write_a_coeff
 
-    run_h_b : process( clk, run_a_loop,run_b_loop, b_is_read, h_is_read )
+    --4.6: calculates the second part of fixed step equation (BU)
+    run_h_b : process(clk, run_a_loop,run_b_loop, b_is_read, h_is_read)
     variable proceed:std_logic  := '0';
     variable first_time: std_logic  := '1';
     variable N_M_temp:  integer range 0 to 2500 ;
-    
     begin
         -- I will run when:
         -- clk, I have the right, A is finished, next element is read, h is read.
@@ -761,7 +758,6 @@ begin
             else 
                 proceed := '1';
             end if;
-
             if proceed = '1' then
                 fpu_mul_1_in_1 <= b_temp;
                 fpu_mul_1_in_2 <= h_temp;
@@ -774,7 +770,8 @@ begin
         end if;
     end process ; -- run_h_b
 
-
+    --4.7: responsible for reading coeff B at addresses [x,x+1]
+    --and update the address pointer
     read_b_coeff : process(clk, run_b_loop, b_is_read, write_b_coeff)
     begin
         if rising_edge(clk) and run_b_loop = '1' and b_is_read = '0' and write_b_coeff = '0' then
@@ -800,7 +797,7 @@ begin
         b_coeff_rd <= '0';
     end process ; -- read_a_coeff
 
-
+    --4.8: writes result_b_temp to memory
     write_b : process(clk, run_b_loop, write_b_coeff)
     begin
         -- result is at result_a_temp
@@ -825,8 +822,7 @@ begin
         b_coeff_wr <= '0';
     end process ; -- write_a_coeff
 
-
-
+    --4.9: increments address of part A
     inc_a_address : process( clk, increment_a_address, done_add_2 )
     begin
         if rising_edge (clk) and increment_a_address = '1' then
@@ -842,7 +838,7 @@ begin
         end if;
     end process ; -- inc_a_address
 
-
+    --4.10: decrements address of part A
     dec_a_address : process( clk, decrement_a_address, done_sub_1 )
     begin
         if rising_edge (clk) and decrement_a_address = '1' then
@@ -859,6 +855,7 @@ begin
         end if;
     end process ; -- dec_a_address
 
+    --4.11: increments address of part B
     inc_b_address : process( clk, increment_b_address,done_add_2 )
     begin
         if rising_edge (clk) and increment_b_address = '1' then
@@ -870,12 +867,11 @@ begin
                 b_coeff_address <= fpu_add_2_out;
                 enable_add_2 <= '0';
                 increment_b_address <='0';
-                
             end if;
         end if;
     end process ; -- inc_b_address
 
-
+    --4.12: decrements address of part B
     dec_b_address : process( clk, decrement_b_address, done_sub_1)
     begin
         if rising_edge (clk) and decrement_b_address = '1' then
@@ -887,14 +883,8 @@ begin
                 b_coeff_address <= fpu_add_2_out;
                 enable_sub_1 <= '0';
                 decrement_b_address <='0';
-                
             end if;
         end if;
     end process ; -- dec_b_address
-
-
-
-
-
 
 end architecture;
