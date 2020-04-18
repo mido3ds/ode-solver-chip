@@ -620,7 +620,9 @@ begin
                 when "0000" => --wait for loop a and loop b
                     null;
                 when "0001" => --send new h to interpolater 
-                    null;
+                    h_doubler_read <= '1';
+                    in_data <= h_doubler_temp;
+                    adr <= X"2C33";
                 when "0010" => --calculate AX
                     null;
                 when "0011" => --save AX in intermediate register
@@ -635,6 +637,8 @@ begin
                     null;
                 when "1000" => --Xnew checks and save
                     null;
+                when "1001" => --double h for fixed step
+                    null;    
                 when "1111" => --processing state (FSM hibernation)      
                     null;            
             end case;
@@ -917,39 +921,29 @@ begin
         end if;
     end process ; -- dec_b_address
 
-    -- run_a_x : process(clk, run_x_loop)
-    -- variable first_time: std_logic  := '1';
-    -- variable proceed:std_logic  := '0';
-    -- variable N_N_count:  integer range 0 to 2500;
-    -- variable N_count: integer range 0 to 50;
-    -- begin
-    --     if rising_edge(clk) and run_x_loop ='1' then
-    --         if first_time = '1' then
-    --             first_time := '0';
-    --             N_N_count := N_N;
-    --             N_count := N_X_A_B;
-    --             a_coeff_address <= (others => '0');
-    --             X_ware_address <= (others => '0');
-    --         end if;
-    --         N_N_count := N_N_count - 1; 
-    --         N_count := N_count - 1;     
-    --         if N_N_count = 0 then 
-    --             proceed := '0';
-    --             run_x_loop <= '0';
-    --         else 
-    --             proceed := '1';
-    --         end if;
-    --         if N_count = 0 then
-    --             N_count := N_X_A_B;
-    --         end if;    
-    --         if proceed = '1' then
-    --             fpu_mul_1_in_1 <= a_temp;
-    --             fpu_mul_1_in_2 <= x_temp;
-    --             enable_mul_1 <= '1';
-    --             result_x_temp <= fpu_mul_1_out;
-    --             write_b_coeff <= '1';               
-    --         end if;
-    --     end if;
-    -- end process ;
+    --4.13: responsible for reading current h (time sent to interpolator)
+    read_h_doubler : process(clk, h_doubler_read)
+    begin
+        if rising_edge(clk) and h_doubler_read = '1' then
+            if h__high = '0' then
+                --read the low part
+                h_doubler_rd <= '1';
+                h_doubler_temp(63 downto 32) <= h_doubler_data_out;
+                h_high <= '1';
+            else
+                --read the upper part
+                h_doubler_rd <= '1';
+                h_doubler_temp(31 downto 0) <= h_doubler_data_out;
+                h_high <= '0';
+            end if;
+            fpu_add_3_in_1 <= h_doubler_address;
+            fpu_add_3_in_2 <= X"0001";
+            enable_add_3 <= '1';
+            h_doubler_address <= fpu_add_2_out;
+        end if;
+        --reset signals
+        h_doubler_rd <= '0';
+        enable_add_3 <= '0';
+    end process ;
 
 end architecture;

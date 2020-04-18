@@ -90,3 +90,39 @@ variable a_of_i : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
 
         end if;
         run_a_loop <= '0';
+
+
+-- run_a_x : process(clk, run_x_loop)
+    -- variable first_time: std_logic  := '1';
+    -- variable proceed:std_logic  := '0';
+    -- variable N_N_count:  integer range 0 to 2500;
+    -- variable N_count: integer range 0 to 50;
+    -- begin
+    --     if rising_edge(clk) and run_x_loop ='1' then
+    --         if first_time = '1' then
+    --             first_time := '0';
+    --             N_N_count := N_N;
+    --             N_count := N_X_A_B;
+    --             a_coeff_address <= (others => '0');
+    --             X_ware_address <= (others => '0');
+    --         end if;
+    --         N_N_count := N_N_count - 1; 
+    --         N_count := N_count - 1;     
+    --         if N_N_count = 0 then 
+    --             proceed := '0';
+    --             run_x_loop <= '0';
+    --         else 
+    --             proceed := '1';
+    --         end if;
+    --         if N_count = 0 then
+    --             N_count := N_X_A_B;
+    --         end if;    
+    --         if proceed = '1' then
+    --             fpu_mul_1_in_1 <= a_temp;
+    --             fpu_mul_1_in_2 <= x_temp;
+    --             enable_mul_1 <= '1';
+    --             result_x_temp <= fpu_mul_1_out;
+    --             write_b_coeff <= '1';               
+    --         end if;
+    --     end if;
+    -- end process ;
