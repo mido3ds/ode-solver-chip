@@ -1,19 +1,21 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity ram is
-    generic (WORD_LENGTH, NUM_WORDS : integer);
+    generic (WORD_LENGTH, ADR_LENGTH : integer);
 
     port (
-        clk, rd, wr      : in std_logic;
-        address, data_in : in std_logic_vector(WORD_LENGTH - 1 downto 0);
-        data_out         : out std_logic_vector(WORD_LENGTH - 1 downto 0)
+        clk, rd, wr : in std_logic;
+        data_in     : in std_logic_vector(WORD_LENGTH - 1 downto 0);
+        address     : in std_logic_vector(ADR_LENGTH - 1 downto 0);
+        data_out    : out std_logic_vector(WORD_LENGTH - 1 downto 0)
     );
 end entity;
 
 architecture rtl of ram is
-    type DataType is array(0 to NUM_WORDS - 1) of std_logic_vector(data_in'range);
+    type DataType is array(0 to (2 ** ADR_LENGTH) - 1) of std_logic_vector(data_in'range);
     signal data                      : DataType;
 
     -- for debugging, as ghdl doenst dump `DataType` signals

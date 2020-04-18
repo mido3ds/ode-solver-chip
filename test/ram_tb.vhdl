@@ -21,7 +21,7 @@ begin
     clk <= not clk after CLK_PERD / 2;
 
     ram : entity work.ram
-        generic map(WORD_LENGTH => 16, NUM_WORDS => 4 * 1024)
+        generic map(WORD_LENGTH => 16, ADR_LENGTH => 16)
         port map(
             rd => rd, wr => wr, address => address, clk => clk,
             data_in => data_in, data_out => data_out
