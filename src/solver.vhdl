@@ -490,7 +490,7 @@ begin
                     fixed_or_var <= in_data(19);
                     mode_sig <= in_data(18 downto 17);
                     t_size <= in_data(16 downto 14);
-                    --NOTE: You can use the adder unit untill the next clock cycle
+                    --NOTE: You can not use the adder unit untill the next clock cycle
                     --and you don't need to use it anyways...
                 when "010" =>
                     --H
@@ -542,7 +542,9 @@ begin
 
                 when "101" =>
                     --since we got here, then A and H are ready
-                    run_a_loop <= '1';
+                    if fixed_or_var = '0' then 
+                        run_a_loop <= '1';
+                    end if;
                     --b coefficient
                     b_coeff_data_in <= in_data;
                     b_coeff_wr <= '1';
@@ -554,7 +556,9 @@ begin
                     b_coeff_address <= fpu_add_1_out;
                 when "110" =>
                     --Since we got here, then B and H are ready
-                    run_b_loop <= '1';
+                    if fixed_or_var = '0' then 
+                        run_b_loop <= '1';
+                    end if;
                     --X0
                     X_ware_data_in <= in_data;
                     X_ware_wr <= '1';
@@ -582,12 +586,13 @@ begin
 
     --3- Error process:
     --add here any other error_out signal that might occur
-    errorOccured : process(clk, err_mul_1, err_add_1)
+    errorOccured : process(clk, err_mul_1, err_add_1,err_add_2,err_add_3)
     begin
         if rising_edge(clk) then
             if (err_mul_1 = '1'
             or  err_add_1 = '1'
             or  err_add_2 = '1'
+            or  err_add_3 = '1'
             )
             then
                 error_success <= '0';
@@ -619,6 +624,7 @@ begin
                 a_coeff_address<= (others => '0');
                 first_time := '0';
             end if;
+            --N_N_temp minused in subtractor and when with_one = 0 only
             N_N_temp := N_N_temp - 1;
             --we reached the end of the loop            
             if N_N_temp = 0 then 
@@ -706,7 +712,7 @@ begin
     end process ; -- read_a_coeff
 
 
-    
+
     --PROCESS to write result_A_temp --> A[i,i+1]
     write_a : process(clk, run_a_loop, write_a_coeff )
     begin
