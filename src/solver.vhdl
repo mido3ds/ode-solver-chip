@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.common.all;
+use solver_signals.all;
 --use std.env.stop;
 
 entity solver is
@@ -52,45 +53,49 @@ architecture rtl of solver is
 
     --Memory signals:
     --RD/WR:
-    signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
-    signal h_doubler_rd, h_doubler_wr                                  : std_logic                                  := '0';
-    signal L_tol_rd, L_tol_wr                                          : std_logic                                  := '0';
-    signal header_rd, header_wr                                        : std_logic                                  := '0';
+    --signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
+    --signal h_doubler_rd, h_doubler_wr                                  : std_logic                                  := '0';
+    --signal L_tol_rd, L_tol_wr                                          : std_logic                                  := '0';
+    --signal header_rd, header_wr                                        : std_logic                                  := '0';
     signal U_main_rd, U_main_wr                                        : std_logic                                  := '0';
     signal U_sub_rd, U_sub_wr                                          : std_logic                                  := '0';
     signal X_ware_rd, X_ware_wr                                        : std_logic                                  := '0';
     signal a_coeff_rd, a_coeff_wr                                      : std_logic                                  := '0';
     signal b_coeff_rd, b_coeff_wr                                      : std_logic                                  := '0';
     --signal address_pointer_rd,  address_pointer_wr: std_logic := '0';
-    signal error_rd, error_wr                                          : std_logic                                  := '0';
+    --signal error_rd, error_wr                                          : std_logic                                  := '0';
 
     --Address:
-    signal h_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal h_doubler_address                                           : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal L_tol_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal header_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    --signal h_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    --signal h_doubler_address                                           : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    --signal L_tol_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    --signal header_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     signal U_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     signal U_sub_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     signal X_ware_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     signal a_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     signal b_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
     --signal address_pointer_address: std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
-    signal error_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
+    --signal error_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
 
     --DATA in and out:
-    signal h_main_data_in, h_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    signal h_doubler_data_in, h_doubler_data_out                       : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    signal L_tol_data_in, L_tol_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    signal header_data_in, header_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    --signal h_main_data_in, h_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    --signal h_doubler_data_in, h_doubler_data_out                       : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    --signal L_tol_data_in, L_tol_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    --signal header_data_in, header_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal U_main_data_in, U_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal U_sub_data_in, U_sub_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal X_ware_data_in, X_ware_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal a_coeff_data_in, a_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal b_coeff_data_in, b_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     --signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(WORD_LENGTH-1 downto 0) := (others => '0');
-    signal error_data_in, error_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+    --signal error_data_in, error_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 
     --Solver module's signals:
+    --SEMI PROCESSES ENABLES:
+    signal run_mul_n_m : std_logic  := '0';
+
+
     --range [0:5], acts like a pointer to X_ware
     --signal counter      : std_logic_vector(2 downto 0)               := "000";
     --fp16, fp32, fp64
@@ -117,9 +122,10 @@ architecture rtl of solver is
     signal a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
-    signal read_h_please,h_is_read,h_high : std_logic  := '0';
+    --signal read_h_please,h_is_read,h_high : std_logic  := '0';
     signal h_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-
+    signal h_main, L_tol : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal h_high, L_high : std_logic  := '0';
 
     --result of a*H
     signal result_a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
@@ -216,44 +222,44 @@ begin
     
     --Memory and Registers:
     -- h_main--> two (32) regs.
-    h_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-        port map(
-            clk      => clk,
-            rd       => h_main_rd,
-            wr       => h_main_wr,
-            address  => h_main_address,
-            data_in  => h_main_data_in,
-            data_out => h_main_data_out
-        );
-    h_doubler : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-        port map(
-            clk      => clk,
-            rd       => h_doubler_rd,
-            wr       => h_doubler_wr,
-            address  => h_doubler_address,
-            data_in  => h_doubler_data_in,
-            data_out => h_doubler_data_out
-        );
-    --tolerance register, will be initiated at the begining of the program.
-    L_tol : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-        port map(
-            clk      => clk,
-            rd       => L_tol_rd,
-            wr       => L_tol_wr,
-            address  => L_tol_address,
-            data_in  => L_tol_data_in,
-            data_out => L_tol_data_out
-        );
-    -- header: holds N,M,Count,FP,mode(fixed/variable)
-    header : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 1)
-        port map(
-            clk      => clk,
-            rd       => header_rd,
-            wr       => header_wr,
-            address  => header_address,
-            data_in  => header_data_in,
-            data_out => header_data_out
-        );
+    --h_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
+    --    port map(
+    --        clk      => clk,
+    --        rd       => h_main_rd,
+    --        wr       => h_main_wr,
+    --        address  => h_main_address,
+    --        data_in  => h_main_data_in,
+    --        data_out => h_main_data_out
+    --    );
+    --h_doubler : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
+    --    port map(
+    --        clk      => clk,
+    --        rd       => h_doubler_rd,
+    --        wr       => h_doubler_wr,
+    --        address  => h_doubler_address,
+    --        data_in  => h_doubler_data_in,
+    --        data_out => h_doubler_data_out
+    --    );
+    ----tolerance register, will be initiated at the begining of the program.
+    --L_tol : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
+    --    port map(
+    --        clk      => clk,
+    --        rd       => L_tol_rd,
+    --        wr       => L_tol_wr,
+    --        address  => L_tol_address,
+    --        data_in  => L_tol_data_in,
+    --        data_out => L_tol_data_out
+    --    );
+    ---- header: holds N,M,Count,FP,mode(fixed/variable)
+    --header : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 1)
+    --    port map(
+    --        clk      => clk,
+    --        rd       => header_rd,
+    --        wr       => header_wr,
+    --        address  => header_address,
+    --        data_in  => header_data_in,
+    --        data_out => header_data_out
+    --    );
     -- U_main
     U_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100)
         port map(
@@ -315,15 +321,15 @@ begin
     --    data_out => address_pointer_data_out
     --);
     -- error
-    error : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-        port map(
-            clk      => clk,
-            rd       => error_rd,
-            wr       => error_wr,
-            address  => error_address,
-            data_in  => error_data_in,
-            data_out => error_data_out
-        );
+    --error : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
+    --    port map(
+    --        clk      => clk,
+    --        rd       => error_rd,
+    --        wr       => error_wr,
+    --        address  => error_address,
+    --        data_in  => error_data_in,
+    --        data_out => error_data_out
+    --    );
     --Many more register may be added....
 
 
@@ -378,35 +384,19 @@ begin
             case adr_var is
                 --Header
                 when X"0000" =>
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
                     address_pointer <= "001";
                 --H
                 when X"0001" =>
-                    --Dont write at 'header' any more..
-                    header_wr <= '0';
-                    h_main_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
+                    h_high <= '0';
                     address_pointer <= "010";
                 --error ie. Tolerance
                 when X"0003" =>
-                    h_main_wr <= '0';
-                    h_main_address <= (others => '0');
-                    L_tol_address <= (others => '0');
-                    enable_mul_1 <= '0';
-                    enable_add_1 <= '0';
-
+                    L_high <= '0';
                     address_pointer <= "011";
                 --A
                 when X"0005" =>
-                    L_tol_wr <= '0';
-                    L_tol_address <= (others => '0');
                     a_coeff_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
+                    
                     address_pointer <= "100";
                 --B
                 when X"138D" =>
@@ -481,54 +471,35 @@ begin
             case address_pointer is
                 when "001" =>
                     --Header only one clock for one variable:
-                    --adapt header register to store its data:
-                    header_data_in <= in_data;
-                    header_address <= (others => '0');
-                    header_wr <= '1';
-                    header_rd <= '0';
                     --Up till now, 'header' register is useless
                     N_X_A_B <= to_int(in_data(31 downto 26));
                     M_U_B <= to_int(in_data(25 downto 20));
-
                     fixed_or_var <= in_data(19);
                     mode_sig <= in_data(18 downto 17);
                     t_size <= in_data(16 downto 14);
                     --NOTE: You can not use the adder unit untill the next clock cycle
                     --and you don't need to use it anyways...
+
                 when "010" =>
                     --H
-                    --write in_data at address [adr]
-                    h_main_data_in <= in_data;
-                    h_main_wr <= '1';
-                    h_main_rd <= '0';
-                    --then increment adr+=1
-                    fpu_add_1_in_1 <= h_main_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    h_main_address <= fpu_add_1_out;
-                    --I can prepare N_M here using fpu_mul_1
-                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
-                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(M_U_B, fpu_mul_1_in_2'length));
-                    enable_mul_1 <= '1';
-                    N_M <= to_integer(unsigned(fpu_mul_1_out));
+                    if h_high = '0' then
+                        h_main(MAX_LENGTH-1 downto 32) <= in_data;
+                        h_high <= '1';
+                    else
+                        h_main(31 downto 0) <= in_data;
+                    end if;
+                    --this signal will initiate both:
+                    -- N*M and N*N
+                    run_mul_n_m <= '1'; 
 
                 when "011" =>
                     --error tolerance
-                    L_tol_data_in <= in_data;
-                    L_tol_wr <= '1';
-                    L_tol_rd <= '0';
-                    --then increment adr+=1
-                    fpu_add_1_in_1 <= L_tol_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    L_tol_address <= fpu_add_1_out;
-                    --I can prepare N_N using fpu_mul_1
-                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
-                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_2'length));
-                    enable_mul_1 <= '1';
-                    N_N <= to_integer(unsigned(fpu_mul_1_out));
-                    --used in tracking and looping
-                    --N_N_temp <= to_integer(unsigned(fpu_mul_1_out));
+                    if L_high = '0' then
+                        L_tol (MAX_LENGTH-1 downto 32) <= in_data;
+                        L_high <= '1';
+                    else
+                        L_tol(31 downto 0) <= in_data;
+                    end if;
                 when "100" =>
                     --a coefficient
                     a_coeff_data_in <= in_data;
@@ -540,8 +511,7 @@ begin
                     enable_add_1 <= '1';
                     a_coeff_address <= fpu_add_1_out;
 
-                    --I can read H here..
-                    read_h_please <= '1';
+                    
                 when "101" =>
                     --since we got here, then A and H are ready
                     if fixed_or_var = '0' then 
@@ -951,5 +921,33 @@ begin
     --         end if;
     --     end if;
     -- end process ;
+
+proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m,done_mul_1 )
+    variable first_operation: std_logic  := '0';
+    begin
+        if rising_edge (clk) and run_mul_n_m = '1' then
+            if first_operation = '0' then
+                if done_mul_1 = '0' then
+                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
+                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(M_U_B, fpu_mul_1_in_2'length));
+                    enable_mul_1 <= '1';
+                else
+                    enable_mul_1 <= '0';
+                    N_M <= to_integer(unsigned(fpu_mul_1_out));
+                    first_operation := '1';
+                end if;
+            else
+                if done_mul_1 = '0' and enable_mul_1 <= '0' then
+                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
+                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_2'length));
+                    enable_mul_1 <= '1';
+                else
+                    enable_mul_1 <= '0';
+                    N_N <= to_integer(unsigned(fpu_mul_1_out));
+                    run_mul_n_m <= '0';
+                end if;
+            end if;
+        end if;
+    end process ; -- proc_run_n_m_and_n_n
 
 end architecture;
