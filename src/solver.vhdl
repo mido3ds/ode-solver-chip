@@ -480,6 +480,7 @@ begin
                     --a coefficient
                     a_coeff_data_in <= in_data;
                     a_coeff_wr <= '1';
+
                     --then increment adr+=1
                     if done_add_1 = '0' then
                         fpu_add_1_in_1 <= a_coeff_address;
@@ -488,8 +489,7 @@ begin
                     else
                         a_coeff_address <= fpu_add_1_out;
                         enable_add_1 <= '0';
-                    end if;
-                    
+                    end if;        
                 when "101" =>
                     --since we got here, then A and H are ready
                     if fixed_or_var = '0' then 
@@ -524,23 +524,19 @@ begin
                         X_ware_address <= fpu_add_1_out;
                         enable_add_1 <= '0';
                     end if;
-                    --X0
-                    X_ware_data_in <= in_data;
-                    X_ware_wr <= '1';
-                    --then increment adr+=1
-                    fpu_add_1_in_1 <= X_ware_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    X_ware_address <= fpu_add_1_out;
                 when "111" =>
                     --X0
                     U_main_data_in <= in_data;
                     U_main_wr <= '1';
                     --then increment adr+=1
-                    fpu_add_1_in_1 <= U_main_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    U_main_address <= fpu_add_1_out;
+                    if done_add_1 = '0' then
+                        fpu_add_1_in_1 <= U_main_address;
+                        fpu_add_1_in_2 <= X"0001";
+                        enable_add_1 <= '1';
+                    else
+                        U_main_address <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                    end if;
                 when others =>
                     null;
             end case;
