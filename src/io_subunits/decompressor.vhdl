@@ -72,7 +72,7 @@ begin
             );
     end generate;
 
-    buf_flush_i_adder : entity work.adder_n_m
+    buf_flush_i_adder : entity work.int_adder
         generic map(N => buf_flush_i'length, M => 6)
         port map(
             a    => buf_flush_i,
@@ -86,7 +86,7 @@ begin
     buf_flush_i_inv <= not buf_flush_i;
 
     -- buf_fill_flush_diff = buf_fill_i - buf_flush_i
-    fill_flush_diff_subtractor : entity work.adder_n_m
+    fill_flush_diff_subtractor : entity work.int_adder
         generic map(N => buf_fill_i'length, M => buf_flush_i'length)
         port map(
             a    => buf_fill_i,

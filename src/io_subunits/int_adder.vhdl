@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity adder_n_m is
+entity int_adder is
     -- N: bits of the input A, output C
     -- M: bits of input B
     -- N >= M
@@ -22,7 +22,7 @@ entity adder_n_m is
     );
 end entity;
 
-architecture rtl of adder_n_m is
+architecture rtl of int_adder is
     signal adder_b      : std_logic_vector(a'range) := (others => '0');
     signal adder_carrys : std_logic_vector(N downto 0);
     signal temp_c       : std_logic_vector(c'range);

@@ -22,7 +22,7 @@ begin
             c    => temp_out_a
         );
 
-    add : entity work.adder_n_m
+    add : entity work.int_adder
         generic map(N => 7, M => 3)
         port map(
             a    => temp_out_a,
