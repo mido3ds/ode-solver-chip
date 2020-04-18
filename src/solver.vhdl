@@ -129,6 +129,11 @@ architecture rtl of solver is
     signal run_b_loop, b_high, b_is_read,write_b_coeff ,increment_b_address, decrement_a_address: std_logic  := '0';
     signal b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
+    --fixed point special signals
+    signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
+    signal run_x_loop: std_logic := '0';
+    signal x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal result_x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
 begin
     --ENTITIES:
@@ -603,13 +608,37 @@ begin
     end process ;
 
     --4- Fixed Step Size
-    --Applied Function (X[n+1] = X[n](1+hA) + (hB)U[n])
+    --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
+    --Let A = 1+hA and B = hB (computed once)
     --Divided into multiple processes
 
     --4.1: main fixed step driver
-    fixed : process(clk, fixed_or_var, interp_done_op) 
+    fixed : process(clk, fixed_or_var, fixed_point_state) 
     begin
-        null;
+        if rising_edge(clk) and fixed_or_var = '0' then
+            case fixed_point_state is
+                when "0000" => --wait for loop a and loop b
+                    null;
+                when "0001" => --send new h to interpolater 
+                    null;
+                when "0010" => --calculate AX
+                    null;
+                when "0011" => --save AX in intermediate register
+                    null;
+                when "0100" => --wait for interpolator done signal
+                    null;
+                when "0101" => --calculate BU
+                    null;
+                when "0110" => --save BU
+                    null;
+                when "0111" => --AX + BU
+                    null;
+                when "1000" => --Xnew checks and save
+                    null;
+                when "1111" => --processing state (FSM hibernation)      
+                    null;            
+            end case;
+        end if;
     end process ;
 
     --4.2: calculates the first part coefficients of fixed step equation (1+hA)
@@ -887,5 +916,40 @@ begin
             end if;
         end if;
     end process ; -- dec_b_address
+
+    -- run_a_x : process(clk, run_x_loop)
+    -- variable first_time: std_logic  := '1';
+    -- variable proceed:std_logic  := '0';
+    -- variable N_N_count:  integer range 0 to 2500;
+    -- variable N_count: integer range 0 to 50;
+    -- begin
+    --     if rising_edge(clk) and run_x_loop ='1' then
+    --         if first_time = '1' then
+    --             first_time := '0';
+    --             N_N_count := N_N;
+    --             N_count := N_X_A_B;
+    --             a_coeff_address <= (others => '0');
+    --             X_ware_address <= (others => '0');
+    --         end if;
+    --         N_N_count := N_N_count - 1; 
+    --         N_count := N_count - 1;     
+    --         if N_N_count = 0 then 
+    --             proceed := '0';
+    --             run_x_loop <= '0';
+    --         else 
+    --             proceed := '1';
+    --         end if;
+    --         if N_count = 0 then
+    --             N_count := N_X_A_B;
+    --         end if;    
+    --         if proceed = '1' then
+    --             fpu_mul_1_in_1 <= a_temp;
+    --             fpu_mul_1_in_2 <= x_temp;
+    --             enable_mul_1 <= '1';
+    --             result_x_temp <= fpu_mul_1_out;
+    --             write_b_coeff <= '1';               
+    --         end if;
+    --     end if;
+    -- end process ;
 
 end architecture;
