@@ -136,9 +136,6 @@ architecture rtl of solver is
 
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
-    signal run_x_loop: std_logic := '0';
-    signal x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    signal result_x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
 begin
     --ENTITIES:
@@ -575,31 +572,34 @@ begin
             case fixed_point_state is
                 when "0000" => --wait for loop a and loop b
                     null;
-                when "0001" => --send new h to interpolater 
-                    h_doubler_read <= '1';
-                    in_data <= h_doubler_temp;
+                when "0001" => --send lower half of new h to interpolater 
+                    in_data <= h_temp(31 downto 0);
                     adr <= X"2C33";
-                when "0010" => --calculate AX
+                    fixed_point_state <= "0010";
+                when "0010" => --send higher half of new h to interpolater
+                    in_data <= h_temp(63 downto 32);
+                    adr <= X"2C33";
+                    fixed_point_state <= "0011";
+                when "0011" => --calculate AX
                     null;
-                when "0011" => --save AX in intermediate register
+                when "0100" => --save AX in intermediate register
                     null;
-                when "0100" => --wait for interpolator done signal
+                when "0101" => --wait for interpolator done signal
                     null;
-                when "0101" => --calculate BU
+                when "0110" => --calculate BU
                     null;
-                when "0110" => --save BU
+                when "0111" => --save BU
                     null;
-                when "0111" => --AX + BU
+                when "1000" => --AX + BU
                     null;
-                when "1000" => --Xnew checks and save
+                when "1001" => --Xnew checks and save
                     null;
-                when "1001" => --double h for fixed step
+                when "1010" => --double h for fixed step
                     null;    
                 when "1111" => --processing state (FSM hibernation)      
                     null;   
-                --this is a mandatory!
-                --when others =>
-                --    null;             
+                when others =>
+                    null;             
             end case;
         end if;
     end process ;
