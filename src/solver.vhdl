@@ -396,68 +396,44 @@ begin
                 --A
                 when X"0005" =>
                     a_coeff_address <= (others => '0');
-                    
                     address_pointer <= "100";
                 --B
                 when X"138D" =>
                     a_coeff_wr <= '0';
                     a_coeff_address <= (others => '0');
                     b_coeff_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
                     address_pointer <= "101";
                 --X0 ie. X_w[0]
                 when X"2715" =>
                     b_coeff_wr <= '0';
                     b_coeff_address <= (others => '0');
                     X_ware_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
                     address_pointer <= "110";
                 --U0 ie. Umain
                 when X"296D" =>
                     X_ware_wr <= '0';
                     X_ware_address <= (others => '0');
                     U_main_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
                     address_pointer <= "111";
                 --X_out, not mine
                 when X"2779" =>
-                    enable_mul_1 <= '0';
-                    U_main_address <= (others => '0');
-
                     address_pointer <= "000";
                 --T, not mine
                 when X"29D1" =>
                     U_main_address <= (others => '0');
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
+                    U_main_wr <= '0';
                     address_pointer <= "000";
                 --Us, not mine
                 when X"29D8" =>
-                    enable_add_1 <= '0';
                     address_pointer <= "000";
                 --Uint
                 when X"2BCF" =>
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
                     address_pointer <= "000";
                 --h_new
                 when X"2C33" =>
-                    enable_add_1 <= '0';
-                    enable_mul_1 <= '0';
-
                     address_pointer <= "000";
                 -- Not our address :D
                 when others =>
-                    enable_mul_1 <= '0';
-                    enable_add_1 <= '0'; 
                     null;
             end case;
         end if;
@@ -504,13 +480,15 @@ begin
                     --a coefficient
                     a_coeff_data_in <= in_data;
                     a_coeff_wr <= '1';
-                    a_coeff_rd <= '0';
                     --then increment adr+=1
-                    fpu_add_1_in_1 <= a_coeff_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    a_coeff_address <= fpu_add_1_out;
-
+                    if done_add_1 = '0' then
+                        fpu_add_1_in_1 <= a_coeff_address;
+                        fpu_add_1_in_2 <= X"0001";
+                        enable_add_1 <= '1';
+                    else
+                        a_coeff_address <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                    end if;
                     
                 when "101" =>
                     --since we got here, then A and H are ready
@@ -520,31 +498,44 @@ begin
                     --b coefficient
                     b_coeff_data_in <= in_data;
                     b_coeff_wr <= '1';
-                    b_coeff_rd <= '0';
                     --then increment adr+=1
-                    fpu_add_1_in_1 <= b_coeff_address;
-                    fpu_add_1_in_2 <= X"0001";
-                    enable_add_1 <= '1';
-                    b_coeff_address <= fpu_add_1_out;
+                    if done_add_1 = '0' then
+                        fpu_add_1_in_1 <= b_coeff_address;
+                        fpu_add_1_in_2 <= X"0001";
+                        enable_add_1 <= '1';
+                    else
+                        b_coeff_address <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                    end if;
                 when "110" =>
                     --Since we got here, then B and H are ready
                     if fixed_or_var = '0' then 
                         run_b_loop <= '1';
                     end if;
+                    --X_ware[0] = X0
+                    X_ware_data_in <= in_data;
+                    X_ware_wr <= '1';
+                    --then increment adr+=1
+                    if done_add_1 = '0' then
+                        fpu_add_1_in_1 <= X_ware_address;
+                        fpu_add_1_in_2 <= X"0001";
+                        enable_add_1 <= '1';
+                    else
+                        X_ware_address <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                    end if;
                     --X0
                     X_ware_data_in <= in_data;
                     X_ware_wr <= '1';
-                    X_ware_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= X_ware_address;
                     fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     X_ware_address <= fpu_add_1_out;
                 when "111" =>
-                    --U0
+                    --X0
                     U_main_data_in <= in_data;
                     U_main_wr <= '1';
-                    U_main_rd <= '0';
                     --then increment adr+=1
                     fpu_add_1_in_1 <= U_main_address;
                     fpu_add_1_in_2 <= X"0001";
