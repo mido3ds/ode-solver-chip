@@ -603,6 +603,7 @@ begin
     end process ;
 
     --4- Fixed Step Size
+    --Applied Function (X[n+1] = X[n](1+hA) + (hB)U[n])
     --Divided into multiple processes
 
     --4.1: main fixed step driver
@@ -611,7 +612,7 @@ begin
         null;
     end process ;
 
-    --4.2: calculates the first part of fixed step equation (AX)
+    --4.2: calculates the first part coefficients of fixed step equation (1+hA)
     runA : process(clk, run_a_loop, a_is_read, h_is_read, write_a_coeff)
     variable proceed:std_logic  := '0';
     variable with_one: std_logic  := '0';
@@ -710,7 +711,7 @@ begin
         enable_add_3 <= '0';
     end process ; -- read_a_coeff
 
-    --4.5: writes result_A_temp --> A[i,i+1]
+    --4.5: writes result_a_temp --> A[i,i+1]
     write_a : process(clk, run_a_loop, write_a_coeff)
     begin
         -- result is at result_a_temp
@@ -735,7 +736,7 @@ begin
         a_coeff_wr <= '0';
     end process ; -- write_a_coeff
 
-    --4.6: calculates the second part of fixed step equation (BU)
+    --4.6: calculates the second part coefficients of fixed step equation (hB)
     run_h_b : process(clk, run_a_loop,run_b_loop, b_is_read, h_is_read)
     variable proceed:std_logic  := '0';
     variable first_time: std_logic  := '1';
