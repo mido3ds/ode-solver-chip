@@ -57,3 +57,36 @@ fpu_unit_1 : entity work.fpu(rtl)
                 when others => 
                     address_pointer <= "000";
             end case;
+
+variable a_of_i : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+    variable h_var  : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+    
+    begin
+        if rising_edge(clk) and run_a_loop = '1' then
+            a_coeff_address <= (others => '0');
+            h_main_address <= (others => '0');
+            for I in 0 to N_N-1 loop
+                --each element(64) of A, multiply by h and add 1
+                a_coeff_rd <= '1';
+                h_main_rd  <= '1';
+                for j in 0 to 1 loop
+                    a_of_i(63-(j*32) downto 32-(j*32)) := a_coeff_data_out;
+                    fpu_add_2_in_1 <= a_coeff_address;
+                    fpu_add_2_in_2 <= X"0001";
+                    enable_add_2   <= '1';
+                    a_coeff_address <= fpu_add_2_out;
+
+                    h_var (63-(j*32) downto 32-(j*32)) := h_main_data_out; 
+                    fpu_add_3_in_1 <= h_main_address;
+                    fpu_add_3_in_2 <= X"0001";
+                    enable_add_3   <= '1';
+                    h_main_address <= fpu_add_3_out;
+                end loop ; 
+                enable_add_2   <= '0';
+                enable_add_3   <= '0';
+
+
+            end loop;
+
+        end if;
+        run_a_loop <= '0';

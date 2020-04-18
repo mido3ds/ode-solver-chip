@@ -37,6 +37,16 @@ architecture rtl of solver is
     signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1 : std_logic                                  := '0';
 
+    --FPU ADD 2
+    --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_add_2_in_1, fpu_add_2_in_2, fpu_add_2_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_add_2, err_add_2, zero_add_2, posv_add_2, enable_add_2 : std_logic                                  := '0';
+
+    --FPU ADD 3
+    --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
+    signal fpu_add_3_in_1, fpu_add_3_in_2, fpu_add_3_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_add_3, err_add_3, zero_add_3, posv_add_3, enable_add_3 : std_logic                                  := '0';
+
     --Memory signals:
     --RD/WR:
     signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
@@ -89,18 +99,36 @@ architecture rtl of solver is
     signal thisIsAdder : std_logic  := '0';
     signal thisIsSub : std_logic  := '1';
     --N, used in looping at X, A, B
-    signal N_X_A_B : integer range 1 to 50 ;
+    signal N_X_A_B : integer range 0 to 50 ;
     --M, used in looping at B, U
-    signal M_U_B :  integer range 1 to 50 ;
+    signal M_U_B :  integer range 0 to 50 ;
     --FIXED or VAR
     signal fixed_or_var : std_logic  := '0';
     --T_size
     signal t_size :  std_logic_vector(2 downto 0) := "000";
     --N*M, needed in looping at B
-    signal N_M:  integer range 1 to 2500 ;
+    signal N_M:  integer range 0 to 2500 ;
     --N*N, needed in looping at A
-    signal N_N:integer range 1 to 2500 ;
-    
+    signal N_N:  integer range 0 to 2500 ;
+    --run a and b processes
+    signal run_a_loop, a_high, a_is_read,write_a_coeff : std_logic  := '0';
+    signal a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    --signal N_N_temp: integer range 0 to 2500 ;
+    --read h
+    signal read_h_please,h_is_read,h_high : std_logic  := '0';
+    signal h_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
+
+    --result of a*H
+    signal result_a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
+
+    signal run_b_loop : std_logic  := '0';
+
+
+
+
+
 
 begin
     --ENTITIES:
@@ -132,6 +160,36 @@ begin
             err       => err_add_1,
             zero      => zero_add_1,
             posv      => posv_add_1,
+            add_sub   => thisIsAdder
+        );
+    fpu_add_2 : entity work.fpu_adder(rtl)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_add_2,
+            in_a      => fpu_add_2_in_1,
+            in_b      => fpu_add_2_in_2,
+            out_c     => fpu_add_2_out,
+            done      => done_add_2,
+            err       => err_add_2,
+            zero      => zero_add_2,
+            posv      => posv_add_2,
+            add_sub   => thisIsAdder
+        );
+    fpu_add_3 : entity work.fpu_adder(rtl)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_add_3,
+            in_a      => fpu_add_3_in_1,
+            in_b      => fpu_add_3_in_2,
+            out_c     => fpu_add_3_out,
+            done      => done_add_3,
+            err       => err_add_3,
+            zero      => zero_add_3,
+            posv      => posv_add_3,
             add_sub   => thisIsAdder
         );
     --Memo:
@@ -253,6 +311,9 @@ begin
     --4- fixed step size
     --5- variable step size
     --6- output is ready
+    --7- prepare A, run once
+    --8- prepare B, run once
+
 
     --1- RESET
     process (clk, rst)
@@ -261,7 +322,7 @@ begin
             --RESET fpu's:
             enable_mul_1            <= '1';
             enable_add_1            <= '1';
-
+            enable_add_2            <= '1';
             --Reset memory
             address_pointer <= (others => '0');
 
@@ -441,6 +502,8 @@ begin
                     fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_2'length));
                     enable_mul_1 <= '1';
                     N_N <= to_integer(unsigned(fpu_mul_1_out));
+                    --used in tracking and looping
+                    --N_N_temp <= to_integer(unsigned(fpu_mul_1_out));
                 when "100" =>
                     --a coefficient
                     a_coeff_data_in <= in_data;
@@ -451,7 +514,13 @@ begin
                     fpu_add_1_in_2 <= X"0001";
                     enable_add_1 <= '1';
                     a_coeff_address <= fpu_add_1_out;
+
+                    --I can read H here..
+                    read_h_please <= '1';
+
                 when "101" =>
+                    --since we got here, then A and H are ready
+                    run_a_loop <= '1';
                     --b coefficient
                     b_coeff_data_in <= in_data;
                     b_coeff_wr <= '1';
@@ -462,6 +531,8 @@ begin
                     enable_add_1 <= '1';
                     b_coeff_address <= fpu_add_1_out;
                 when "110" =>
+                    --Since we got here, then B and H are ready
+                    run_b_loop <= '1';
                     --X0
                     X_ware_data_in <= in_data;
                     X_ware_wr <= '1';
@@ -493,7 +564,9 @@ begin
     begin
         if rising_edge(clk) then
             if (err_mul_1 = '1'
-            or err_add_1 = '1')
+            or  err_add_1 = '1'
+            or  err_add_2 = '1'
+            )
             then
                 error_success <= '0';
                 interrupt <= '1';
@@ -512,5 +585,120 @@ begin
         null;
     end process ; -- FIXED
 
+    runA : process(clk, run_a_loop, a_is_read, h_is_read, write_a_coeff)
+        variable proceed:std_logic  := '0';
+        variable with_one: std_logic  := '0';
+        variable first_time: std_logic  := '1';
+        variable N_N_temp:  integer range 0 to 2500 ;
+        begin 
+        if rising_edge(clk) and run_a_loop = '1' and a_is_read = '1' and h_is_read = '1' then
+            if first_time = '1' then
+                N_N_temp := N_N;
+                first_time := '0';
+            end if;
+            N_N_temp := N_N_temp - 1;
+            --we reached the end of the loop            
+            if N_N_temp = 0 then 
+                proceed := '0'; 
+            else 
+                proceed := '1';
+            end if;
+            if proceed = '1' then
+                if with_one = '0' then
+                    fpu_mul_1_in_1 <= a_temp;
+                    fpu_mul_1_in_2 <= h_temp;
+                    enable_mul_1 <= '1';
+                    -- we will wait till writing :'(
+                    result_a_temp <= fpu_mul_1_out;
+                    with_one := '1';
+                    --write_a_coeff <= '1';
+                    --a_is_read <= '0'; --to read another A
+                else
+                    --then result_a_temp = h*A[i], and fpu_add_3 is not used because we're not reading h
+                    fpu_add_3_in_1 <= result_a_temp;
+                    fpu_add_3_in_2 <= X"0001";
+                    enable_add_3 <= '1';
+                    result_a_temp <= fpu_add_3_out;
+                    with_one := '0';
+                    write_a_coeff <= '1'; --write this one then read me another one
+                    a_is_read <= '0'; --read another one, after this one is written
+                end if;
+            end if;
+
+        end if;
+    end process ; -- runA
+
+    --This process responsible for reading coeff A at addresses [x,x+1]
+    --and update the address pointer for furhter adu
+    read_a_coeff : process(clk, run_a_loop, a_is_read, write_a_coeff)
+    begin
+        if rising_edge(clk) and run_a_loop = '1' and a_is_read = '0' and write_a_coeff = '0' then
+            if a_high = '0' then
+                --reading the low part
+                a_coeff_rd <= '1';
+                a_temp(63 downto 32) <= a_coeff_data_out;
+                a_high <= '1';
+            else
+                a_coeff_rd <= '1';
+                a_temp(31 downto 0) <= a_coeff_data_out;
+                a_high <= '0';
+                a_is_read <= '1';
+            end if;
+            fpu_add_2_in_1 <= a_coeff_address;
+            fpu_add_2_in_2 <= X"0001";
+            enable_add_2 <= '1';
+            a_coeff_address <= fpu_add_2_out;
+        end if;
+        --rga3 el-7aga zay ma kant!
+        a_coeff_rd <= '0';
+        enable_add_2 <= '0';
+    end process ; -- read_a_coeff
+
+    read_h_main : process(clk, h_is_read,read_h_please)
+    begin
+        if rising_edge(clk) and h_is_read = '0' and read_h_please='1' then
+            if h_high = '0' then
+                --reading the low part
+                h_main_rd <= '1';
+                h_temp(63 downto 32) <= h_main_data_out;
+                h_high <= '1';
+            else
+                h_main_rd <= '1';
+                h_temp(31 downto 0) <= h_main_data_out;
+                h_high <= '0';
+                h_is_read <= '1';
+            end if;
+            fpu_add_3_in_1 <= h_main_address;
+            fpu_add_3_in_2 <= X"0001";
+            enable_add_3 <= '1';
+            h_main_address <= fpu_add_2_out;
+        end if;
+        --rga3 el-7aga zay ma kant!
+        h_main_rd <= '0';
+        enable_add_3 <= '0';
+    end process ; -- read_a_coeff
+    --PROCESS to write result_A_temp --> A[i,i+1]
+    write_a : process(clk, run_a_loop, write_a_coeff )
+    begin
+        -- result is at result_a_temp
+        -- we can't read and write at the same time, so add_2 is free
+        if rising_edge(clk) and run_a_loop = '1' and write_a_coeff = '1' then
+            if a_high = '0' then
+                a_coeff_wr <= '1';
+                a_coeff_data_in <= result_a_temp (63 downto 32) ;
+                a_high <= '1';
+            else
+                a_coeff_wr <= '1';
+                a_coeff_data_in <= result_a_temp (31 downto 0) ;
+                a_high <= '0';
+            end if;
+            fpu_add_2_in_1 <= a_coeff_address;
+            fpu_add_2_in_2 <= X"0001";
+            enable_add_2 <= '1';
+            a_coeff_address <= fpu_add_2_out;
+        end if;
+        a_coeff_wr <= '0';
+        enable_add_2 <= '0';
+    end process ; -- write_a_coeff
 
 end architecture;
