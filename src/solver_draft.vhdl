@@ -90,3 +90,183 @@ variable a_of_i : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
 
         end if;
         run_a_loop <= '0';
+
+
+run_a_x : process(clk, run_x_loop)
+    variable first_time: std_logic  := '1';
+    variable proceed:std_logic  := '0';
+    variable N_N_count:  integer range 0 to 2500;
+    variable N_count: integer range 0 to 50;
+    begin
+        if rising_edge(clk) and run_x_loop ='1' then
+            if first_time = '1' then
+                first_time := '0';
+                N_N_count := N_N;
+                N_count := N_X_A_B;
+                a_coeff_address <= (others => '0');
+                X_ware_address <= (others => '0');
+            end if;
+            N_N_count := N_N_count - 1; 
+            N_count := N_count - 1;     
+            if N_N_count = 0 then 
+                proceed := '0';
+                run_x_loop <= '0';
+            else 
+                proceed := '1';
+            end if;
+            if N_count = 0 then
+                N_count := N_X_A_B;
+            end if;    
+            if proceed = '1' then
+                fpu_mul_1_in_1 <= a_temp;
+                fpu_mul_1_in_2 <= x_temp;
+                enable_mul_1 <= '1';
+                result_x_temp <= fpu_mul_1_out;
+                write_b_coeff <= '1';               
+            end if;
+        end if;
+    end process ;
+
+
+--4.5: writes result_a_temp --> A[i,i+1]
+write_a : process(clk, run_a_loop, write_a_coeff)
+begin
+    -- result is at result_a_temp
+    -- we can't read and write at the same time, so add_2 is free
+    if rising_edge(clk) and run_a_loop = '1' and write_a_coeff = '1' then
+        if a_high = '0' then
+            if decrement_a_address = '0' then 
+                a_coeff_wr <= '1';
+                a_coeff_data_in <= result_a_temp (63 downto 32) ;
+                a_high <= '1';
+                increment_a_address <= '1';
+            end if;
+        else
+            if increment_a_address = '0' then
+                a_coeff_wr <= '1';
+                a_coeff_data_in <= result_a_temp (31 downto 0) ;
+                a_high <= '0';
+                increment_a_address <= '1';
+            end if;
+        end if;
+    end if;
+    a_coeff_wr <= '0';
+end process ; -- write_a_coeff
+
+
+
+--4.3: responsible for reading coeff A at addresses [x,x+1]
+--and update the address pointer
+read_a_coeff : process(clk, run_a_loop, a_is_read, write_a_coeff)
+begin
+    if rising_edge(clk) and run_a_loop = '1' and a_is_read = '0' and write_a_coeff = '0' then
+        if a_high = '0' then
+            if increment_a_address = '0' then
+                --reading the low part
+                a_coeff_rd <= '1';
+                a_temp(63 downto 32) <= a_coeff_data_out;
+                a_high <= '1';
+                increment_a_address <= '1';
+            end if;
+        else
+            if increment_a_address = '0' then
+                a_coeff_rd <= '1';
+                a_temp(31 downto 0) <= a_coeff_data_out;
+                a_high <= '0';
+                a_is_read <= '1';
+                decrement_a_address <= '1';
+            end if;
+        end if;
+    end if;
+    --rga3 el-7aga zay ma kant!
+    a_coeff_rd <= '0';
+end process ; -- read_a_coeff
+
+
+
+
+--4.7: responsible for reading coeff B at addresses [x,x+1]
+--and update the address pointer
+read_b_coeff : process(clk, run_b_loop, b_is_read, write_b_coeff)
+begin
+    if rising_edge(clk) and run_b_loop = '1' and b_is_read = '0' and write_b_coeff = '0' then
+        if b_high = '0' then
+            if increment_b_address = '0' then
+                --reading the low part
+                b_coeff_rd <= '1';
+                b_temp(63 downto 32) <= b_coeff_data_out;
+                b_high <= '1';
+                increment_b_address <= '1';
+            end if;
+        else
+            if increment_b_address = '0' then
+                b_coeff_rd <= '1';
+                b_temp(31 downto 0) <= b_coeff_data_out;
+                b_high <= '0';
+                b_is_read <= '1';
+                decrement_b_address <= '1';
+            end if;
+        end if;
+    end if;
+    --rga3 el-7aga zay ma kant!
+    b_coeff_rd <= '0';
+end process ; -- read_a_coeff
+
+--4.8: writes result_b_temp to memory
+write_b : process(clk, run_b_loop, write_b_coeff)
+begin
+    -- result is at result_a_temp
+    -- we can't read and write at the same time, so add_2 is free
+    if rising_edge(clk) and run_b_loop = '1' and write_b_coeff = '1' then
+        if b_high = '0' then
+            if decrement_b_address = '0' then
+                b_coeff_wr <= '1';
+                b_coeff_data_in <= result_b_temp (63 downto 32) ;
+                b_high <= '1';
+                increment_b_address <= '1';
+            end if;
+        else
+            if increment_b_address = '0' then 
+                b_coeff_wr <= '1';
+                b_coeff_data_in <= result_b_temp (31 downto 0) ;
+                b_high <= '0';
+                increment_b_address <= '1';
+            end if;
+        end if;
+    end if;
+    b_coeff_wr <= '0';
+end process ; -- write_a_coeff
+
+
+
+--4.11: increments address of part B
+inc_b_address : process( clk, increment_b_address,done_add_2 )
+begin
+    if rising_edge (clk) and increment_b_address = '1' then
+        if done_add_2 = '0' then
+            fpu_add_2_in_1 <= b_coeff_address;
+            fpu_add_2_in_2 <= X"0001";
+            enable_add_2 <= '1';
+        else
+            b_coeff_address <= fpu_add_2_out;
+            enable_add_2 <= '0';
+            increment_b_address <='0';
+        end if;
+    end if;
+end process ; -- inc_b_address
+
+--4.12: decrements address of part B
+dec_b_address : process( clk, decrement_b_address, done_sub_1)
+begin
+    if rising_edge (clk) and decrement_b_address = '1' then
+        if done_sub_1 = '0' then
+            fpu_sub_1_in_1 <= b_coeff_address;
+            fpu_sub_1_in_2 <= X"0001";
+            enable_sub_1 <= '1'; 
+        else
+            b_coeff_address <= fpu_add_2_out;
+            enable_sub_1 <= '0';
+            decrement_b_address <='0';
+        end if;
+    end if;
+end process ; -- dec_b_address
