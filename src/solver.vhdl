@@ -136,9 +136,6 @@ architecture rtl of solver is
 
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
-    signal run_x_loop: std_logic := '0';
-    signal x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    signal result_x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
 begin
     --ENTITIES:
@@ -575,27 +572,34 @@ begin
             case fixed_point_state is
                 when "0000" => --wait for loop a and loop b
                     null;
-                when "0001" => --send new h to interpolater 
+                when "0001" => --send lower half of new h to interpolater 
+                    in_data <= h_temp(31 downto 0);
+                    adr <= X"2C33";
+                    fixed_point_state <= "0010";
+                when "0010" => --send higher half of new h to interpolater
+                    in_data <= h_temp(63 downto 32);
+                    adr <= X"2C33";
+                    fixed_point_state <= "0011";
+                when "0011" => --calculate AX
                     null;
-                when "0010" => --calculate AX
+                when "0100" => --save AX in intermediate register
                     null;
-                when "0011" => --save AX in intermediate register
+                when "0101" => --wait for interpolator done signal
                     null;
-                when "0100" => --wait for interpolator done signal
+                when "0110" => --calculate BU
                     null;
-                when "0101" => --calculate BU
+                when "0111" => --save BU
                     null;
-                when "0110" => --save BU
+                when "1000" => --AX + BU
                     null;
-                when "0111" => --AX + BU
+                when "1001" => --Xnew checks and save
                     null;
-                when "1000" => --Xnew checks and save
-                    null;
+                when "1010" => --double h for fixed step
+                    null;    
                 when "1111" => --processing state (FSM hibernation)      
                     null;   
-                --this is a mandatory!
-                --when others =>
-                --    null;             
+                when others =>
+                    null;             
             end case;
         end if;
     end process ;
@@ -912,7 +916,32 @@ dec_b_address : process( clk, decrement_b_address, done_sub_1 )
                 decrement_b_address <='0';
             end if;
         end if;
-    end process ; -- dec_a_address
+    end process ; -- dec_b_address
+
+    --4.13: responsible for reading current h (time sent to interpolator)
+    read_h_doubler : process(clk, h_doubler_read)
+    begin
+        if rising_edge(clk) and h_doubler_read = '1' then
+            if h__high = '0' then
+                --read the low part
+                h_doubler_rd <= '1';
+                h_doubler_temp(63 downto 32) <= h_doubler_data_out;
+                h_high <= '1';
+            else
+                --read the upper part
+                h_doubler_rd <= '1';
+                h_doubler_temp(31 downto 0) <= h_doubler_data_out;
+                h_high <= '0';
+            end if;
+            fpu_add_3_in_1 <= h_doubler_address;
+            fpu_add_3_in_2 <= X"0001";
+            enable_add_3 <= '1';
+            h_doubler_address <= fpu_add_2_out;
+        end if;
+        --reset signals
+        h_doubler_rd <= '0';
+        enable_add_3 <= '0';
+    end process ;
 
 
 end architecture;
