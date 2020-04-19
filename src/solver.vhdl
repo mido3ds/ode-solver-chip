@@ -26,6 +26,7 @@ end entity;
 architecture rtl of solver is
     --SIGNALS:
 
+    --SIGNALS FOR UNITS
     --FPU MUL 1
     --signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
     signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
@@ -63,6 +64,9 @@ architecture rtl of solver is
     signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
     signal int_mul_1_enbl : std_logic := '0';
 
+
+
+
     --Memory signals:
     --RD/WR:
     signal U_main_rd, U_main_wr                                        : std_logic                                  := '0';
@@ -85,6 +89,9 @@ architecture rtl of solver is
     signal a_coeff_data_in, a_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal b_coeff_data_in, b_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     
+
+
+
     --Solver module's signals:
     --SEMI PROCESSES ENABLES:
     signal run_mul_n_m : std_logic_vector(1 downto 0) := "00";
@@ -115,7 +122,7 @@ architecture rtl of solver is
     --N*N, needed in looping at A
     --signal N_N:  integer range 0 to 2500 ;
     --run a and b processes
-    signal run_a_loop, a_high, a_is_read,read_a_coeff,write_a_coeff, increment_a_address,decrement_a_address : std_logic  := '0';
+    signal a_high, read_a_coeff,write_a_coeff, increment_a_address,decrement_a_address : std_logic  := '0';
     signal a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
@@ -129,7 +136,7 @@ architecture rtl of solver is
     signal result_b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
     --run a and b processes
-    signal run_b_loop, b_high, b_is_read, read_b_coeff, write_b_coeff ,increment_b_address, decrement_b_address: std_logic  := '0';
+    signal b_high, read_b_coeff, write_b_coeff ,increment_b_address, decrement_b_address: std_logic  := '0';
     signal b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
     signal fsm_run_h_b : std_logic_vector(2 downto 0) := (others => '0');
@@ -468,7 +475,7 @@ begin
                 when "101" =>
                     --since we got here, then A and H are ready
                     if fixed_or_var = '0' then 
-                        run_a_loop <= '1';
+                        fsm_run_h_a <= "1111";
                     end if;
                     --b coefficient
                     b_coeff_data_in <= in_data;
