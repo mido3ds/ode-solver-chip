@@ -161,7 +161,7 @@ architecture rtl of solver is
     fsm_run_x_h
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
-    signal calculate_ax: std_logic := '0';
+    signal fsm_run_a_x: std_logic := '0';
     --Like a pointer at X_ware, once it changes address value is updated
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
@@ -606,7 +606,7 @@ begin
                     adr <= X"2C33";
                     fixed_point_state <= "0011";
                 when "0011" => --calculate AX
-                    calculate_ax <= '1';
+                    fsm_run_a_x <= '1';
                 when "0100" => --save AX in intermediate register
                     null;
                 when "0101" => --wait for interpolator done signal
@@ -1165,53 +1165,78 @@ begin
     end process ; -- dec_x_i_address
 
     --4.19: calculates AX
-    calc_ax : process(clk, calculate_ax)
-    variable proceed: std_logic  := '0';
-    variable first_time: std_logic  := '1';
-    variable N_N_count:  integer range 0 to 2500;
-    variable N_count:  integer range 0 to 50;
-    variable new_entry: std_logic_vector(MAX_LENGTH-1 downto 0);
+    proc_run_a_x : process(clk, fsm_run_a_x)
+    variable N_N_temp : std_logic_vector(15 downto 0) := (others => '0');
+    variable N_temp : std_logic_vector(15 downto 0) := (others => '0');
+    variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
-        if rising_edge(clk) and calculate_ax = '1' then
-            if first_time = '1' then
-                N_N_count := N_N;
-                N_count := N_X_A_B;
-                first_time := '0';
-                new_entry := (others => '0');
-                x_ware_address <= (others => '0');
-            end if;
-            N_N_count := N_N_count - 1;
-            N_count := N_count - 1;
-            --we reached the end of the loop            
-            if N_N_count = 0 then 
-                proceed := '0';
-                --EXIT LOOP
-                run_b_loop <= '0';
-            else 
-               proceed := '1';
-            end if;
-            --reset new entry accumulator
-            if N_count = 0 then 
-                N_count := N_X_A_B;
-                result_a_temp <= new_entry;
-                write_x <= '1';
-                new_entry := (others => '0'); 
-            end if;
-            --this statement needs to be divided into multiple cycles!!!
-            if proceed = '1' then
-                --multiply A entry with X entry
-                fpu_mul_1_in_1 <= a_temp;
-                fpu_mul_1_in_2 <= x_temp;
-                enable_mul_1 <= '1';
-                --add result to the current entry
-                fpu_sub_1_in_1 <= fpu_mul_1_out;
-                fpu_sub_1_in_2 <= new_entry;
-                enable_sub_1 <= '1'; 
-                --save result in the current entry
-                new_entry := fpu_add_2_out;         
-            end if;
+        if rising_edge(clk) then
+            case(fsm_run_a_x) is
+                when "000" =>
+                    -- initialization
+                    N_N_temp := N_N;
+                    N_temp := N_X_A_B_vec;
+                    new_entry := (others => '0');
+                    to_write := (others => '0');
+                    fsm_run_a_x <= "001";
+                when "001" =>
+                    --read A coeff nad X_c
+                    read_a_coeff <='1';
+                    read_x <= '1';
+                    fsm_run_a_x <= "010";
+                when "010" =>
+                    if read_a_coeff = '0' and read_x = '0' then --check for read completion
+                        --multiply a with x
+                        enable_mul_1 <= '1';
+                        fpu_mul_1_in_1 <= a_temp;
+                        fpu_mul_1_in_2 <= x_temp;
+                        fsm_run_a_x <= "011";
+                    end if;
+                when "011" =>
+                    if done_mul_1 = '1' then --check for multiply completion
+                        --add ax to the current entry
+                        enable_mul_1 <= '0';
+                        fpu_add_1_in_1 <= fpu_mul_1_out;
+                        fpu_add_1_in_2 <= new_entry;
+                        enable_add_1 <= '1';
+                        fsm_run_a_x <= "100";
+                    end if;
+                when "100" =>
+                    if done_add_1 = '1' then --check for add completion
+                        --get output and decrement N_N_temp and N_temp
+                        new_entry := fpu_add_1_out;
+                        address_dec_1_in <= N_N_temp;
+                        address_dec_1_enbl <= '1';
+                        address_dec_2_in <= N_temp;
+                        address_dec_2_enbl <= '1';
+                        fsm_run_a_x <= "101";
+                    end if;
+                when "101" =>
+                    --update counters
+                    N_N_temp <= address_dec_1_out;
+                    N_temp <= address_dec_2_out;
+                    --check if the end of the column is reached
+                    if N_temp = X"0000" then
+                        to_write := new_entry;
+                        result_x_temp <= to_write; --write the current entry
+                        write_x <= '1';
+                        N_temp <= N_X_A_B_vec; --reset N
+                        new_entry := (others => '0');
+                    end if;
+                    fsm_run_a_x <= "110";
+                when "110" =>
+                    if N_N_temp = X"0000" then --check if the end of the loop is reached
+                        fsm_run_a_x <= "111"; --return to the NOP state
+                    else
+                        fsm_run_a_x <= "001"; --return to the loop start
+                    end if;
+                when others =>
+                    --NOP state
+                    null;
+            end case ;
         end if;
-    end process; --calc_ax
+    end process; --proc_run_a_x
 
     --4.20: runs main computations for fixed and variable step
     --fsm_main_eq will be 3 bits for now...
