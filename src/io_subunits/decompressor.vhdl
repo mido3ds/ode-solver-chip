@@ -7,7 +7,7 @@ entity decompressor is
     port (
         in_data   : in std_logic_vector(31 downto 0);
         rst       : in std_logic;
-        enbl      : in std_logic;
+        enbl_in   : in std_logic;
         clk       : in std_logic;
 
         out_ready : out std_logic;
@@ -89,7 +89,7 @@ begin
     fill_flush_diff_subtractor : entity work.int_adder
         generic map(N => buf_fill_i'length, M => buf_flush_i'length)
         port map(
-            a    => buf_fill_i,
+            a    => out_as(0),
             b    => buf_flush_i_inv,
             cin  => '1',
             enbl => '1',
@@ -98,7 +98,7 @@ begin
 
     buf_dbg <= buf;
 
-    process (enbl, clk, rst)
+    process (enbl_in, clk, rst)
         procedure fill_buffer is
         begin
             --- foreach range pair
@@ -129,8 +129,8 @@ begin
 
         procedure flush_buffer is
         begin
-            if buf_is_empty = '0' and ((to_int(buf_fill_i) > to_int(buf_flush_i) and to_int(buf_fill_flush_diff) >= 31)
-                or to_int(buf_fill_i) < to_int(buf_flush_i)) then
+            if buf_is_empty = '0' and ((to_int(out_as(0)) > to_int(buf_flush_i) and to_int(buf_fill_flush_diff) >= 31)
+                or to_int(out_as(0)) < to_int(buf_flush_i)) then
                 if to_int(buf_flush_i) = 0 then
                     out_data <= flip(buf(32 - 1 downto 0));
                 elsif to_int(buf_flush_i) = 32 then
@@ -150,18 +150,16 @@ begin
             end if;
         end procedure;
     begin
-        if enbl = '0' then
-            out_data  <= (others => 'Z');
-            out_ready <= '0';
-        end if;
-
         if rst = '1' then
             buf_fill_i   <= (others => '1');
             buf_flush_i  <= (others => '0');
             buf_is_empty <= '1';
             out_ready    <= '0';
-        elsif rising_edge(clk) and enbl = '1' then
-            fill_buffer;
+        elsif rising_edge(clk) then
+            if enbl_in = '1' then
+                fill_buffer;
+            end if;
+
             flush_buffer;
         end if;
     end process;
