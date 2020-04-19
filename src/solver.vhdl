@@ -88,7 +88,7 @@ architecture rtl of solver is
     signal U_sub_address                                               : std_logic_vector(6 downto 0) := (others => '0');
     signal X_ware_address                                              : std_logic_vector(9 downto 0) := (others => '0');
     signal a_coeff_address                                             : std_logic_vector(12 downto 0) := (others => '0');
-    signal b_coeff_address                                             : std_logic_vector(13 downto 0) := (others => '0');
+    signal b_coeff_address                                             : std_logic_vector(12 downto 0) := (others => '0');
     signal X_intm_address                                              : std_logic_vector(6 downto 0) := (others => '0');
     
     --DATA in and out:
@@ -259,7 +259,7 @@ begin
             enbl   => address_inc_1_enbl
         );
 
-    address_dec_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_dec_1 : entity work.decrementor(rtl) generic map (N => ADDR_LENGTH)
         port map(
             a      => address_dec_1_in,
             c      => address_dec_1_out,
@@ -273,7 +273,7 @@ begin
             enbl   => address_inc_2_enbl
         );
 
-    address_dec_2 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_dec_2 : entity work.decrementor(rtl) generic map (N => ADDR_LENGTH)
         port map(
             a      => address_dec_2_in,
             c      => address_dec_2_out,
@@ -800,10 +800,12 @@ proc_run_h_b : process( clk, fsm_run_h_b )
                 when "110" =>
                         null;
                 when others =>
-                    --START working, init w kda
-                    b_coeff_address <= (others => '0');
-                    N_M_temp := N_M;
-                    fsm_run_h_b <= "001";
+                    if fsm_run_h_a = "0000" then
+                        --START working, init w kda
+                        b_coeff_address <= (others => '0');
+                        N_M_temp := N_M;
+                        fsm_run_h_b <= "001";
+                    end if;
             end case ;
 
         end if;
@@ -1416,12 +1418,12 @@ begin
                         enable_add_1 <= '1';
                         fpu_add_1_in_1 <= x_temp;
                         fpu_add_1_in_2 <= x_i_temp;
-                        result_x_i_temp<= fpu_add_1_out;
                         fsm_run_x_i_c <= "011";
                     end if;
                 when "011" =>
                     --store hb at b
                     if done_add_1 = '1' then
+                        result_x_i_temp<= fpu_add_1_out;
                         enable_add_1 <= '0';
                         write_x_i <= '1';
                         fsm_run_x_i_c <= "100";
@@ -1456,7 +1458,7 @@ begin
                     X_intm_address <= (others => '0');
                     --x_ware_address is already updated as C_ware is updated
                     --check proc_update_X_ware_address for more info :D
-                    N_X_A_B_TEMP := N_X_A_B;
+                    N_X_A_B_TEMP := N_X_A_B_vec;
                     fsm_run_x_i_c <= "001";
             end case ;
 
