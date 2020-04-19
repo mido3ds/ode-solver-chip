@@ -69,6 +69,7 @@ package common is
     function u_to_vec(i : unsigned; size : integer              := 16) return std_logic_vector;
 
     function to_std_logic(i     : integer) return std_logic;
+    function to_std_logic(i     : boolean) return std_logic;
 
     function to_int(i           : std_logic_vector) return integer;
     function to_int(i           : unsigned) return integer;
@@ -165,6 +166,15 @@ package body common is
     function to_std_logic(i : integer) return std_logic is
     begin
         if i = 1 then
+            return '1';
+        end if;
+
+        return '0';
+    end function;
+
+    function to_std_logic(i : boolean) return std_logic is
+    begin
+        if i then
             return '1';
         end if;
 
