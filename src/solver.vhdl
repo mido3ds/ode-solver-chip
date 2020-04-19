@@ -111,6 +111,7 @@ architecture rtl of solver is
     signal thisIsSub : std_logic  := '1';
     --N, used in looping at X, A, B
     signal N_X_A_B : integer range 0 to 50 ;
+    signal N_X_A_B_vec : std_logic_vector(15 downto 0) := (others => '0');
     --M, used in looping at B, U
     signal M_U_B :  integer range 0 to 50 ;
     --FIXED or VAR
@@ -120,8 +121,9 @@ architecture rtl of solver is
     --N*M, needed in looping at B
     --signal N_M:  integer range 0 to 2500 ;
     signal N_M: std_logic_vector(15 downto 0) :=(others => '0');
+    signal N_N: std_logic_vector(15 downto 0) :=(others => '0');
     --N*N, needed in looping at A
-    signal N_N:  integer range 0 to 2500 ;
+    --signal N_N:  integer range 0 to 2500 ;
     --run a and b processes
     signal run_a_loop, a_high, a_is_read,read_a_coeff,write_a_coeff, increment_a_address,decrement_a_address : std_logic  := '0';
     signal a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
@@ -140,9 +142,13 @@ architecture rtl of solver is
     signal run_b_loop, b_high, b_is_read, read_b_coeff, write_b_coeff ,increment_b_address, decrement_b_address: std_logic  := '0';
     signal b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
+    signal fsm_run_h_b : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_h_a : std_logic_vector(3 downto 0) := (others => '0');
+    
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     signal calculate_ax: std_logic := '0';
+
 
 begin
     --ENTITIES:
@@ -529,7 +535,8 @@ begin
                 when "110" =>
                     --Since we got here, then B and H are ready
                     if fixed_or_var = '0' then 
-                        run_b_loop <= '1';
+                        fsm_run_h_b <= "111";
+                        --at the begining of Fixed algorithm, you need to check that fsm_run_h_b = "000" or wait..
                     end if;
                     --X_ware[0] = X0
                     X_ware_data_in <= in_data;
@@ -591,6 +598,8 @@ begin
     --4.1: main fixed step driver
     fixed : process(clk, fixed_or_var, fixed_point_state) 
     begin
+    --NOTE YA SHAWKY: at the begining of Fixed algorithm,
+    --you need to check that fsm_run_h_b = "000" or wait..
         if rising_edge(clk) and fixed_or_var = '0' then
             case fixed_point_state is
                 when "0000" => --wait for loop a and loop b
@@ -627,145 +636,156 @@ begin
         end if;
     end process ;
 
-    --4.2: calculates the first part coefficients of fixed step equation (1+hA)
-    --runA : process(clk, run_a_loop, a_is_read, write_a_coeff, read_a_coeff)
-    --variable proceed:std_logic  := '0';
-    --variable with_one: std_logic  := '0';
-    --variable first_time: std_logic  := '1';
-    --variable N_N_temp:  integer range 0 to 2500 ;
-    --begin 
-    --    if rising_edge(clk) and run_a_loop = '1' and a_is_read = '1' then
-    --        if first_time = '1' then
-    --            N_N_temp := N_N;
-    --            a_coeff_address<= (others => '0');
-    --            first_time := '0';
-    --        end if;
-    --        --N_N_temp minused in subtractor and when with_one = 0 only
-    --        N_N_temp := N_N_temp - 1;
-    --        --we reached the end of the loop            
-    --        if N_N_temp = 0 then 
-    --            proceed := '0';
-    --            --EXIT LOOP
-    --            run_a_loop <= '0';
-    --        else 
-    --            proceed := '1';
-    --        end if;
-    --        if proceed = '1' then
-    --            if with_one = '0' then
-    --                fpu_mul_1_in_1 <= a_temp;
-    --                fpu_mul_1_in_2 <= h_temp;
-    --                enable_mul_1 <= '1';
-    --                -- we will wait till writing :'(
-    --                result_a_temp <= fpu_mul_1_out;
-    --                with_one := '1';
-    --                --write_a_coeff <= '1';
-    --                --a_is_read <= '0'; --to read another A
-    --            else
-    --                --then result_a_temp = h*A[i], and fpu_add_3 is not used because we're not reading h
-    --                fpu_add_3_in_1 <= result_a_temp;
-    --                fpu_add_3_in_2 <= X"0001";
-    --                enable_add_3 <= '1';
-    --                result_a_temp <= fpu_add_3_out;
-    --                with_one := '0';
-    --                write_a_coeff <= '1'; --write this one then read me another one
-    --                a_is_read <= '0'; --read another one, after this one is written
-    --            end if;
-    --        end if;
-    --    end if;
-    --end process ; -- runA
-
-    ----4.6: calculates the second part coefficients of fixed step equation (hB)
-    --run_h_b : process(clk, run_a_loop,run_b_loop, b_is_read, h_is_read)
-    --variable proceed:std_logic  := '0';
-    --variable first_time: std_logic  := '1';
-    --variable N_M_temp:  integer range 0 to 2500 ;
-    --begin
-    --    -- I will run when:
-    --    -- clk, I have the right, A is finished, next element is read, h is read.
-    --    if rising_edge(clk) and run_b_loop ='1' and run_a_loop ='0' and b_is_read='1' and h_is_read ='1' then
-    --        if first_time = '1' then
-    --            N_M_temp := N_M;
-    --            first_time := '0';
-    --            b_coeff_address <= (others => '0');
-    --        end if;
-    --        N_M_temp := N_M_temp - 1;
-    --        --we reached the end of the loop            
-    --        if N_N_temp = 0 then 
-    --            proceed := '0';
-    --            --EXIT LOOP
-    --            run_b_loop <= '0';
-    --        else 
-    --            proceed := '1';
-    --        end if;
-    --        if proceed = '1' then
-    --            fpu_mul_1_in_1 <= b_temp;
-    --            fpu_mul_1_in_2 <= h_temp;
-    --            enable_mul_1 <= '1';
-    --            -- we will wait till writing :'(
-    --            result_b_temp <= fpu_mul_1_out;
-    --            write_b_coeff <= '1';
-    --            b_is_read <= '0'; --to read another A                
-    --        end if;
-    --    end if;
-    --end process ; -- run_h_b
-
-proc_run_h_b : process( clk, fsm_run_h_b )
-variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0'); 
-begin
-    if rising_edge(clk) then
-        case( fsm_run_h_b ) is
-        
-            when "000" =>
-                --NOP for now
-                null;
-            when "001" =>
-                --read B coeff
-                --operated only once
-                read_b_coeff <='1';
-                fsm_run_h_b <= "010";
-            when "010" =>
-                if read_b_coeff = '0' then
-                    --b_temp holds current b element..
-                    enable_mul_1 <= '1';
-                    fpu_mul_1_in_1 <= b_temp;
-                    fpu_mul_1_in_2 <= h_main;
-                    result_b_temp<= fpu_mul_1_out;
-                    fsm_run_h_b <= "011";
-                end if;
-            when "011" =>
-                --store hb at b
-                if done_mul_1 = '1' then
-                    enable_mul_1 <= '0';
-                    write_b_coeff <= '1';
-                    fsm_run_h_b <= "011";
-                end if;
-            when "100" =>
-                -- check if we reached end of the loop!!
-                --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
-                -- if it's zero, we escape
-                if write_b_coeff = '0' then
-                    address_dec_1_in <= N_M_temp;
-                    fsm_run_h_b <= "101";
-                end if;
-            when "101" =>
-                N_M_temp := address_dec_1_out;
-                if N_M_temp = '0' then
-                    --end loop
-                    fsm_run_h_b <= "000";
-                else
-                    fsm_run_h_b <= "001";
-                end if;
-            when "110" =>
+proc_run_h_a : process( clk, fsm_run_h_a )
+    variable N_N_temp, N_N_temp_2 : std_logic_vector(15 downto 0) :=(others => '0');
+    variable N_X_A_B_2 : std_logic_vector(15 downto 0) :=(others => '0');
+    begin
+        if rising_edge (clk) then
+            case( fsm_run_h_a ) is
+            
+                when "0000" =>
+                    --END
                     null;
-            when others =>
-                --START working, init w kda
-                b_coeff_address <= (others => '0');
-                fsm_run_h_b <= "001";
-                N_M_temp := N_M;
-        end case ;
 
-    end if;
-end process ; -- proc_run_h_b
+                when "0001" =>
+                    read_a_coeff <= '1';
+                    fsm_run_h_a <= "0010";
+                when "0010" =>
+                    if read_a_coeff = '0' then
+                        enable_mul_1 <= '1';
+                        fpu_mul_1_in_1 <= a_temp;
+                        fpu_mul_1_in_2 <= h_main;
+                        fsm_run_h_a <= "0011";
+                    end if;
+                when "0011" =>
+                    if done_mul_1 = '1' then
+                        enable_mul_1 <= '0';
+                        --SHOULD WE ADD 1 ?????
+                        if N_N_temp_2 = N_N_temp then
+                            --add one
+                            fpu_add_1_in_1 <= a_temp;
+                            fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
+                            enable_add_1<= '1';
+                            fsm_run_h_a <= "0101";
+                        else
+                            --continue 3ady
+                            write_a_coeff <='1';
+                            fsm_run_h_a <= "0100";
+                        end if;
+                    end if;
+                when "0100" =>
+                    if write_a_coeff = '0' then
+                        if N_N_temp = '0' then
+                            a_coeff_address <= (others => '0');
+                            fsm_run_h_a <= "0000";
+                        else
+                            fsm_run_h_a <= "1110";
+                        end if;
+                    end if;
+                when "0101" => 
+                    if done_add_1 = '1' then
+                        enable_add_1<= '0';
+                        write_a_coeff <='1';
+                        fsm_run_h_a <= "0100";
+                    end if;
+                --when "0110" => 
+                --when "0111" => 
+                --when "1000" =>
+                --when "1001" =>
+                --when "1010" =>
+                --when "1011" =>
+                --when "1100" =>
+                when "1101" =>
+                    --disable dec
+                    N_N_temp := address_dec_1_out;
+                    fsm_run_h_a <= "0001";
+                when "1110" =>
+                    --decrement N_N_TEMP first
+                    address_dec_1_in <= N_N_temp;
+                    --add dec its enable
+                    --disable incrementer
+                    fsm_run_h_a <= "1101";
+                when "1111" =>
+                    --start here :D
+                    N_N_temp := N_N;
+                    N_N_temp_2 := N_N;
+                    address_inc_1 <= N_X_A_B_vec;
+                    N_X_A_B_2 := address_inc_1_out;
+                    --enable it
+                    
+
+                    a_coeff_address <= (others =>'0');
+                    fsm_run_h_a <= "1110";
+                when others =>
+                    null;
+            end case ;
+
+
+        end if;
+    end process ; -- proc_run_h_a
+
+    
+--If you want to run this:
+--fsm_run_h_b <= "111"
+--and wait until it equals "000"
+proc_run_h_b : process( clk, fsm_run_h_b )
+    variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0'); 
+    begin
+        if rising_edge(clk) then
+            case( fsm_run_h_b ) is
+            
+                when "000" =>
+                    --NOP for now
+                    null;
+                when "001" =>
+                    --read B coeff
+                    --operated only once
+                    read_b_coeff <='1';
+                    fsm_run_h_b <= "010";
+                when "010" =>
+                    if read_b_coeff = '0' then
+                        --b_temp holds current b element..
+                        enable_mul_1 <= '1';
+                        fpu_mul_1_in_1 <= b_temp;
+                        fpu_mul_1_in_2 <= h_main;
+                        result_b_temp<= fpu_mul_1_out;
+                        fsm_run_h_b <= "011";
+                    end if;
+                when "011" =>
+                    --store hb at b
+                    if done_mul_1 = '1' then
+                        enable_mul_1 <= '0';
+                        write_b_coeff <= '1';
+                        fsm_run_h_b <= "011";
+                    end if;
+                when "100" =>
+                    -- check if we reached end of the loop!!
+                    --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
+                    -- if it's zero, we escape
+                    if write_b_coeff = '0' then
+                        address_dec_1_in <= N_M_temp;
+                        fsm_run_h_b <= "101";
+                    end if;
+                when "101" =>
+                    N_M_temp := address_dec_1_out;
+                    if N_M_temp = '0' then
+                        --end loop
+                        b_coeff_address <= (others => '0');
+                        fsm_run_h_b <= "000";
+                    else
+                        fsm_run_h_b <= "001";
+                    end if;
+                when "110" =>
+                        null;
+                when others =>
+                    --START working, init w kda
+                    b_coeff_address <= (others => '0');
+                    fsm_run_h_b <= "001";
+                    N_M_temp := N_M;
+            end case ;
+
+        end if;
+    end process ; -- proc_run_h_b
 
 
    
