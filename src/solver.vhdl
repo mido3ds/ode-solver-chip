@@ -65,51 +65,32 @@ architecture rtl of solver is
 
     --Memory signals:
     --RD/WR:
-    --signal h_main_rd, h_main_wr                                        : std_logic                                  := '0';
-    --signal h_doubler_rd, h_doubler_wr                                  : std_logic                                  := '0';
-    --signal L_tol_rd, L_tol_wr                                          : std_logic                                  := '0';
-    --signal header_rd, header_wr                                        : std_logic                                  := '0';
     signal U_main_rd, U_main_wr                                        : std_logic                                  := '0';
     signal U_sub_rd, U_sub_wr                                          : std_logic                                  := '0';
     signal X_ware_rd, X_ware_wr                                        : std_logic                                  := '0';
     signal a_coeff_rd, a_coeff_wr                                      : std_logic                                  := '0';
     signal b_coeff_rd, b_coeff_wr                                      : std_logic                                  := '0';
-    --signal address_pointer_rd,  address_pointer_wr: std_logic := '0';
-    --signal error_rd, error_wr                                          : std_logic                                  := '0';
-
+    
     --Address:
-    --signal h_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    --signal h_doubler_address                                           : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    --signal L_tol_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    --signal header_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal U_main_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal U_sub_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal X_ware_address                                              : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal a_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    signal b_coeff_address                                             : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-    --signal address_pointer_address: std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
-    --signal error_address                                               : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-
+    signal U_main_address                                              : std_logic_vector(6 downto 0) := (others => '0');
+    signal U_sub_address                                               : std_logic_vector(6 downto 0) := (others => '0');
+    signal X_ware_address                                              : std_logic_vector(9 downto 0) := (others => '0');
+    signal a_coeff_address                                             : std_logic_vector(12 downto 0) := (others => '0');
+    signal b_coeff_address                                             : std_logic_vector(13 downto 0) := (others => '0');
+    
     --DATA in and out:
-    --signal h_main_data_in, h_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    --signal h_doubler_data_in, h_doubler_data_out                       : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    --signal L_tol_data_in, L_tol_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    --signal header_data_in, header_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal U_main_data_in, U_main_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal U_sub_data_in, U_sub_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal X_ware_data_in, X_ware_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal a_coeff_data_in, a_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal b_coeff_data_in, b_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-    --signal address_pointer_data_in, address_pointer_data_out:   std_logic_vector(WORD_LENGTH-1 downto 0) := (others => '0');
-    --signal error_data_in, error_data_out                               : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-
+    
     --Solver module's signals:
     --SEMI PROCESSES ENABLES:
     signal run_mul_n_m : std_logic_vector(1 downto 0) := "00";
 
 
     --range [0:5], acts like a pointer to X_ware
-    --signal counter      : std_logic_vector(2 downto 0)               := "000";
     --fp16, fp32, fp64
     signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
     --address pointer: keeps track when initializing
@@ -271,49 +252,10 @@ begin
             c       =>  int_mul_1_out
         );
 
+    --MEMORIES:
 
-    --Memory and Registers:
-    -- h_main--> two (32) regs.
-    --h_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-    --    port map(
-    --        clk      => clk,
-    --        rd       => h_main_rd,
-    --        wr       => h_main_wr,
-    --        address  => h_main_address,
-    --        data_in  => h_main_data_in,
-    --        data_out => h_main_data_out
-    --    );
-    --h_doubler : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-    --    port map(
-    --        clk      => clk,
-    --        rd       => h_doubler_rd,
-    --        wr       => h_doubler_wr,
-    --        address  => h_doubler_address,
-    --        data_in  => h_doubler_data_in,
-    --        data_out => h_doubler_data_out
-    --    );
-    ----tolerance register, will be initiated at the begining of the program.
-    --L_tol : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-    --    port map(
-    --        clk      => clk,
-    --        rd       => L_tol_rd,
-    --        wr       => L_tol_wr,
-    --        address  => L_tol_address,
-    --        data_in  => L_tol_data_in,
-    --        data_out => L_tol_data_out
-    --    );
-    ---- header: holds N,M,Count,FP,mode(fixed/variable)
-    --header : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 1)
-    --    port map(
-    --        clk      => clk,
-    --        rd       => header_rd,
-    --        wr       => header_wr,
-    --        address  => header_address,
-    --        data_in  => header_data_in,
-    --        data_out => header_data_out
-    --    );
     -- U_main
-    U_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100)
+    U_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rd       => U_main_rd,
@@ -323,7 +265,7 @@ begin
             data_out => U_main_data_out
         );
     -- U_sub
-    U_sub : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100)
+    U_sub : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rd       => U_sub_rd,
@@ -333,7 +275,7 @@ begin
             data_out => U_sub_data_out
         );
     -- X_warehouse, holds X0 and X_1:5 for outputs
-    X_ware : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600)
+    X_ware : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
         port map(
             clk      => clk,
             rd       => X_ware_rd,
@@ -343,7 +285,7 @@ begin
             data_out => X_ware_data_out
         );
     -- A
-    a_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000)
+    a_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000, ADR_LENGTH=>13)
         port map(
             clk      => clk,
             rd       => a_coeff_rd,
@@ -353,7 +295,7 @@ begin
             data_out => a_coeff_data_out
         );
     -- B
-    b_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000)
+    b_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000,ADR_LENGTH=>13)
         port map(
             clk      => clk,
             rd       => b_coeff_rd,
@@ -362,28 +304,7 @@ begin
             data_in  => b_coeff_data_in,
             data_out => b_coeff_data_out
         );
-    -- address_pointer
-    --address_pointer: entity work.ram(rtl) generic map (WORD_LENGTH=>WORD_LENGTH, NUM_WORDS=>1) 
-    -- port map(
-    --    clk => clk,
-    --    rd => address_pointer_rd,
-    --    wr => address_pointer_wr,
-    --    address => address_pointer_address,
-    --    data_in => address_pointer_data_in,
-    --    data_out => address_pointer_data_out
-    --);
-    -- error
-    --error : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 2)
-    --    port map(
-    --        clk      => clk,
-    --        rd       => error_rd,
-    --        wr       => error_wr,
-    --        address  => error_address,
-    --        data_in  => error_data_in,
-    --        data_out => error_data_out
-    --    );
-    --Many more register may be added....
-
+    
 
     --PROCESSES:
     --1- RESET --> Done
@@ -950,12 +871,13 @@ inc_a_address : process( clk, increment_a_address )
     begin
         if rising_edge(clk) and increment_a_address = '1' then
             if address_inc_1_enbl = '0' then
-                address_inc_1_in <= a_coeff_address;
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(12 downto 0) <= a_coeff_address;
                 address_inc_1_enbl <= '1';
                 a_coeff_rd <= '0';
                 a_coeff_wr <= '0';
             else
-                a_coeff_address <= address_inc_1_out;
+                a_coeff_address <= address_inc_1_out(12 downto 0);
                 address_inc_1_enbl <= '0';
                 increment_a_address <='0';
             end if;
@@ -965,12 +887,13 @@ dec_a_address : process( clk, decrement_a_address)
     begin
         if rising_edge(clk) and decrement_a_address = '1' then
             if address_dec_1_enbl = '0' then
-                address_dec_1_in <= a_coeff_address;
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(12 downto 0) <= a_coeff_address;
                 address_dec_1_enbl <= '1';
                 a_coeff_rd <= '0';
                 a_coeff_wr <= '0';
             else
-                a_coeff_address <= address_dec_1_out;
+                a_coeff_address <= address_dec_1_out(12 downto 0);
                 address_dec_1_enbl <= '0';
                 decrement_a_address <='0';
             end if;
@@ -1025,12 +948,13 @@ inc_b_address : process( clk, increment_b_address )
     begin
         if rising_edge(clk) and increment_b_address = '1' then
             if address_inc_1_enbl = '0' then
-                address_inc_1_in <= b_coeff_address;
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(12 downto 0) <= b_coeff_address;
                 address_inc_1_enbl <= '1';
                 b_coeff_rd <= '0';
                 b_coeff_wr <= '0';
             else
-                b_coeff_address <= address_inc_1_out;
+                b_coeff_address <= address_inc_1_out(12 downto 0);
                 address_inc_1_enbl <= '0';
                 increment_b_address <='0';
             end if;
@@ -1043,12 +967,13 @@ dec_b_address : process( clk, decrement_b_address)
     begin
         if rising_edge(clk) and decrement_b_address = '1' then
             if address_dec_1_enbl = '0' then
-                address_dec_1_in <= b_coeff_address;
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(12 downto 0) <= b_coeff_address;
                 address_dec_1_enbl <= '1';
                 b_coeff_rd <= '0';
                 b_coeff_wr <= '0';
             else
-                b_coeff_address <= address_dec_1_out;
+                b_coeff_address <= address_dec_1_out(12 downto 0);
                 address_dec_1_enbl <= '0';
                 decrement_b_address <='0';
             end if;
@@ -1103,12 +1028,13 @@ inc_x_address : process(clk, increment_x_address)
     begin
         if rising_edge(clk) and increment_x_address = '1' then
             if address_inc_1_enbl = '0' then
-                address_inc_1_in <= x_ware_address;
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(9 downto 0) <= x_ware_address;
                 address_inc_1_enbl <= '1';
                 x_ware_rd <= '0';
                 x_ware_wr <= '0';
             else
-                x_ware_address <= address_inc_1_out;
+                x_ware_address <= address_inc_1_out(9 downto 0);
                 address_inc_1_enbl <= '0';
                 increment_x_address <='0';
             end if;
@@ -1118,45 +1044,18 @@ dec_x_address : process(clk, decrement_x_address)
     begin
         if rising_edge(clk) and decrement_x_address = '1' then
             if address_dec_1_enbl = '0' then
-                address_dec_1_in <= x_ware_address;
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(9 downto 0) <= x_ware_address;
                 address_dec_1_enbl <= '1';
                 x_ware_rd <= '0';
                 x_ware_wr <= '0';
             else
-                x_ware_address <= address_dec_1_out;
+                x_ware_address <= address_dec_1_out(9 downto 0);
                 address_dec_1_enbl <= '0';
                 decrement_x_address <='0';
             end if;
         end if;       
     end process ; -- dec_x_address
-
-
-
-    ----4.13: responsible for reading current h (time sent to interpolator)
-    --read_h_doubler : process(clk, h_doubler_read)
-    --begin
-    --    if rising_edge(clk) and h_doubler_read = '1' then
-    --        if h__high = '0' then
-    --            --read the low part
-    --            h_doubler_rd <= '1';
-    --            h_doubler_temp(63 downto 32) <= h_doubler_data_out;
-    --            h_high <= '1';
-    --        else
-    --            --read the upper part
-    --            h_doubler_rd <= '1';
-    --            h_doubler_temp(31 downto 0) <= h_doubler_data_out;
-    --            h_high <= '0';
-    --        end if;
-    --        fpu_add_3_in_1 <= h_doubler_address;
-    --        fpu_add_3_in_2 <= X"0001";
-    --        enable_add_3 <= '1';
-    --        h_doubler_address <= fpu_add_2_out;
-    --    end if;
-    --    --reset signals
-    --    h_doubler_rd <= '0';
-    --    enable_add_3 <= '0';
-    --end process ;
-
 
     --process for AX calculation
     calc_ax : process(clk, calculate_ax)
