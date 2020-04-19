@@ -57,9 +57,9 @@ begin
                 in_data <= dcm_out_data;
 
                 when STATE_OUT =>
-                -- TODO: output logic
+                cpu_data <= in_data;
 
-                when others    => null;
+                when others => null;
             end case;
         end if;
     end process;
@@ -73,6 +73,7 @@ begin
 
             when STATE_OUT               =>
             in_data <= (others           => 'Z');
+            adr     <= (others           => 'Z');
 
             when others                  =>
             cpu_data <= (others          => 'Z');

@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.common.all;
 
 entity next_adr is
     port (
@@ -14,6 +15,16 @@ entity next_adr is
 end entity;
 
 architecture rtl of next_adr is
+    signal state          : std_logic_vector(1 downto 0);
+
+    constant STATE_NO_HDR : std_logic_vector(state'range) := to_vec(0, state'length);
 begin
-    -- TODO
+    process (clk, rst)
+    begin
+        if rst = '1' then
+            -- TODO
+        elsif rising_edge(clk) then
+            -- TODO
+        end if;
+    end process;
 end architecture;
