@@ -398,7 +398,7 @@ begin
     begin
         adr_var := resize(unsigned(adr),16);
         -- if in_State is           LOAD         or            WAIT      I can read..
-        if rising_edge(clk) and (in_state = "00" or in_state = "01") then
+        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
             case adr_var is
                 --Header
                 when X"0000" =>
@@ -461,7 +461,7 @@ begin
     enable_read : process (clk, in_state, in_data, adr)
     begin
         -- if in_State is           LOAD         or            WAIT      I can read..
-        if rising_edge(clk) and (in_state = "00" or in_state = "01") then
+        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
             case address_pointer is
                 when "001" =>
                     --Header only one clock for one variable:
@@ -567,7 +567,7 @@ begin
     --add here any other error_out signal that might occur
     error_occured : process(clk, err_mul_1, err_add_1,err_add_2,err_add_3)
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             if (err_mul_1 = '1'
             or  err_add_1 = '1'
             or  err_add_2 = '1'
@@ -594,7 +594,7 @@ begin
     begin
     --NOTE YA SHAWKY: at the begining of Fixed algorithm,
     --you need to check that fsm_run_h_b = "000" or wait..
-        if rising_edge(clk) and fixed_or_var = '0' then
+        if rst = '0' and rising_edge(clk) and fixed_or_var = '0' then
             case fixed_point_state is
                 when "0000" => --wait for loop a and loop b
                     null;
@@ -635,7 +635,7 @@ begin
     variable N_N_temp, N_N_temp_2 : std_logic_vector(15 downto 0) :=(others => '0');
     variable N_X_A_B_2 : std_logic_vector(15 downto 0) :=(others => '0');
     begin
-        if rising_edge (clk) then
+        if rst = '0' and rising_edge (clk) then
             case( fsm_run_h_a ) is
                 when "0000" =>
                     --END
@@ -737,7 +737,7 @@ begin
     proc_run_h_b : process( clk, fsm_run_h_b )
     variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case( fsm_run_h_b ) is
                 when "000" =>
                     --NOP for now
@@ -800,7 +800,7 @@ begin
     proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
     --variable first_operation: std_logic  := '0';
     begin
-        if rising_edge (clk) then
+        if rst = '0' and rising_edge (clk) then
             case( run_mul_n_m ) is
                 when "00" => null;
                 when "01" =>
@@ -829,7 +829,7 @@ begin
     --and store it at a_temp[63:0]
     proc_read_a_coeff : process(clk, read_a_coeff, write_a_coeff)
     begin
-        if rising_edge(clk) and read_a_coeff = '1' and write_a_coeff = '0' then
+        if rst = '0' and rising_edge(clk) and read_a_coeff = '1' and write_a_coeff = '0' then
             if a_high = '0' then
                 if increment_a_address = '0' then
                     --reading the low part
@@ -854,7 +854,7 @@ begin
     --This sub process takes data from resut_a_temo and stores it at a[adr,adr+1]
     proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
     begin
-        if rising_edge(clk) and read_a_coeff = '0' and write_a_coeff = '1' then
+        if rst = '0' and rising_edge(clk) and read_a_coeff = '0' and write_a_coeff = '1' then
             if a_high = '0' then
                 if decrement_a_address = '0' then 
                     a_coeff_wr <= '1';
@@ -877,7 +877,7 @@ begin
     --4.5: increments A address
     inc_a_address : process( clk, increment_a_address )
     begin
-        if rising_edge(clk) and increment_a_address = '1' then
+        if rst = '0' and rising_edge(clk) and increment_a_address = '1' then
             if address_inc_1_enbl = '0' then
                 address_inc_1_in <= (others => '0');
                 address_inc_1_in(12 downto 0) <= a_coeff_address;
@@ -895,7 +895,7 @@ begin
     --4.6: decrements A address
     dec_a_address : process( clk, decrement_a_address)
     begin
-        if rising_edge(clk) and decrement_a_address = '1' then
+        if rst = '0' and rising_edge(clk) and decrement_a_address = '1' then
             if address_dec_1_enbl = '0' then
                 address_dec_1_in <= (others => '0');
                 address_dec_1_in(12 downto 0) <= a_coeff_address;
@@ -913,7 +913,7 @@ begin
     --4.7: reads B coefficient
     proc_read_b_coeff : process(clk, read_b_coeff, write_b_coeff)
     begin
-        if rising_edge(clk) and read_b_coeff = '1' and write_b_coeff = '0' then
+        if rst = '0' and rising_edge(clk) and read_b_coeff = '1' and write_b_coeff = '0' then
             if b_high = '0' then
                 if increment_b_address = '0' then
                     --reading the low part
@@ -937,7 +937,7 @@ begin
     --4.8: writes B coefficient
     proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
     begin
-        if rising_edge(clk) and read_b_coeff = '0' and write_b_coeff = '1' then
+        if rst = '0' and rising_edge(clk) and read_b_coeff = '0' and write_b_coeff = '1' then
             if b_high = '0' then
                     if decrement_b_address = '0' then 
                         b_coeff_wr <= '1';
@@ -961,7 +961,7 @@ begin
     --4.9: increments B address
     inc_b_address : process( clk, increment_b_address )
     begin
-        if rising_edge(clk) and increment_b_address = '1' then
+        if rst = '0' and rising_edge(clk) and increment_b_address = '1' then
             if address_inc_1_enbl = '0' then
                 address_inc_1_in <= (others => '0');
                 address_inc_1_in(12 downto 0) <= b_coeff_address;
@@ -979,7 +979,7 @@ begin
     --4.10: decrements B address
     dec_b_address : process( clk, decrement_b_address)
     begin
-        if rising_edge(clk) and decrement_b_address = '1' then
+        if rst = '0' and rising_edge(clk) and decrement_b_address = '1' then
             if address_dec_1_enbl = '0' then
                 address_dec_1_in <= (others => '0');
                 address_dec_1_in(12 downto 0) <= b_coeff_address;
@@ -997,7 +997,7 @@ begin
     --4.11: reads X from X_ware
     proc_read_x : process(clk, read_x, write_x)
     begin
-        if rising_edge(clk) and read_x = '1' and write_x = '0' then
+        if rst = '0' and rising_edge(clk) and read_x = '1' and write_x = '0' then
             if x_high = '0' then
                 if increment_x_address = '0' then
                     --reading higher part
@@ -1022,7 +1022,7 @@ begin
     --4.12: write X in X_ware
     proc_write_x : process(clk, read_x, write_x)
     begin
-        if rising_edge(clk) and read_x = '0' and write_x = '1' then
+        if rst = '0' and rising_edge(clk) and read_x = '0' and write_x = '1' then
             if x_high = '0' then
                     if decrement_x_address = '0' then 
                         X_ware_wr <= '1';
@@ -1045,7 +1045,7 @@ begin
     --4.13: increments X address
     inc_x_address : process(clk, increment_x_address)
     begin
-        if rising_edge(clk) and increment_x_address = '1' then
+        if rst = '0' and rising_edge(clk) and increment_x_address = '1' then
             if address_inc_1_enbl = '0' then
                 address_inc_1_in <= (others => '0');
                 address_inc_1_in(9 downto 0) <= x_ware_address;
@@ -1063,7 +1063,7 @@ begin
     --4.14: decrements X address
     dec_x_address : process(clk, decrement_x_address)
     begin
-        if rising_edge(clk) and decrement_x_address = '1' then
+        if rst = '0' and rising_edge(clk) and decrement_x_address = '1' then
             if address_dec_1_enbl = '0' then
                 address_dec_1_in <= (others => '0');
                 address_dec_1_in(9 downto 0) <= x_ware_address;
@@ -1081,7 +1081,7 @@ begin
     --4.15: reads X intermediate
     proc_read_x_i : process(clk, read_x_i, write_x_i)
     begin
-        if rising_edge(clk) and read_x_i = '1' and write_x_i = '0' then
+        if rst = '0' and rising_edge(clk) and read_x_i = '1' and write_x_i = '0' then
             if x_i_high = '0' then
                 if increment_x_i_address = '0' then
                     --reading higher part
@@ -1106,7 +1106,7 @@ begin
     --4.16: writes X intermediate
     proc_write_x_i : process(clk, read_x_i, write_x_i)
     begin
-        if rising_edge(clk) and read_x_i = '0' and write_x_i = '1' then
+        if rst = '0' and rising_edge(clk) and read_x_i = '0' and write_x_i = '1' then
             if x_i_high = '0' then
                     if decrement_x_i_address = '0' then 
                         X_intm_wr <= '1';
@@ -1132,7 +1132,7 @@ begin
     --so I need another one...e4m3na hwa :'(
     inc_x_i_address : process(clk, increment_x_i_address)
     begin
-        if rising_edge(clk) and increment_x_i_address = '1' then
+        if rst = '0' and rising_edge(clk) and increment_x_i_address = '1' then
             if address_inc_2_enbl = '0' then
                 address_inc_2_in <= (others => '0');
                 address_inc_2_in(6 downto 0) <= X_intm_address;
@@ -1150,7 +1150,7 @@ begin
     --4.18: decrements X_i address
     dec_x_i_address : process(clk, decrement_x_i_address)
     begin
-        if rising_edge(clk) and decrement_x_i_address = '1' then
+        if rst = '0' and rising_edge(clk) and decrement_x_i_address = '1' then
             if address_dec_2_enbl = '0' then
                 address_dec_2_in <= (others => '0');
                 address_dec_2_in(6 downto 0) <= X_intm_address;
@@ -1172,7 +1172,7 @@ begin
     variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case(fsm_run_a_x) is
                 when "000" =>
                     -- initialization
@@ -1247,7 +1247,7 @@ begin
     variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case(fsm_run_x_b_u) is
                 when "0000" =>
                     -- initialization
@@ -1342,7 +1342,7 @@ begin
     --      exit
     proc_run_main_eq : process(clk, fsm_main_eq )
     begin
-        if rising_edge (clk) then
+        if rst = '0' and rising_edge (clk) then
             case( fsm_main_eq ) is
             
                 when "001" =>
@@ -1402,7 +1402,7 @@ begin
     proc_run_x_h : process(clk,fsm_run_x_h )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case( fsm_run_x_h ) is
                 when "000" =>
                     --NOP for now
@@ -1484,7 +1484,7 @@ begin
     proc_run_x_i_c : process(clk, fsm_run_x_i_c )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
-        if rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case( fsm_run_x_i_c ) is
                 when "000" =>
                     --NOP for now
