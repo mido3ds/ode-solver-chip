@@ -166,6 +166,9 @@ Based on the previous definition, this design doesn't implement parallelism. As 
     \item and repeat.
 \end{itemize}
 
+\subsection{Communication and Clock Edges}
+Module $X$ sends data and address on \textbf{only positive edge} of the clock, and module $Y$ receives data on \textbf{either the following positive or negative edge} of the clock.
+
 \part{Simulation Workflow}
 \section{Input Preprocessing}
 This stage is the responsibility of a script that runs before the simulation:
