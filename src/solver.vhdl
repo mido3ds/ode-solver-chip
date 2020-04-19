@@ -443,7 +443,7 @@ begin
                     U_main_wr <= '0';
                     address_pointer <= "000";
                 --Us, not mine
-                when X"29D8" =>
+                when X"29DB" =>
                     address_pointer <= "000";
                 --Uint
                 when X"2BCF" =>

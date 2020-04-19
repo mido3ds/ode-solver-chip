@@ -54,7 +54,7 @@ package common is
     constant MM_T_0             : std_logic_vector(15 downto 0) := X"29D1";
     constant MM_T_1             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 10);
 
-    constant MM_U_S_0           : std_logic_vector(15 downto 0) := X"29D8";
+    constant MM_U_S_0           : std_logic_vector(15 downto 0) := X"29DB";
     constant MM_U_S_1           : std_logic_vector(15 downto 0) := other_adr(MM_U_S_0, 500);
 
     constant MM_U_INT_0         : std_logic_vector(15 downto 0) := X"2BCF";
@@ -73,6 +73,7 @@ package common is
 
     function to_int(i           : std_logic_vector) return integer;
     function to_int(i           : unsigned) return integer;
+    function to_int(i           : std_logic) return integer;
 
     function to_str(a           : std_logic_vector) return string;
     function to_str(a           : unsigned) return string;
@@ -145,6 +146,15 @@ package body common is
     function to_int(i : std_logic_vector) return integer is
     begin
         return to_integer(unsigned(i));
+    end function;
+
+    function to_int(i : std_logic) return integer is
+    begin
+        if i = '0' then
+            return 0;
+        end if;
+
+        return 1;
     end function;
 
     function to_int(i : unsigned) return integer is
