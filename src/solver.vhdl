@@ -53,11 +53,15 @@ architecture rtl of solver is
     --ADDRESS INCREMENTOR 1, ADDR_LENGTH is the maximum..
     signal address_inc_1_in, address_inc_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
     signal address_inc_1_enbl : std_logic := '0';
+    
     signal address_dec_1_in, address_dec_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
     signal address_dec_1_enbl : std_logic := '0';
 
     signal int_adder_1_in_1,int_adder_1_in_2,int_adder_1_out: std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
     signal int_adder_1_enbl, int_adder_1_cin, int_adder_1_cout: std_logic := '0';
+
+    signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+    signal int_mul_1_enbl : std_logic := '0';
 
     --Memory signals:
     --RD/WR:
@@ -101,7 +105,7 @@ architecture rtl of solver is
 
     --Solver module's signals:
     --SEMI PROCESSES ENABLES:
-    signal run_mul_n_m : std_logic  := '0';
+    signal run_mul_n_m : std_logic_vector(1 downto 0) := "00";
 
 
     --range [0:5], acts like a pointer to X_ware
@@ -118,6 +122,7 @@ architecture rtl of solver is
     signal N_X_A_B_vec : std_logic_vector(15 downto 0) := (others => '0');
     --M, used in looping at B, U
     signal M_U_B :  integer range 0 to 50 ;
+    signal M_U_B_vec :  std_logic_vector(15 downto 0) := (others => '0');
     --FIXED or VAR
     signal fixed_or_var : std_logic  := '0';
     --T_size
@@ -257,6 +262,13 @@ begin
             cin     =>  int_adder_1_cin,
             c       =>  int_adder_1_out,
             cout    =>  int_adder_1_cout
+        );
+    int_mul_1 : entity work.int_multiplier(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
+        port map(
+            a       =>  int_mul_1_in_1,
+            b       =>  int_mul_1_in_2,
+            enbl    =>  int_mul_1_enbl,
+            c       =>  int_mul_1_out
         );
 
 
@@ -488,6 +500,8 @@ begin
                 when "001" =>
                     --Header only one clock for one variable:
                     --Up till now, 'header' register is useless
+                    N_X_A_B_vec <= in_data(31 downto 26);
+                    M_U_B_vec <= in_data(25 downto 20);
                     N_X_A_B <= to_int(in_data(31 downto 26));
                     M_U_B <= to_int(in_data(25 downto 20));
                     fixed_or_var <= in_data(19);
@@ -506,7 +520,7 @@ begin
                     end if;
                     --this signal will initiate both:
                     -- N*M and N*N
-                    run_mul_n_m <= '1'; 
+                    run_mul_n_m <= "11"; 
 
                 when "011" =>
                     --error tolerance
@@ -858,34 +872,33 @@ proc_run_h_b : process( clk, fsm_run_h_b )
     --     end if;
     -- end process ;
 
---proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m,done_mul_1 )
---    variable first_operation: std_logic  := '0';
---    begin
---        if rising_edge (clk) and run_mul_n_m = '1' then
---            if first_operation = '0' then
---                if done_mul_1 = '0' then
---                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
---                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(M_U_B, fpu_mul_1_in_2'length));
---                    enable_mul_1 <= '1';
---                else
---                    enable_mul_1 <= '0';
---                    --N_M <= to_integer(unsigned(fpu_mul_1_out));
---                    N_M <= fpu_mul_1_out;
---                    first_operation := '1';
---                end if;
---            else
---                if done_mul_1 = '0' and enable_mul_1 <= '0' then
---                    fpu_mul_1_in_1 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_1'length));
---                    fpu_mul_1_in_2 <= std_logic_vector(to_unsigned(N_X_A_B, fpu_mul_1_in_2'length));
---                    enable_mul_1 <= '1';
---                else
---                    enable_mul_1 <= '0';
---                    N_N <= to_integer(unsigned(fpu_mul_1_out));
---                    run_mul_n_m <= '0';
---                end if;
---            end if;
---        end if;
---    end process ; -- proc_run_n_m_and_n_n
+proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
+    --variable first_operation: std_logic  := '0';
+    begin
+        if rising_edge (clk) then
+            case( run_mul_n_m ) is
+            
+                when "00" => null;
+                when "01" =>
+                    --assuming answer is ready
+                    N_N <= int_mul_1_out;
+                    int_mul_1_in_2 <= M_U_B;
+                    int_mul_1_enbl <= '1';
+                    run_mul_n_m <= "01";
+                when "10" =>
+                    N_M <= int_mul_1_out;
+                    int_mul_1_enbl <= '0';
+                    run_mul_n_m <= "00";
+                when others =>
+                    --11
+                    --START
+                    int_mul_1_enbl <= '1';
+                    int_mul_1_in_1 <= N_X_A_B;
+                    int_mul_1_in_2 <= N_X_A_B;
+                    run_mul_n_m <= "01";
+            end case ;
+        end if;
+    end process ; -- proc_run_n_m_and_n_n
 
 --This sub_process is responsible for reading a[address,address+1]
 --and store it at a_temp[63:0]
