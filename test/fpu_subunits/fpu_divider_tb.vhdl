@@ -93,8 +93,73 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        if run("test_case_name") then
-            -- TODO
+        if run("all") then
+			-- testing overflow error
+		   testa <= "0000000000000000000000000000000000000000000000000111111110000000";
+		   testb <= "0000000000000000000000000000000000000000000000000000000000000001";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;
+		   ASSERT(testDone ='1' and testErr = '1' and testZero = '0' and testPosv = '0') REPORT  "Overflow test failed" SEVERITY ERROR; 
+		   
+		   -- testing divide by zero error 
+		   testa <= "0000000000000000000000000000000000000000000000000111111110000000";
+		   testb <= "0000000000000000000000000000000000000000000000000000000000000000";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;				
+		   ASSERT(testDone ='1' and testErr = '1' and testZero = '0' and testPosv = '0') REPORT  "Divide by zero test failed" SEVERITY ERROR; 
+
+		   -- testing operation while enable is 0 (it should reset all except error state)
+		   testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+		   testb <= "0000000000000000000000000000000000000000000000000100100011100001";	
+		   rst   <= '0';
+		   enbl  <= '0';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"0000000000000000" and testDone ='0' and testErr = '1' and testZero = '0' and testPosv = '0') REPORT  "Enable 0 test failed" SEVERITY ERROR;  
+
+		   -- resetting	while enable is 0 
+		   testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+		   testb <= "0000000000000000000000000000000000000000000000000100100011100001";	
+		   rst   <= '1';
+		   enbl  <= '0';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"0000000000000000" and testDone ='0' and testErr = '0' and testZero = '0' and testPosv = '0') REPORT  "Reset test failed" SEVERITY ERROR;  
+
+
+		   -- testing valid positive / positive operation 
+		   testa <= "0000000000000000000000000000000000000000000000000111111110000000";
+		   testb <= "0000000000000000000000000000000000000000000000000000010100000000";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"0000000000000CC0" and testDone ='1' and testErr = '0' and testZero = '0' and testPosv = '1') REPORT  "positive / positive test failed" SEVERITY ERROR;
+
+		   -- testing valid positive / negative operation 
+		   testa <= "1111111111111111111111111111111111111111111111111000000010000000";
+		   testb <= "0000000000000000000000000000000000000000000000000000010100000000";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"FFFFFFFFFFFFF340" and testDone ='1' and testErr = '0' and testZero = '0' and testPosv = '0') REPORT  "positive / negative test failed" SEVERITY ERROR;
+
+		   -- testing valid negative / negative operation 
+		   testa <= "1111111111111111111111111111111111111111111111111000000010000000";
+		   testb <= "1111111111111111111111111111111111111111111111111111101100000000";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"0000000000000CC0" and testDone ='1' and testErr = '0' and testZero = '0' and testPosv = '1') REPORT  "negative / negative test failed" SEVERITY ERROR;
+		   
+		   -- testing valid zero / number operation 
+		   testa <= "0000000000000000000000000000000000000000000000000000000000000000";
+		   testb <= "1111111111111111111111111111111111111111111111111000000010000000";	
+		   rst   <= '0';
+		   enbl  <= '1';
+		   wait for CLKPERIOD;				
+		   ASSERT(testc = x"0000000000000000" and testDone ='1' and testErr = '0' and testZero = '1' and testPosv = '0') REPORT  "zero / number test failed" SEVERITY ERROR;
+
+
         end if;
 
         wait for CLK_PERD/2;
