@@ -124,6 +124,9 @@ architecture rtl of solver is
     --run a and b processes
     signal a_high, read_a_coeff,write_a_coeff, increment_a_address,decrement_a_address : std_logic  := '0';
     signal a_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
+    signal x_high, read_x, write_x, increment_x_address, decrement_x_address : std_logic  := '0';
+    signal result_x_temp,x_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
     --signal read_h_please,h_is_read,h_high : std_logic  := '0';
@@ -633,7 +636,7 @@ proc_run_h_a : process( clk, fsm_run_h_a )
                     end if;
                 when "0100" =>
                     if write_a_coeff = '0' then
-                        if N_N_temp = '0' then
+                        if N_N_temp = X"0000" then
                             --END LOOOOOP
                             a_coeff_address <= (others => '0');
                             fsm_run_h_a <= "0000";
@@ -683,7 +686,7 @@ proc_run_h_a : process( clk, fsm_run_h_a )
                     N_N_temp := N_N;
                     --this var to keep track of % N+1
                     N_N_temp_2 := N_N;
-                    address_inc_1 <= N_X_A_B_vec;
+                    address_inc_1_in <= N_X_A_B_vec;
                     address_inc_1_enbl <= '1';
                     a_coeff_address <= (others =>'0');
                     fsm_run_h_a <= "1110";
@@ -741,7 +744,7 @@ proc_run_h_b : process( clk, fsm_run_h_b )
                 when "101" =>
                     address_dec_1_enbl <= '0';
                     N_M_temp := address_dec_1_out;
-                    if N_M_temp = '0' then
+                    if N_M_temp = X"0000" then
                         --end loop
                         b_coeff_address <= (others => '0');
                         fsm_run_h_b <= "000";
@@ -810,7 +813,7 @@ proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
                 when "01" =>
                     --assuming answer is ready
                     N_N <= int_mul_1_out;
-                    int_mul_1_in_2 <= M_U_B;
+                    int_mul_1_in_2 <= M_U_B_vec;
                     int_mul_1_enbl <= '1';
                     run_mul_n_m <= "01";
                 when "10" =>
@@ -821,8 +824,8 @@ proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
                     --11
                     --START
                     int_mul_1_enbl <= '1';
-                    int_mul_1_in_1 <= N_X_A_B;
-                    int_mul_1_in_2 <= N_X_A_B;
+                    int_mul_1_in_1 <= N_X_A_B_vec;
+                    int_mul_1_in_2 <= N_X_A_B_vec;
                     run_mul_n_m <= "01";
             end case ;
         end if;
