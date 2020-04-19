@@ -166,6 +166,9 @@ Based on the previous definition, this design doesn't implement parallelism. As 
     \item and repeat.
 \end{itemize}
 
+\subsection{Communication and Clock Edges}
+Module $X$ sends data and address on \textbf{only positive edge} of the clock, and module $Y$ receives data on \textbf{either the following positive or negative edge} of the clock.
+
 \part{Simulation Workflow}
 \section{Input Preprocessing}
 This stage is the responsibility of a script that runs before the simulation:
@@ -245,43 +248,34 @@ You can turn the output into human-readable json using output-formatting script.
 \section{Memory Mapping}
 The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
 
-The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
+The address loaded at the bus resembles what kind of data is on data bus.
 
-If address bus is loaded with an address \emph{Adr} that some module \emph{M} is not assigned to, module \emph{M} must ignore the data and address bus so the rest can communicate.
+If address bus is loaded with an address \emph{Adr} that some module \emph{M} is not assigned to, module \emph{M} must ignore the data and address bus so the rest can use the bus.
 
 This way communication is simplified.
-
-\emph{A} column for module \emph{M} is the action of the address taken at module \emph{M} when it sees that address. It's either:
-
-\begin{itemize}
-    \item \emph{W}: \textbf{Write to} module \emph{M}. Module \emph{M} is expected to \textbf{read} the data bus and store data internally, so the other module \emph{wrote} to module \emph{M}.
-    \item \emph{R}: \textbf{Read from} module \emph{M}. Module \emph{M} is expected to \textbf{write} some data to the data bus as response to this address, so the other module \textbf{reads} from it.
-\end{itemize}
 
 \subsection{Solver Memory Mapping}
 Solver module listens at the addresses listed in Table \ref{tab:solver-mem}.
 
 \begin{center}
     \captionof{table}{Solver Memory Mapping\label{tab:solver-mem}}
- \begin{tabular}{||l| c| c| c| c| l||} 
+ \begin{tabular}{||l| c| c| c| l||} 
  \hline
- Address & A & Type & Words & Name & Description  \\ [0.5ex] 
+ Address &Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0x0001  & W & f64 & 2 & H & Timestep (variable step mode)  \\
+ 0x0001  & f64 & 2 & H & Timestep (variable step mode)  \\
  \hline
- 0x0003  & W & f64 & 2 & Error & Error Tolerance (variable step mode) \\
+ 0x0003  & f64 & 2 & Error & Error Tolerance (variable step mode) \\
  \hline
- 0x0005  & W & f64[50][50] & 5000 & A & Matrix A \\
+ 0x0005  & f64[50][50] & 5000 & A & Matrix A \\
  \hline
- 0x138D  & W & f64[50][50] & 5000 & B & Matrix B \\
+ 0x138D  & f64[50][50] & 5000 & B & Matrix B \\
  \hline
- 0x2715  & W & f64[50] & 100 & X & Initial value of X \\
+ 0x2715  & f64[50] & 100 & X & Initial value of X \\
  \hline
- 0x2779  & R & f64[50][5] & 500 & X$_{out}$ & Final Output X \\
- \hline
- 0x296D  & W & f64[50] & 100 & U$_{0}$ & Initial U vector \\
+ 0x296D  & f64[50] & 100 & U$_{0}$ & Initial U vector \\
  \hline
 \end{tabular}
 \end{center}
@@ -291,21 +285,19 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 
 \begin{center}
     \captionof{table}{Interpolator Memory Mapping\label{tab:interp-mem}}
- \begin{tabular}{||l |c| c| c| c| l||} 
+ \begin{tabular}{||l | c| c| c| l||} 
  \hline
- Address & A & Type & Words & Name & Description  \\ [0.5ex] 
+ Address & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
   \hline
-  0x296D  & W & f64[50] & 100 & U$_0$ & Initial U vector \\
+  0x296D  & f64[50] & 100 & U$_0$ & Initial U vector \\
  \hline
- 0x29D1  & W & f64[5] & 10 & T & Time points of solutions  \\
+ 0x29D1  & f64[5] & 10 & T & Time points of solutions  \\
  \hline
- 0x29D8  & W & f64[50][5] & 500 & U$_s$ & U vector at required time steps \\
+ 0x29D8  & f64[50][5] & 500 & U$_s$ & U vector at required time steps \\
  \hline
- 0x2BCF  & R & f64[50] & 100 & U$_{int}$ & Interpolated U Vector \\
- \hline
- 0x2C33  & W & f64 & 2 & h$_{new}$ & Time to calculate U at \\
+ 0x2C33  & f64 & 2 & h$_{new}$ & Time to calculate U at \\
  \hline
 \end{tabular}
 \end{center}
@@ -378,9 +370,13 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
 
 \subsubsection{Role}
 \begin{itemize}
-    \item Receive packets of 32 bits from the CPU through \emph{DATA} bus.
-    \item Decompress the data.
-    \item Send the decompressed data to the data-bus.
+    \item In LOAD/WAIT state:
+    \begin{itemize}
+        \item Receive packets of 32 bits from the CPU through \emph{DATA} bus.
+        \item Decompress the data.
+        \item Send the decompressed data to the data-bus.
+    \end{itemize}
+    \item In OUT state: just connect the internal data bus with external data bus.
 \end{itemize}
 
 \subsubsection{Ports}
@@ -423,7 +419,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
     \item Computes the upcoming X knowing h, the previous X and U.
     \item Counts the error difference and the new h.
     \item Checks for arithmetic errors that may occurs (e.g. div. by zero).
-    \item Outputs the final X's at the desired times to the RAM.
+    \item Outputs the final X's at the desired times to the internal RAM.
 \end{itemize}
 
 \subsubsection{Ports}
