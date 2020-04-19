@@ -421,3 +421,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# ignore latex-formatter output
+__latexindent_temp*

@@ -118,15 +118,20 @@ Set the current major state of the machine.
 
 \section{Pipelining} 
 \label{sec:pipeline}
-Main module has only one pipeline with 2 stages, the solver and the interpolator.
-The solver calculates the next $X_h$ while the interpolator calculates $U_{h2}$.
+% Main module has only one pipeline with 2 stages, the solver and the interpolator.
+% The solver calculates the next $X_h$ while the interpolator calculates $U_{h2}$.
+Solver's main equation to calulate is Xn+1 = Xn + hAXn + hBUn, so we can divide it into two parts, 
+part 1: Xn + hAXn, and part 2: hBUn, so our approach is that at the begining of operating that equation
+Solver sends 'h' to the interpolator, at which it (interpolator) will calculate U, meanwhile, solver is calculcating the first part (part 1), and when interpolator is finished, it sends 'done' signal to solver and raises the value at the bus,
+solver then proceed with the second part of the equation (part 2).
 
-\subsection{Possible Hazards}
-\subsubsection{In Fixed Step Mode} 
-The only problem is when the unit reachs the last $X$, then the upcoming $h$ will be garbage or unwanted $h$, and the unit will terminate either ways.
+\subsection{Possible Pitfalls}
+% \subsubsection{In Fixed Step Mode} 
+% The only problem is when the unit reachs the last $X$, then the upcoming $h$ will be garbage or unwanted $h$, and the unit will terminate either ways.
 
-\subsubsection{In Adaptive/Variable Step Mode} 
-When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, and when solver is calculating $X_{h/2}$ and $X_{h}$, interpolator will be calculating $U_{h}*$, $h*$ is the $h$ from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and orders it to calculate $U_{hnew}$.
+% \subsubsection{In Adaptive/Variable Step Mode} 
+% When solver is calculating $X_h$, interpolator is busy calculating $U_{h/2}$, and when solver is calculating $X_{h/2}$ and $X_{h}$, interpolator will be calculating $U_{h}*$, $h*$ is the $h$ from the algorithm equation, which is $h = \frac{0.9 \times h^2 \times L}{e}$, this $U_{h}$* might not even be used, and then, solver will interrupt the interpolator, and orders it to calculate $U_{hnew}$.
+That whole assumption is built based on that part 1 of the solver's main equation is polynomial wrt. N (no. of elements at X), while the interpolator's whole equation is Linear in (M), that's why most of the time no delay will occur or be noticeable.
 
 \section{Parallelism}
 \label{sec:parallel}
@@ -161,6 +166,9 @@ Based on the previous definition, this design doesn't implement parallelism. As 
     \item and repeat.
 \end{itemize}
 
+\subsection{Communication and Clock Edges}
+Module $X$ sends data and address on \textbf{only positive edge} of the clock, and module $Y$ receives data on \textbf{either the following positive or negative edge} of the clock.
+
 \part{Simulation Workflow}
 \section{Input Preprocessing}
 This stage is the responsibility of a script that runs before the simulation:
@@ -170,7 +178,9 @@ JSON file that follows the format stated in the main project document \cite{main
 \subsubsection{Steps}
 \begin{itemize}
     \item Create bit stream of the read data that follows the {Input Data Structure} specifications.
-    \item encode the bits following the {Compression} specifications.
+
+        \textbf{NOTE}:  if the mode is 16 bit (fixed), then each 16bit number must be padded with 16 bits of zeros, so that the number is in the lowest part (bits 0 $\dots$ 15 $\rightarrow$ num, 16 $\dots$ 31 $\rightarrow$ 0 padding.)
+    \item Encode the bits following the {Compression} specifications.
     \item Collect encoding output in ASCII string, each byte in string is either '0' or '1' in ASCII format.
     \item When the string reaches the length of 32 bytes, push it to output file.
     \item If the last created string didn't reach the length of 32 bytes, complete the rest with '0' and push it to the output file.    
@@ -238,43 +248,34 @@ You can turn the output into human-readable json using output-formatting script.
 \section{Memory Mapping}
 The Following addresses are only meant for internal communicating between modules, and they don't need to resemble actual addresses stored at some memory. 
 
-The address loaded at the bus resembles what kind of data is on data bus or what kind of data this module should output.
+The address loaded at the bus resembles what kind of data is on data bus.
 
-If address bus is loaded with an address \emph{Adr} that some module \emph{M} is not assigned to, module \emph{M} must ignore the data and address bus so the rest can communicate.
+If address bus is loaded with an address \emph{Adr} that some module \emph{M} is not assigned to, module \emph{M} must ignore the data and address bus so the rest can use the bus.
 
 This way communication is simplified.
-
-\emph{A} column for module \emph{M} is the action of the address taken at module \emph{M} when it sees that address. It's either:
-
-\begin{itemize}
-    \item \emph{W}: \textbf{Write to} module \emph{M}. Module \emph{M} is expected to \textbf{read} the data bus and store data internally, so the other module \emph{wrote} to module \emph{M}.
-    \item \emph{R}: \textbf{Read from} module \emph{M}. Module \emph{M} is expected to \textbf{write} some data to the data bus as response to this address, so the other module \textbf{reads} from it.
-\end{itemize}
 
 \subsection{Solver Memory Mapping}
 Solver module listens at the addresses listed in Table \ref{tab:solver-mem}.
 
 \begin{center}
     \captionof{table}{Solver Memory Mapping\label{tab:solver-mem}}
- \begin{tabular}{||l| c| c| c| c| l||} 
+ \begin{tabular}{||l| c| c| c| l||} 
  \hline
- Address & A & Type & Words & Name & Description  \\ [0.5ex] 
+ Address &Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
  \hline
- 0x0002  & W & f64 & 4 & H & Timestep (variable step mode)  \\
+ 0x0001  & f64 & 2 & H & Timestep (variable step mode)  \\
  \hline
- 0x0006  & W & f64 & 4 & Error & Error Tolerance (variable step mode) \\
+ 0x0003  & f64 & 2 & Error & Error Tolerance (variable step mode) \\
  \hline
- 0x000A  & W & f64[50][50] & 10000 & A & Matrix A \\
+ 0x0005  & f64[50][50] & 5000 & A & Matrix A \\
  \hline
- 0x271A  & W & f64[50][50] & 10000 & B & Matrix B \\
+ 0x138D  & f64[50][50] & 5000 & B & Matrix B \\
  \hline
- 0x4E2A  & W & f64[50] & 200 & X & Initial value of X \\
+ 0x2715  & f64[50] & 100 & X & Initial value of X \\
  \hline
- 0x4EF2  & R & f64[50][5] & 1000 & X$_{out}$ & Final Output X \\
- \hline
- 0x52DA  & W & f64[50] & 200 & U$_{0}$ & Initial U vector \\
+ 0x296D  & f64[50] & 100 & U$_{0}$ & Initial U vector \\
  \hline
 \end{tabular}
 \end{center}
@@ -284,21 +285,19 @@ Interpolator module listens at the addresses listed in Table \ref{tab:interp-mem
 
 \begin{center}
     \captionof{table}{Interpolator Memory Mapping\label{tab:interp-mem}}
- \begin{tabular}{||l |c| c| c| c| l||} 
+ \begin{tabular}{||l | c| c| c| l||} 
  \hline
- Address & A & Type & Words & Name & Description  \\ [0.5ex] 
+ Address & Type & Words & Name & Description  \\ [0.5ex] 
  \hline\hline
-  0x0000 & W & struct Header & 2 & Header & Includes Dimensions and modes  \\ 
+  0x0000 & struct Header & 1 & Header & Includes Dimensions and modes  \\ 
   \hline
-  0x52DA  & W & f64[50] & 200 & U$_0$ & Initial U vector \\
+  0x296D  & f64[50] & 100 & U$_0$ & Initial U vector \\
  \hline
- 0x53A2  & W & f64[5] & 20 & T & Time points of solutions  \\
+ 0x29D1  & f64[5] & 10 & T & Time points of solutions  \\
  \hline
- 0x53B6  & W & f64[50][5] & 1000 & U$_s$ & U vector at required time steps \\
+ 0x29D8  & f64[50][5] & 500 & U$_s$ & U vector at required time steps \\
  \hline
- 0x579E  & R & f64[50] & 200 & U$_{int}$ & Interpolated U Vector \\
- \hline
- 0x5866  & W & f64 & 4 & h$_{new}$ & Time to calculate U at \\
+ 0x2C33  & f64 & 2 & h$_{new}$ & Time to calculate U at \\
  \hline
 \end{tabular}
 \end{center}
@@ -311,48 +310,49 @@ Table \ref{tab:header} shows the structure of header data. Note the whole struct
  \hline
  Address & Bit & Name & Description & Datatype & Total Size \\ [0.5ex] 
  \hline\hline
- \multirow{5}{*}{0x0000} & 15:10 & N & Dimension of X  & uint & 6 bits  \\ 
+ \multirow{5}{*}{0x0000} & 31:26 & N & Dimension of X  & uint & 6 bits  \\ 
  \cline{2-6}
- & 9:4 & M & Dimension of U  & uint & 6 bits  \\ 
+ & 25:20 & M & Dimension of U  & uint & 6 bits  \\ 
  \cline{2-6}
- & 3 & Solver Mode & Fixed Step(0) or Variable Step(1)  & enum & 1 bit \\ 
+ & 19 & Solver Mode & Fixed Step(0) or Variable Step(1)  & enum & 1 bit \\ 
  \cline{2-6}
- & 2:1 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
+ & 18:17 & FPU Precision & fixed point(0), f64(1) or f32(2) & enum & 2 bits  \\ 
  \cline{2-6}
- & 0  & NOT USED &  ------ & ------ & 1 bit \\
+ & 16:14 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
+ \cline{2-6}
+ & 13:0 & NOT USED &  ------ & ------ & 14 bits \\
  \hline
- \multirow{2}{*}{0x0001} & 15:13 & T$_{size}$ & Count of timesteps needed & uint & 3 bits \\ 
- \cline{2-6}
- & 14:0 & NOT USED &  ------ & ------ & 13 bits \\
- \hline
+ 
 \end{tabular}
 \end{center}
 
 \section{Input Format}
 Table \ref{tab:input_format} shows the IO input structure. IO reads the header and figures out the addresses.
+
+\textbf{NOTE}: if the mode is 16 bit (fixed), then each 16bit number is padded with 16 bits of zeros, so that the number is in the lowest part (bits 0 $\dots$ 15 $\rightarrow$ num, 16 $\dots$ 31 $\rightarrow$ 0 padding.)
 \begin{center}
     \captionof{table}{Inputs Specifications\label{tab:input_format}}
     \begin{tabular}{||l| c| c| c||} 
         \hline
         Address & Type & Max Words & Name  \\ [0.5ex] 
         \hline\hline
-        0x0000 & struct Header & 2 & Header\\ 
+        0x0000 & struct Header & 1 & Header\\ 
         \hline
-        0x0002 & f64 & 4 & H\\
+        0x0001 & f64 & 2 & H\\
         \hline
-        0x0006 & f64 & 4 & Error\\
+        0x0003 & f64 & 2 & Error\\
         \hline
-        0x000A & f64[50][50] & 10000 & A\\
+        0x0005 & f64[50][50] & 5000 & A\\
         \hline
-        0x271A & f64[50][50] & 10000 & B\\
+        0x138D & f64[50][50] & 5000 & B\\
         \hline
-        0x4E2A & f64[50] & 200 & X\\
+        0x2715 & f64[50] & 100 & X\\
         \hline
-        0x52DA & f64[50] & 200 & U$_0$\\
+        0x296D & f64[50] & 100 & U$_0$\\
         \hline
-        0x53A2 & f64[5] & 20 & T\\
+        0x29D1 & f64[5] & 10 & T\\
         \hline
-        0x53B6 & f64[50][5] & 1000 & U$_s$\\
+        0x29D8 & f64[50][5] & 500 & U$_s$\\
         \hline
        \end{tabular}
 \end{center}
@@ -370,9 +370,13 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
 
 \subsubsection{Role}
 \begin{itemize}
-    \item Receive packets of 32 bits from the CPU through \emph{DATA} bus.
-    \item Decompress the data.
-    \item Send the decompressed data to the data-bus.
+    \item In LOAD/WAIT state:
+    \begin{itemize}
+        \item Receive packets of 32 bits from the CPU through \emph{DATA} bus.
+        \item Decompress the data.
+        \item Send the decompressed data to the data-bus.
+    \end{itemize}
+    \item In OUT state: just connect the internal data bus with external data bus.
 \end{itemize}
 
 \subsubsection{Ports}
@@ -415,7 +419,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
     \item Computes the upcoming X knowing h, the previous X and U.
     \item Counts the error difference and the new h.
     \item Checks for arithmetic errors that may occurs (e.g. div. by zero).
-    \item Outputs the final X's at the desired times to the RAM.
+    \item Outputs the final X's at the desired times to the internal RAM.
 \end{itemize}
 
 \subsubsection{Ports}

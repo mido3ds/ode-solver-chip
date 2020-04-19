@@ -25,7 +25,8 @@ binary = sys.stdin.read()
 # cast binary to numbers
 if inp['Fixedpoint'] == 1:
     batch_size = 16
-    to_num = utils.bits_to_fixed
+    def to_num(n):
+        return utils.bits_to_fixed(n[15:])
 elif inp['Fixedpoint'] == 2:
     batch_size = 64
     to_num = utils.bits_to_double

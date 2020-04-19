@@ -45,7 +45,8 @@ assert inp['Fixedpoint'] in (1, 2, 3)
 
 # choose to_bits mapper
 if inp['Fixedpoint'] == 1:
-    to_bits = utils.fixed_to_bits
+    def to_bits(n):
+        return '0'*16+utils.fixed_to_bits(n)
 elif inp['Fixedpoint'] == 2:
     to_bits = utils.double_to_bits
 else:

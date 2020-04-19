@@ -6,95 +6,116 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 
 entity fpu_multiplier_tb is
-    generic (runner_cfg: string);
-end entity; 
+    generic (runner_cfg : string);
+end entity;
 
 architecture tb of fpu_multiplier_tb is
-    constant CLK_FREQ: integer := 100e6; -- 100 MHz
-    constant CLK_PERD: time    := 1000 ms / CLK_FREQ;
-
-    signal clk: std_logic := '0';
-    signal mode: std_logic_vector(1 downto 0);
-    signal rst: std_logic;
-    signal enbl: std_logic;
-    signal in_a: std_logic_vector(63 downto 0);
-    signal in_b: std_logic_vector(63 downto 0);
-
-    -- outputs for fpu_multiplier_with_operators instance
-    signal wo_out_c: std_logic_vector(63 downto 0);
-    signal wo_done: std_logic;
-    signal wo_err: std_logic;
-    signal wo_zero: std_logic;
-    signal wo_posv: std_logic;
-
-    -- outputs for fpu_multiplier_first_algo instance
-    signal fa_out_c: std_logic_vector(63 downto 0);
-    signal fa_done: std_logic;
-    signal fa_err: std_logic;
-    signal fa_zero: std_logic;
-    signal fa_posv: std_logic;
-
-    -- outputs for fpu_multiplier_sec_algo instance
-    signal sa_out_c: std_logic_vector(63 downto 0);
-    signal sa_done: std_logic;
-    signal sa_err: std_logic;
-    signal sa_zero: std_logic;
-    signal sa_posv: std_logic;
+    signal testa, testb, testc                              : std_logic_vector (63 downto 0);
+    signal mode                                             : std_logic_vector(1 downto 0) := (others => '0');
+    signal testDone, testErr, testZero, testPosv, enbl, rst : std_logic                    := '0';
+    signal clk                                              : std_logic                    := '1';
+    constant CLKPERIOD                                      : time                         := 200 ps;
 begin
-    clk <= not clk after CLK_PERD / 2;
+    Multiblier_1 : entity work.fpu_multiplier(first_algo)
+        port map(
+            mode  => mode,
+            clk   => clk,
+            rst   => rst,
+            enbl  => enbl,
+            in_a  => testa,
+            in_b  => testb,
+            out_c => testc,
+            done  => testDone,
+            err   => testErr,
+            zero  => testZero,
+            posv  => testPosv
+        );
 
-    fpu_multiplier_with_operators: entity work.fpu_multiplier(with_operators) port map (
-        clk => clk, 
-        mode => mode, 
-        rst => rst, 
-        enbl => enbl, 
-        in_a => in_a, 
-        in_b => in_b, 
-        out_c => wo_out_c, 
-        done => wo_done, 
-        err => wo_err, 
-        zero => wo_zero, 
-        posv => wo_posv
-    );
+    process
+    begin
+        clk <= not clk;
+        wait for CLKPERIOD/2;
+    end process;
 
-    fpu_multiplier_first_algo: entity work.fpu_multiplier(first_algo) port map (
-        clk => clk, 
-        mode => mode, 
-        rst => rst, 
-        enbl => enbl, 
-        in_a => in_a, 
-        in_b => in_b, 
-        out_c => fa_out_c, 
-        done => fa_done, 
-        err => fa_err, 
-        zero => fa_zero, 
-        posv => fa_posv
-    );
-
-    fpu_multiplier_sec_algo: entity work.fpu_multiplier(sec_algo) port map (
-        clk => clk, 
-        mode => mode, 
-        rst => rst, 
-        enbl => enbl, 
-        in_a => in_a, 
-        in_b => in_b, 
-        out_c => sa_out_c, 
-        done => sa_done, 
-        err => sa_err, 
-        zero => sa_zero, 
-        posv => sa_posv
-    );
-
-    main: process
+    process
     begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        if run("test_case_name") then
-            -- TODO
+        if run("all") then
+            -- testing overflow error
+            testa <= "1111111111111111111111111111111111111111111111111010011111100101";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"FFFFFFFFFFFFD5F0" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "overflow test failed" severity ERROR;
+
+            -- testing operation while error flag is 1
+            testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "error flag 1 test failed" severity ERROR;
+
+            -- testing operation while enable is 0 (it should reset all except error state)
+            testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '0';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000000" and testDone = '0' and testErr = '1' and testZero = '0' and testPosv = '0') report "enable 0 test failed" severity ERROR;
+
+            -- resetting	while enable is 0 
+            testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '1';
+            enbl  <= '0';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "reset test failed" severity ERROR;
+            -- testing valid positive * positive operation 
+            testa <= "0000000000000000000000000000000000000000000000000000000000000101";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"00000000000002D8" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "positive * positive test failed" severity ERROR;
+
+            -- testing valid positive * negative operation 
+            testa <= "1111111111111111111111111111111111111111111111111111111111111011";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"FFFFFFFFFFFFFD27" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "positive * negative test failed" severity ERROR;
+
+            -- testing valid negative * negative operation 
+            testa <= "1111111111111111111111111111111111111111111111111111111111111011";
+            testb <= "1111111111111111111111111111111111111111111111111100100011100001";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000227" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "negative * negative test failed" severity ERROR;
+
+            -- testing valid zero * number operation 
+            testa <= "1111111111111111111111111111111111111111111111111111111111111011";
+            testb <= "0000000000000000000000000000000000000000000000000000000000000000";
+            rst   <= '0';
+            enbl  <= '1';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '1' and testPosv = '0') report "zero * number test failed" severity ERROR;
+
+            -- testing valid operation when enable is 0
+            testa <= "1111111111111111111111111111111111111111111111111111111111111011";
+            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
+            rst   <= '0';
+            enbl  <= '0';
+            wait for CLKPERIOD;
+            assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "enable 0 2nd test failed" severity ERROR;
         end if;
 
-        wait for CLK_PERD/2;
+        wait for CLKPERIOD/2;
         test_runner_cleanup(runner);
         wait;
     end process;
