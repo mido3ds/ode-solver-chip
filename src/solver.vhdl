@@ -398,7 +398,7 @@ begin
     begin
         adr_var := resize(unsigned(adr),16);
         -- if in_State is           LOAD         or            WAIT      I can read..
-        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
+        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
             case adr_var is
                 --Header
                 when X"0000" =>
@@ -461,7 +461,7 @@ begin
     enable_read : process (clk, in_state, in_data, adr)
     begin
         -- if in_State is           LOAD         or            WAIT      I can read..
-        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
+        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
             case address_pointer is
                 when "001" =>
                     --Header only one clock for one variable:
