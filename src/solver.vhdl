@@ -136,6 +136,10 @@ architecture rtl of solver is
     signal x_i_high, read_x_i, write_x_i, increment_x_i_address, decrement_x_i_address : std_logic  := '0';
     signal result_x_i_temp,x_i_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
+    --U_main
+    signal u_main_high, read_u_main, write_u_main, increment_u_main_address, decrement_u_main_address : std_logic  := '0';
+    signal result_u_main_temp, u_main_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
     --signal read_h_please,h_is_read,h_high : std_logic  := '0';
@@ -924,6 +928,90 @@ begin
         end if;       
     end process ; -- dec_x_i_address
 
+    --reads U main
+    proc_read_u_main : process(clk, read_u_main, write_u_main)
+    begin
+        if rising_edge(clk) and read_u_main = '1' and write_u_main = '0' then
+            if u_main_high = '0' then
+                if increment_u_main_address = '0' then
+                    --reading the low part
+                    u_main_rd <= '1';
+                    u_main_temp(63 downto 32) <= u_main_data_out;
+                    u_main_high <= '1';
+                    increment_u_main_address <= '1';
+                end if;
+            else
+                if increment_u_main_address = '0' then
+                    u_main_rd <= '1';
+                    u_main_temp(31 downto 0) <= u_main_data_out;
+                    u_main_high <= '0';
+                    decrement_u_main_address <= '1';
+                    read_u_main <= '0';
+                end if;
+            end if;            
+        end if;
+    end process ; --proc_read_u_main
+
+    --writes U main
+    proc_write_u_main : process(clk, read_u_main, write_u_main)
+    begin
+        if rising_edge(clk) and read_u_main = '0' and write_u_main = '1' then
+            if u_main_high = '0' then
+                    if decrement_u_main_address = '0' then 
+                        u_main_wr <= '1';
+                        u_main_data_in <= result_u_main_temp (63 downto 32) ;
+                        u_main_high <= '1';
+                        increment_u_main_address <= '1';
+                    end if;
+                else
+                    if increment_u_main_address = '0' then
+                        u_main_wr <= '1';
+                        u_main_data_in <= result_u_main_temp (31 downto 0) ;
+                        u_main_high <= '0';
+                        increment_u_main_address <= '1';
+                        write_u_main_coeff <= '0';
+                    end if;
+                end if;            
+
+        end if;
+    end process ; -- proc_write_u_main
+
+    --increments U main address
+    inc_u_main_address : process(clk, increment_u_main_address)
+    begin
+        if rising_edge(clk) and increment_u_main_address = '1' then
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(12 downto 0) <= u_main_address;
+                address_inc_1_enbl <= '1';
+                u_main_rd <= '0';
+                u_main_wr <= '0';
+            else
+                u_main_address <= address_inc_1_out(12 downto 0);
+                address_inc_1_enbl <= '0';
+                increment_u_main_address <='0';
+            end if;
+        end if;    
+    end process ; --inc_u_main_address
+
+    --decrements U main address
+    dec_u_main_address : process(clk, decrement_u_main_address)
+    begin
+        if rising_edge(clk) and decrement_u_main_address = '1' then
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(12 downto 0) <= u_main_address;
+                address_dec_1_enbl <= '1';
+                u_main_rd <= '0';
+                u_main_wr <= '0';
+            else
+                u_main_address <= address_dec_1_out(12 downto 0);
+                address_dec_1_enbl <= '0';
+                decrement_u_main_address <='0';
+            end if;
+        end if;    
+    end process ; --dec_u_main_address
+
 -----------------------------------------------------------------MATRIX MANIPULATION-----------------------------------------------------------------------------------
     --calculates (I+hA)
     proc_run_h_a : process( clk, fsm_run_h_a )
@@ -1192,7 +1280,7 @@ begin
                         --multiply b with u
                         enable_mul_1 <= '1';
                         fpu_mul_1_in_1 <= b_temp;
-                        fpu_mul_1_in_2 <= u_temp;
+                        fpu_mul_1_in_2 <= u_main_temp;
                         fsm_run_x_b_u <= "0011";
                     end if;
                 when "0011" =>
