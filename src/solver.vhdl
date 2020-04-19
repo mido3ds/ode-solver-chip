@@ -1116,4 +1116,71 @@ dec_x_address : process(clk, decrement_x_address)
         end if;
     end process; --calc_ax
 
+--fsm_main_eq will be 3 bits for now...
+--my loop will be like this:
+--      send h
+--      X_i = A*X_c
+--      X_i = X_i + B*U
+--      X_i = X_i * h, only if we are variable step size
+--      X_i = X_i + X_c, only if we are variable step size
+--      exit
+proc_run_main_eq : process(clk, fsm_main_eq )
+    begin
+        if rising_edge (clk) then
+            case( fsm_main_eq ) is
+            
+                when "001" =>
+                    --send lower bits
+                    adr <= X"2C34";
+                    in_data <= h_doubler(31 downto 0);
+                    --start the AX process
+                    ------------------------------------------------error---------------------
+                    run_a_x <= '1';
+                    fsm_main_eq <= "010";
+                when "010" =>
+                    --don't send anything...CLEAR
+                    adr <= (others => '0');
+                    in_data <= (others => '0');
+                    if run_a_x = '0' then
+                        if interp_done_op = "01" or interp_done_op = "10" then
+                        ----------------------------------------error-------------------------
+                            run_b_u <= '1';
+                            fsm_main_eq <= "011";
+                        end if;
+                    end if;
+                when "011" =>
+                ----------------------------------------error-------------------------
+                    if run_b_u <= '0' then
+                    ----------------------------------------error-------------------------
+                        run_x_h <='1';
+                        fsm_main_eq <= "100";
+                    end if;
+                when "100" =>
+                                ----------------------------------------error-------------------------
+                    if run_x_h = '0' then
+                                    ----------------------------------------error-------------------------
+                        run_x_i_c <= '1';
+                        fsm_main_eq <= "101";
+                    end if;
+                when "101" =>
+                    --END LOOP
+                    fsm_main_eq <= "000";
+                --when "110" =>
+                --when "111" =>
+                    --STARTING POINT...
+                    --Send h_doubler to interpolator..
+                    --Send only the upper bits
+                    adr <= X"2C33";
+                    in_data <= h_doubler(63 downto 32);
+                    fsm_main_eq <= "001";
+                when others =>
+                    --"000" and not used states...
+                    null;
+            end case ;
+
+
+        end if;
+    end process ; -- proc_run_main_eq
+
+
 end architecture;
