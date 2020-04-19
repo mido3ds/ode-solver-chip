@@ -52,8 +52,12 @@ architecture rtl of solver is
 
     --ADDRESS INCREMENTOR 1, ADDR_LENGTH is the maximum..
     signal address_inc_1_in, address_inc_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+    signal address_inc_1_enbl : std_logic := '0';
     signal address_dec_1_in, address_dec_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+    signal address_dec_1_enbl : std_logic := '0';
 
+    signal int_adder_1_in_1,int_adder_1_in_2,int_adder_1_out: std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
+    signal int_adder_1_enbl, int_adder_1_cin, int_adder_1_cout: std_logic := '0';
 
     --Memory signals:
     --RD/WR:
@@ -234,15 +238,26 @@ begin
     address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
         port map(
             a      => address_inc_1_in,
-            c      => address_inc_1_out
+            c      => address_inc_1_out,
+            enbl   => address_inc_1_enbl
         );
 
     address_dec_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
         port map(
             a      => address_dec_1_in,
-            c      => address_dec_1_out
+            c      => address_dec_1_out,
+            enbl   => address_dec_1_enbl
         );
-    
+
+    int_adder_1 : entity work.int_adder(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
+        port map(
+            a       =>  int_adder_1_in_1,
+            b       =>  int_adder_1_in_2,
+            enbl    =>  int_adder_1_enbl,
+            cin     =>  int_adder_1_cin,
+            c       =>  int_adder_1_out,
+            cout    =>  int_adder_1_cout
+        );
 
 
     --Memory and Registers:
@@ -664,9 +679,10 @@ proc_run_h_a : process( clk, fsm_run_h_a )
                         if N_N_temp_2 = N_N_temp then
                             --add one
                             fpu_add_1_in_1 <= a_temp;
-                            fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
-                            enable_add_1<= '1';
-                            fsm_run_h_a <= "0101";
+                            --fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
+                            fpu_add_1_in_2 <= (55 => '1', others => '0');
+                            enable_add_1 <= '1';
+                            fsm_run_h_a <= "1011";
                         else
                             --continue 3ady
                             write_a_coeff <='1';
@@ -676,10 +692,11 @@ proc_run_h_a : process( clk, fsm_run_h_a )
                 when "0100" =>
                     if write_a_coeff = '0' then
                         if N_N_temp = '0' then
+                            --END LOOOOOP
                             a_coeff_address <= (others => '0');
                             fsm_run_h_a <= "0000";
                         else
-                            fsm_run_h_a <= "1110";
+                            fsm_run_h_a <= "1100";
                         end if;
                     end if;
                 when "0101" => 
@@ -692,28 +709,40 @@ proc_run_h_a : process( clk, fsm_run_h_a )
                 --when "0111" => 
                 --when "1000" =>
                 --when "1001" =>
-                --when "1010" =>
-                --when "1011" =>
-                --when "1100" =>
+                when "1010" =>
+                    N_N_temp_2 := int_adder_1_out;
+                    int_adder_1_enbl <='0';
+                    fsm_run_h_a <= "0101";
+                when "1011" =>
+                    --DECREMENT N_N_temp_2 with N+1 (N_X_A_B_2)
+                    int_adder_1_enbl <='1';
+                    int_adder_1_in_1 <= N_N_temp_2;
+                    int_adder_1_in_2 <= not N_X_A_B_2;
+                    int_adder_1_cin  <= '1';
+                    fsm_run_h_a <= "1010";
+                when "1100" =>
+                    address_dec_1_in <= N_N_temp;
+                    address_dec_1_enbl <= '1';
+                    fsm_run_h_a <= "1101";
+
                 when "1101" =>
                     --disable dec
+                    address_dec_1_enbl <= '0';
                     N_N_temp := address_dec_1_out;
                     fsm_run_h_a <= "0001";
+
                 when "1110" =>
-                    --decrement N_N_TEMP first
-                    address_dec_1_in <= N_N_temp;
-                    --add dec its enable
-                    --disable incrementer
-                    fsm_run_h_a <= "1101";
+                    N_X_A_B_2 := address_inc_1_out;
+                    address_inc_1_enbl <= '0';
+                    fsm_run_h_a <= "1100";
                 when "1111" =>
                     --start here :D
+                    --This variable to keep track of the main loop
                     N_N_temp := N_N;
+                    --this var to keep track of % N+1
                     N_N_temp_2 := N_N;
                     address_inc_1 <= N_X_A_B_vec;
-                    N_X_A_B_2 := address_inc_1_out;
-                    --enable it
-                    
-
+                    address_inc_1_enbl <= '1';
                     a_coeff_address <= (others =>'0');
                     fsm_run_h_a <= "1110";
                 when others =>
@@ -756,7 +785,7 @@ proc_run_h_b : process( clk, fsm_run_h_b )
                     if done_mul_1 = '1' then
                         enable_mul_1 <= '0';
                         write_b_coeff <= '1';
-                        fsm_run_h_b <= "011";
+                        fsm_run_h_b <= "100";
                     end if;
                 when "100" =>
                     -- check if we reached end of the loop!!
@@ -764,15 +793,18 @@ proc_run_h_b : process( clk, fsm_run_h_b )
                     -- if it's zero, we escape
                     if write_b_coeff = '0' then
                         address_dec_1_in <= N_M_temp;
+                        address_dec_1_enbl <= '1';
                         fsm_run_h_b <= "101";
                     end if;
                 when "101" =>
+                    address_dec_1_enbl <= '0';
                     N_M_temp := address_dec_1_out;
                     if N_M_temp = '0' then
                         --end loop
                         b_coeff_address <= (others => '0');
                         fsm_run_h_b <= "000";
                     else
+                        --LOOP AGAIN
                         fsm_run_h_b <= "001";
                     end if;
                 when "110" =>
@@ -780,8 +812,8 @@ proc_run_h_b : process( clk, fsm_run_h_b )
                 when others =>
                     --START working, init w kda
                     b_coeff_address <= (others => '0');
-                    fsm_run_h_b <= "001";
                     N_M_temp := N_M;
+                    fsm_run_h_b <= "001";
             end case ;
 
         end if;
@@ -904,26 +936,32 @@ proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
 inc_a_address : process( clk, increment_a_address )
     begin
         if rising_edge(clk) and increment_a_address = '1' then
-            address_inc_1_in <= a_coeff_address;
-            a_coeff_rd <= '0';
-            a_coeff_wr <= '0';
-        end if;       
-        if falling_edge(clk) and increment_a_address = '1' then
-            a_coeff_address <= address_inc_1_out;
-            increment_a_address <='0';
-        end if;
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= a_coeff_address;
+                address_inc_1_enbl <= '1';
+                a_coeff_rd <= '0';
+                a_coeff_wr <= '0';
+            else
+                a_coeff_address <= address_inc_1_out;
+                address_inc_1_enbl <= '0';
+                increment_a_address <='0';
+            end if;
+        end if;    
     end process ; -- inc_a_address
 dec_a_address : process( clk, decrement_a_address)
     begin
         if rising_edge(clk) and decrement_a_address = '1' then
-            address_dec_1_in <= a_coeff_address;
-            a_coeff_rd <= '0';
-            a_coeff_wr <= '0';
-        end if;       
-        if falling_edge(clk) and decrement_a_address = '1' then
-            a_coeff_address <= address_dec_1_out;
-            decrement_a_address <='0';
-        end if;
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= a_coeff_address;
+                address_dec_1_enbl <= '1';
+                a_coeff_rd <= '0';
+                a_coeff_wr <= '0';
+            else
+                a_coeff_address <= address_dec_1_out;
+                address_dec_1_enbl <= '0';
+                decrement_a_address <='0';
+            end if;
+        end if;    
     end process ; -- dec_a_address
 
 proc_read_b_coeff : process(clk, read_b_coeff, write_b_coeff)
@@ -973,28 +1011,35 @@ proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
 inc_b_address : process( clk, increment_b_address )
     begin
         if rising_edge(clk) and increment_b_address = '1' then
-            address_inc_1_in <= b_coeff_address;
-            b_coeff_rd <= '0';
-            b_coeff_wr <= '0';
-        end if;       
-        if falling_edge(clk) and increment_b_address = '1' then
-            b_coeff_address <= address_inc_1_out;
-            increment_b_address <='0';
-        end if;
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= b_coeff_address;
+                address_inc_1_enbl <= '1';
+                b_coeff_rd <= '0';
+                b_coeff_wr <= '0';
+            else
+                b_coeff_address <= address_inc_1_out;
+                address_inc_1_enbl <= '0';
+                increment_b_address <='0';
+            end if;
+        end if;    
+        
     end process ; -- inc_b_address
 
  --4.10: decrements address of part A
 dec_b_address : process( clk, decrement_b_address)
     begin
         if rising_edge(clk) and decrement_b_address = '1' then
-            address_dec_1_in <= b_coeff_address;
-            b_coeff_rd <= '0';
-            b_coeff_wr <= '0';
-        end if;       
-        if falling_edge(clk) and decrement_b_address = '1' then
-            b_coeff_address <= address_dec_1_out;
-            decrement_b_address <='0';
-        end if;
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= b_coeff_address;
+                address_dec_1_enbl <= '1';
+                b_coeff_rd <= '0';
+                b_coeff_wr <= '0';
+            else
+                b_coeff_address <= address_dec_1_out;
+                address_dec_1_enbl <= '0';
+                decrement_b_address <='0';
+            end if;
+        end if;    
     end process ; -- dec_b_address
     
 proc_read_x : process(clk, read_x, write_x)
@@ -1044,26 +1089,32 @@ proc_write_x : process(clk, read_x, write_x)
 inc_x_address : process(clk, increment_x_address)
     begin
         if rising_edge(clk) and increment_x_address = '1' then
-            address_inc_1_in <= x_ware_address;
-            x_ware_rd <= '0';
-            x_ware_wr <= '0';
-        end if;       
-        if falling_edge(clk) and increment_x_address = '1' then
-            x_ware_address <= address_inc_1_out;
-            increment_x_address <='0';
-        end if;
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= x_ware_address;
+                address_inc_1_enbl <= '1';
+                x_ware_rd <= '0';
+                x_ware_wr <= '0';
+            else
+                x_ware_address <= address_inc_1_out;
+                address_inc_1_enbl <= '0';
+                increment_x_address <='0';
+            end if;
+        end if;    
     end process ; -- inc_x_address
 dec_x_address : process(clk, decrement_x_address)
     begin
         if rising_edge(clk) and decrement_x_address = '1' then
-            address_inc_1_in <= x_ware_address;
-            x_ware_rd <= '0';
-            x_ware_wr <= '0';
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= x_ware_address;
+                address_dec_1_enbl <= '1';
+                x_ware_rd <= '0';
+                x_ware_wr <= '0';
+            else
+                x_ware_address <= address_dec_1_out;
+                address_dec_1_enbl <= '0';
+                decrement_x_address <='0';
+            end if;
         end if;       
-        if falling_edge(clk) and decrement_x_address = '1' then
-            x_ware_address <= address_inc_1_out;
-            decrement_x_address <='0';
-        end if;
     end process ; -- dec_x_address
 
 
