@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.common.all;
 --use std.env.stop;
-
+-----------------------------------------------------------------ENTITY-----------------------------------------------------------------------------------
 entity solver is
     generic (
         WORD_LENGTH : integer := 32;
@@ -23,9 +23,9 @@ entity solver is
     );
 end entity;
 
+-----------------------------------------------------------------ARCHITECTURE-----------------------------------------------------------------------------------
 architecture rtl of solver is
-    --SIGNALS:
-
+-----------------------------------------------------------------SIGNALS-----------------------------------------------------------------------------------
     --SIGNALS FOR UNITS
     --FPU MUL 1
     --signal operation_sig_1                                             : std_logic_vector(1 downto 0)               := "00";
@@ -71,7 +71,6 @@ architecture rtl of solver is
     signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
     signal int_mul_1_enbl : std_logic := '0';
 
-
     --Memory signals:
     --RD/WR:
     signal U_main_rd, U_main_wr                                        : std_logic                                  := '0';
@@ -96,8 +95,7 @@ architecture rtl of solver is
     signal a_coeff_data_in, a_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal b_coeff_data_in, b_coeff_data_out                           : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     signal X_intm_data_in, X_intm_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
-        
-
+    
     --Solver module's signals:
     --SEMI PROCESSES ENABLES:
     signal run_mul_n_m : std_logic_vector(1 downto 0) := "00";
@@ -158,7 +156,6 @@ architecture rtl of solver is
     signal fsm_main_eq : std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_h : std_logic_vector(2 downto 0) := (others => '0');
 
-    fsm_run_x_h
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     signal fsm_run_a_x: std_logic := '0';
@@ -166,9 +163,9 @@ architecture rtl of solver is
     --Like a pointer at X_ware, once it changes address value is updated
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
-begin
-    --ENTITIES:
 
+begin
+-----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
     --FPUs:
     fpu_mul_1 : entity work.fpu_multiplier(rtl)
         port map(
@@ -245,7 +242,6 @@ begin
             add_sub   => thisIsSub
         );
     
-
     --Integer operators:
     address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
         port map(
@@ -353,8 +349,7 @@ begin
             data_in  => b_coeff_data_in,
             data_out => b_coeff_data_out
         );
-    
-
+-----------------------------------------------------------------PROCESSES-----------------------------------------------------------------------------------
     --PROCESSES:
     --1- RESET --> Done
     --2- initialize --> Done
@@ -362,7 +357,8 @@ begin
     --4- fixed step size --> TBD
     --5- variable step size --> TBD
 
-    --1- RESET
+-----------------------------------------------------------------RESET-----------------------------------------------------------------------------------
+    -- RESET
     -- handles reset signal for solver
     reset : process (clk, rst)
     begin
@@ -389,10 +385,11 @@ begin
         end if;
     end process;
 
-    --2- Init:
-    --Divided into two processes:
+-----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
+    -- Init:
+    -- Divided into two processes:
 
-    --2.1: detects what type of addresses is this!  
+    --detects what type of addresses is this!  
     adr_detector : process (clk, in_state, in_data, adr)
     variable adr_var :unsigned(15 downto 0); 
     begin
@@ -457,7 +454,7 @@ begin
         end if;
     end process;
 
-    --2.2: enables reading on my address
+    --enables reading on my address
     enable_read : process (clk, in_state, in_data, adr)
     begin
         -- if in_State is           LOAD         or            WAIT      I can read..
@@ -563,7 +560,8 @@ begin
         end if;
     end process;
 
-    --3- Error process:
+-----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
+    --Error process:
     --add here any other error_out signal that might occur
     error_occured : process(clk, err_mul_1, err_add_1,err_add_2,err_add_3)
     begin
@@ -584,53 +582,350 @@ begin
         end if;
     end process ;
 
-    --4- Fixed Step Size
-    --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
-    --Let A = 1+hA and B = hB (computed once)
-    --Divided into multiple processes
-
-    --4.1: main fixed step driver
-    fixed : process(clk, fixed_or_var, fixed_point_state) 
+-----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
+    --reads A coefficient
+    --This sub_process is responsible for reading a[address,address+1]
+    --and store it at a_temp[63:0]
+    proc_read_a_coeff : process(clk, read_a_coeff, write_a_coeff)
     begin
-    --NOTE YA SHAWKY: at the begining of Fixed algorithm,
-    --you need to check that fsm_run_h_b = "000" or wait..
-        if rising_edge(clk) and fixed_or_var = '0' then
-            case fixed_point_state is
-                when "0000" => --wait for loop a and loop b
-                    null;
-                when "0001" => --send lower half of new h to interpolater 
-                    in_data <= h_temp(31 downto 0);
-                    adr <= X"2C33";
-                    fixed_point_state <= "0010";
-                when "0010" => --send higher half of new h to interpolater
-                    in_data <= h_temp(63 downto 32);
-                    adr <= X"2C33";
-                    fixed_point_state <= "0011";
-                when "0011" => --calculate AX
-                    fsm_run_a_x <= '1';
-                when "0100" => --save AX in intermediate register
-                    null;
-                when "0101" => --wait for interpolator done signal
-                    null;
-                when "0110" => --calculate BU
-                    null;
-                when "0111" => --save BU
-                    null;
-                when "1000" => --AX + BU
-                    null;
-                when "1001" => --Xnew checks and save
-                    null;
-                when "1010" => --double h for fixed step
-                    null;    
-                when "1111" => --processing state (FSM hibernation)      
-                    null;   
-                when others =>
-                    null;             
-            end case;
+        if rising_edge(clk) and read_a_coeff = '1' and write_a_coeff = '0' then
+            if a_high = '0' then
+                if increment_a_address = '0' then
+                    --reading the low part
+                    a_coeff_rd <= '1';
+                    a_temp(63 downto 32) <= a_coeff_data_out;
+                    a_high <= '1';
+                    increment_a_address <= '1';
+                end if;
+            else
+                if increment_a_address = '0' then
+                    a_coeff_rd <= '1';
+                    a_temp(31 downto 0) <= a_coeff_data_out;
+                    a_high <= '0';
+                    decrement_a_address <= '1';
+                    read_a_coeff <= '0';
+                end if;
+            end if;        
         end if;
-    end process ;
+    end process ; -- proc_read_a_coeff
 
-    --4.2: calculates (I+hA)
+    --writes A coefficient
+    --This sub process takes data from resut_a_temo and stores it at a[adr,adr+1]
+    proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
+    begin
+        if rising_edge(clk) and read_a_coeff = '0' and write_a_coeff = '1' then
+            if a_high = '0' then
+                if decrement_a_address = '0' then 
+                    a_coeff_wr <= '1';
+                    a_coeff_data_in <= result_a_temp (63 downto 32) ;
+                    a_high <= '1';
+                    increment_a_address <= '1';
+                end if;
+            else
+                if increment_a_address = '0' then
+                    a_coeff_wr <= '1';
+                    a_coeff_data_in <= result_a_temp (31 downto 0) ;
+                    a_high <= '0';
+                    increment_a_address <= '1';
+                    write_a_coeff <= '0';
+                end if;
+            end if;            
+    end if;
+    end process ; -- proc_write_a_coeff
+
+    --increments A address
+    inc_a_address : process( clk, increment_a_address )
+    begin
+        if rising_edge(clk) and increment_a_address = '1' then
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(12 downto 0) <= a_coeff_address;
+                address_inc_1_enbl <= '1';
+                a_coeff_rd <= '0';
+                a_coeff_wr <= '0';
+            else
+                a_coeff_address <= address_inc_1_out(12 downto 0);
+                address_inc_1_enbl <= '0';
+                increment_a_address <='0';
+            end if;
+        end if;    
+    end process ; -- inc_a_address
+
+    --decrements A address
+    dec_a_address : process( clk, decrement_a_address)
+    begin
+        if rising_edge(clk) and decrement_a_address = '1' then
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(12 downto 0) <= a_coeff_address;
+                address_dec_1_enbl <= '1';
+                a_coeff_rd <= '0';
+                a_coeff_wr <= '0';
+            else
+                a_coeff_address <= address_dec_1_out(12 downto 0);
+                address_dec_1_enbl <= '0';
+                decrement_a_address <='0';
+            end if;
+        end if;    
+    end process ; -- dec_a_address
+
+    --reads B coefficient
+    proc_read_b_coeff : process(clk, read_b_coeff, write_b_coeff)
+    begin
+        if rising_edge(clk) and read_b_coeff = '1' and write_b_coeff = '0' then
+            if b_high = '0' then
+                if increment_b_address = '0' then
+                    --reading the low part
+                    b_coeff_rd <= '1';
+                    b_temp(63 downto 32) <= b_coeff_data_out;
+                    b_high <= '1';
+                    increment_b_address <= '1';
+                end if;
+            else
+                if increment_b_address = '0' then
+                    b_coeff_rd <= '1';
+                    b_temp(31 downto 0) <= b_coeff_data_out;
+                    b_high <= '0';
+                    decrement_b_address <= '1';
+                    read_b_coeff <= '0';
+                end if;
+            end if;            
+    end if;
+    end process ; 
+
+    --writes B coefficient
+    proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
+    begin
+        if rising_edge(clk) and read_b_coeff = '0' and write_b_coeff = '1' then
+            if b_high = '0' then
+                    if decrement_b_address = '0' then 
+                        b_coeff_wr <= '1';
+                        b_coeff_data_in <= result_b_temp (63 downto 32) ;
+                        b_high <= '1';
+                        increment_b_address <= '1';
+                    end if;
+                else
+                    if increment_b_address = '0' then
+                        b_coeff_wr <= '1';
+                        b_coeff_data_in <= result_b_temp (31 downto 0) ;
+                        b_high <= '0';
+                        increment_b_address <= '1';
+                        write_b_coeff <= '0';
+                    end if;
+                end if;            
+
+        end if;
+    end process ; -- proc_write_b_coeff
+
+    --increments B address
+    inc_b_address : process( clk, increment_b_address )
+    begin
+        if rising_edge(clk) and increment_b_address = '1' then
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(12 downto 0) <= b_coeff_address;
+                address_inc_1_enbl <= '1';
+                b_coeff_rd <= '0';
+                b_coeff_wr <= '0';
+            else
+                b_coeff_address <= address_inc_1_out(12 downto 0);
+                address_inc_1_enbl <= '0';
+                increment_b_address <='0';
+            end if;
+        end if;    
+    end process ; -- inc_b_address
+
+    --decrements B address
+    dec_b_address : process( clk, decrement_b_address)
+    begin
+        if rising_edge(clk) and decrement_b_address = '1' then
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(12 downto 0) <= b_coeff_address;
+                address_dec_1_enbl <= '1';
+                b_coeff_rd <= '0';
+                b_coeff_wr <= '0';
+            else
+                b_coeff_address <= address_dec_1_out(12 downto 0);
+                address_dec_1_enbl <= '0';
+                decrement_b_address <='0';
+            end if;
+        end if;    
+    end process ; -- dec_b_address
+    
+    --reads X from X_ware
+    proc_read_x : process(clk, read_x, write_x)
+    begin
+        if rising_edge(clk) and read_x = '1' and write_x = '0' then
+            if x_high = '0' then
+                if increment_x_address = '0' then
+                    --reading higher part
+                    X_ware_rd <= '1';
+                    x_temp(63 downto 32) <= x_ware_data_out;
+                    x_high <= '1';
+                    increment_x_address <= '1';
+                end if;
+            else
+                if increment_x_address = '0' then
+                    --reading lower part
+                    X_ware_rd <= '1';
+                    x_temp(31 downto 0) <= x_ware_data_out;
+                    x_high <= '0';
+                    decrement_x_address <= '1';
+                    read_x <= '0';
+                end if;
+            end if;        
+        end if;
+    end process ; -- proc_read_x
+
+    --writes X in X_ware
+    proc_write_x : process(clk, read_x, write_x)
+    begin
+        if rising_edge(clk) and read_x = '0' and write_x = '1' then
+            if x_high = '0' then
+                    if decrement_x_address = '0' then 
+                        X_ware_wr <= '1';
+                        x_ware_data_in <= result_x_temp(63 downto 32) ;
+                        x_high <= '1';
+                        increment_x_address <= '1';
+                    end if;
+                else
+                    if increment_x_address = '0' then
+                        X_ware_wr <= '1';
+                        x_ware_data_in <= result_x_temp(31 downto 0) ;
+                        x_high <= '0';
+                        increment_x_address <= '1';
+                        write_x <= '0';
+                    end if;
+                end if;            
+        end if;
+    end process ; -- proc_write_x_coeff
+
+    --increments X address
+    inc_x_address : process(clk, increment_x_address)
+    begin
+        if rising_edge(clk) and increment_x_address = '1' then
+            if address_inc_1_enbl = '0' then
+                address_inc_1_in <= (others => '0');
+                address_inc_1_in(9 downto 0) <= x_ware_address;
+                address_inc_1_enbl <= '1';
+                x_ware_rd <= '0';
+                x_ware_wr <= '0';
+            else
+                x_ware_address <= address_inc_1_out(9 downto 0);
+                address_inc_1_enbl <= '0';
+                increment_x_address <='0';
+            end if;
+        end if;    
+    end process ; -- inc_x_address
+
+    --decrements X address
+    dec_x_address : process(clk, decrement_x_address)
+    begin
+        if rising_edge(clk) and decrement_x_address = '1' then
+            if address_dec_1_enbl = '0' then
+                address_dec_1_in <= (others => '0');
+                address_dec_1_in(9 downto 0) <= x_ware_address;
+                address_dec_1_enbl <= '1';
+                x_ware_rd <= '0';
+                x_ware_wr <= '0';
+            else
+                x_ware_address <= address_dec_1_out(9 downto 0);
+                address_dec_1_enbl <= '0';
+                decrement_x_address <='0';
+            end if;
+        end if;       
+    end process ; -- dec_x_address   
+
+    --reads X intermediate
+    proc_read_x_i : process(clk, read_x_i, write_x_i)
+    begin
+        if rising_edge(clk) and read_x_i = '1' and write_x_i = '0' then
+            if x_i_high = '0' then
+                if increment_x_i_address = '0' then
+                    --reading higher part
+                    X_intm_rd <= '1';
+                    x_i_temp(63 downto 32) <= X_intm_data_out;
+                    x_i_high <= '1';
+                    increment_x_i_address <= '1';
+                end if;
+            else
+                if increment_x_i_address = '0' then
+                    --reading lower part
+                    X_intm_rd <= '1';
+                    x_i_temp(31 downto 0) <= X_intm_data_out;
+                    x_i_high <= '0';
+                    decrement_x_i_address <= '1';
+                    read_x_i <= '0';
+                end if;
+            end if;        
+        end if;
+    end process ; -- proc_read_x_i
+    
+    --writes X intermediate
+    proc_write_x_i : process(clk, read_x_i, write_x_i)
+    begin
+        if rising_edge(clk) and read_x_i = '0' and write_x_i = '1' then
+            if x_i_high = '0' then
+                    if decrement_x_i_address = '0' then 
+                        X_intm_wr <= '1';
+                        X_intm_data_in <= result_x_temp(63 downto 32) ;
+                        x_i_high <= '1';
+                        increment_x_i_address <= '1';
+                    end if;
+                else
+                    if increment_x_i_address = '0' then
+                        X_intm_wr <= '1';
+                        X_intm_data_in <= result_x_i_temp(31 downto 0) ;
+                        x_i_high <= '0';
+                        increment_x_i_address <= '1';
+                        write_x_i <= '0';
+                    end if;
+                end if;            
+        end if;
+    end process ; -- proc_write_x_i_coeff
+
+    --increments X_i address
+    --when we calculate x_i = x_i + x_c
+    --x_c uses address_inc_1 and address_dec_1
+    --so I need another one...e4m3na hwa :'(
+    inc_x_i_address : process(clk, increment_x_i_address)
+    begin
+        if rising_edge(clk) and increment_x_i_address = '1' then
+            if address_inc_2_enbl = '0' then
+                address_inc_2_in <= (others => '0');
+                address_inc_2_in(6 downto 0) <= X_intm_address;
+                address_inc_2_enbl <= '1';
+                X_intm_rd <= '0';
+                X_intm_wr <= '0';
+            else
+                X_intm_address <= address_inc_2_out(6 downto 0);
+                address_inc_2_enbl <= '0';
+                increment_x_i_address <='0';
+            end if;
+        end if;    
+    end process ; -- inc_x_i_address
+
+    --decrements X_i address
+    dec_x_i_address : process(clk, decrement_x_i_address)
+    begin
+        if rising_edge(clk) and decrement_x_i_address = '1' then
+            if address_dec_2_enbl = '0' then
+                address_dec_2_in <= (others => '0');
+                address_dec_2_in(6 downto 0) <= X_intm_address;
+                address_dec_2_enbl <= '1';
+                X_intm_rd <= '0';
+                X_intm_wr <= '0';
+            else
+                X_intm_address <= address_dec_2_out(6 downto 0);
+                address_dec_2_enbl <= '0';
+                decrement_x_i_address <='0';
+            end if;
+        end if;       
+    end process ; -- dec_x_i_address
+
+-----------------------------------------------------------------MATRIX MANIPULATION-----------------------------------------------------------------------------------
+    --calculates (I+hA)
     proc_run_h_a : process( clk, fsm_run_h_a )
     variable N_N_temp, N_N_temp_2 : std_logic_vector(15 downto 0) :=(others => '0');
     variable N_X_A_B_2 : std_logic_vector(15 downto 0) :=(others => '0');
@@ -729,8 +1024,8 @@ begin
         end if;
     end process ; -- proc_run_h_a
 
-    
-    --4.2: calculate (hB)
+
+    --calculate (hB)
     --If you want to run this:
     --fsm_run_h_b <= "111"
     --and wait until it equals "000"
@@ -796,376 +1091,7 @@ begin
         end if;
     end process ; --proc_run_h_b
 
-    --4.2: multiples N*N or N*M
-    proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
-    --variable first_operation: std_logic  := '0';
-    begin
-        if rising_edge (clk) then
-            case( run_mul_n_m ) is
-                when "00" => null;
-                when "01" =>
-                    --assuming answer is ready
-                    N_N <= int_mul_1_out;
-                    int_mul_1_in_2 <= M_U_B_vec;
-                    int_mul_1_enbl <= '1';
-                    run_mul_n_m <= "01";
-                when "10" =>
-                    N_M <= int_mul_1_out;
-                    int_mul_1_enbl <= '0';
-                    run_mul_n_m <= "00";
-                when others =>
-                    --11
-                    --START
-                    int_mul_1_enbl <= '1';
-                    int_mul_1_in_1 <= N_X_A_B_vec;
-                    int_mul_1_in_2 <= N_X_A_B_vec;
-                    run_mul_n_m <= "01";
-            end case ;
-        end if;
-    end process ; -- proc_run_n_m_and_n_n
-
-    --4.3: reads A coefficient
-    --This sub_process is responsible for reading a[address,address+1]
-    --and store it at a_temp[63:0]
-    proc_read_a_coeff : process(clk, read_a_coeff, write_a_coeff)
-    begin
-        if rising_edge(clk) and read_a_coeff = '1' and write_a_coeff = '0' then
-            if a_high = '0' then
-                if increment_a_address = '0' then
-                    --reading the low part
-                    a_coeff_rd <= '1';
-                    a_temp(63 downto 32) <= a_coeff_data_out;
-                    a_high <= '1';
-                    increment_a_address <= '1';
-                end if;
-            else
-                if increment_a_address = '0' then
-                    a_coeff_rd <= '1';
-                    a_temp(31 downto 0) <= a_coeff_data_out;
-                    a_high <= '0';
-                    decrement_a_address <= '1';
-                    read_a_coeff <= '0';
-                end if;
-            end if;        
-        end if;
-    end process ; -- proc_read_a_coeff
-
-    --4.4: writes A coefficient
-    --This sub process takes data from resut_a_temo and stores it at a[adr,adr+1]
-    proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
-    begin
-        if rising_edge(clk) and read_a_coeff = '0' and write_a_coeff = '1' then
-            if a_high = '0' then
-                if decrement_a_address = '0' then 
-                    a_coeff_wr <= '1';
-                    a_coeff_data_in <= result_a_temp (63 downto 32) ;
-                    a_high <= '1';
-                    increment_a_address <= '1';
-                end if;
-            else
-                if increment_a_address = '0' then
-                    a_coeff_wr <= '1';
-                    a_coeff_data_in <= result_a_temp (31 downto 0) ;
-                    a_high <= '0';
-                    increment_a_address <= '1';
-                    write_a_coeff <= '0';
-                end if;
-            end if;            
-    end if;
-    end process ; -- proc_write_a_coeff
-
-    --4.5: increments A address
-    inc_a_address : process( clk, increment_a_address )
-    begin
-        if rising_edge(clk) and increment_a_address = '1' then
-            if address_inc_1_enbl = '0' then
-                address_inc_1_in <= (others => '0');
-                address_inc_1_in(12 downto 0) <= a_coeff_address;
-                address_inc_1_enbl <= '1';
-                a_coeff_rd <= '0';
-                a_coeff_wr <= '0';
-            else
-                a_coeff_address <= address_inc_1_out(12 downto 0);
-                address_inc_1_enbl <= '0';
-                increment_a_address <='0';
-            end if;
-        end if;    
-    end process ; -- inc_a_address
-
-    --4.6: decrements A address
-    dec_a_address : process( clk, decrement_a_address)
-    begin
-        if rising_edge(clk) and decrement_a_address = '1' then
-            if address_dec_1_enbl = '0' then
-                address_dec_1_in <= (others => '0');
-                address_dec_1_in(12 downto 0) <= a_coeff_address;
-                address_dec_1_enbl <= '1';
-                a_coeff_rd <= '0';
-                a_coeff_wr <= '0';
-            else
-                a_coeff_address <= address_dec_1_out(12 downto 0);
-                address_dec_1_enbl <= '0';
-                decrement_a_address <='0';
-            end if;
-        end if;    
-    end process ; -- dec_a_address
-
-    --4.7: reads B coefficient
-    proc_read_b_coeff : process(clk, read_b_coeff, write_b_coeff)
-    begin
-        if rising_edge(clk) and read_b_coeff = '1' and write_b_coeff = '0' then
-            if b_high = '0' then
-                if increment_b_address = '0' then
-                    --reading the low part
-                    b_coeff_rd <= '1';
-                    b_temp(63 downto 32) <= b_coeff_data_out;
-                    b_high <= '1';
-                    increment_b_address <= '1';
-                end if;
-            else
-                if increment_b_address = '0' then
-                    b_coeff_rd <= '1';
-                    b_temp(31 downto 0) <= b_coeff_data_out;
-                    b_high <= '0';
-                    decrement_b_address <= '1';
-                    read_b_coeff <= '0';
-                end if;
-            end if;            
-    end if;
-    end process ; 
-
-    --4.8: writes B coefficient
-    proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
-    begin
-        if rising_edge(clk) and read_b_coeff = '0' and write_b_coeff = '1' then
-            if b_high = '0' then
-                    if decrement_b_address = '0' then 
-                        b_coeff_wr <= '1';
-                        b_coeff_data_in <= result_b_temp (63 downto 32) ;
-                        b_high <= '1';
-                        increment_b_address <= '1';
-                    end if;
-                else
-                    if increment_b_address = '0' then
-                        b_coeff_wr <= '1';
-                        b_coeff_data_in <= result_b_temp (31 downto 0) ;
-                        b_high <= '0';
-                        increment_b_address <= '1';
-                        write_b_coeff <= '0';
-                    end if;
-                end if;            
-
-        end if;
-    end process ; -- proc_write_b_coeff
-
-    --4.9: increments B address
-    inc_b_address : process( clk, increment_b_address )
-    begin
-        if rising_edge(clk) and increment_b_address = '1' then
-            if address_inc_1_enbl = '0' then
-                address_inc_1_in <= (others => '0');
-                address_inc_1_in(12 downto 0) <= b_coeff_address;
-                address_inc_1_enbl <= '1';
-                b_coeff_rd <= '0';
-                b_coeff_wr <= '0';
-            else
-                b_coeff_address <= address_inc_1_out(12 downto 0);
-                address_inc_1_enbl <= '0';
-                increment_b_address <='0';
-            end if;
-        end if;    
-    end process ; -- inc_b_address
-
-    --4.10: decrements B address
-    dec_b_address : process( clk, decrement_b_address)
-    begin
-        if rising_edge(clk) and decrement_b_address = '1' then
-            if address_dec_1_enbl = '0' then
-                address_dec_1_in <= (others => '0');
-                address_dec_1_in(12 downto 0) <= b_coeff_address;
-                address_dec_1_enbl <= '1';
-                b_coeff_rd <= '0';
-                b_coeff_wr <= '0';
-            else
-                b_coeff_address <= address_dec_1_out(12 downto 0);
-                address_dec_1_enbl <= '0';
-                decrement_b_address <='0';
-            end if;
-        end if;    
-    end process ; -- dec_b_address
-    
-    --4.11: reads X from X_ware
-    proc_read_x : process(clk, read_x, write_x)
-    begin
-        if rising_edge(clk) and read_x = '1' and write_x = '0' then
-            if x_high = '0' then
-                if increment_x_address = '0' then
-                    --reading higher part
-                    X_ware_rd <= '1';
-                    x_temp(63 downto 32) <= x_ware_data_out;
-                    x_high <= '1';
-                    increment_x_address <= '1';
-                end if;
-            else
-                if increment_x_address = '0' then
-                    --reading lower part
-                    X_ware_rd <= '1';
-                    x_temp(31 downto 0) <= x_ware_data_out;
-                    x_high <= '0';
-                    decrement_x_address <= '1';
-                    read_x <= '0';
-                end if;
-            end if;        
-        end if;
-    end process ; -- proc_read_x
-
-    --4.12: write X in X_ware
-    proc_write_x : process(clk, read_x, write_x)
-    begin
-        if rising_edge(clk) and read_x = '0' and write_x = '1' then
-            if x_high = '0' then
-                    if decrement_x_address = '0' then 
-                        X_ware_wr <= '1';
-                        x_ware_data_in <= result_x_temp(63 downto 32) ;
-                        x_high <= '1';
-                        increment_x_address <= '1';
-                    end if;
-                else
-                    if increment_x_address = '0' then
-                        X_ware_wr <= '1';
-                        x_ware_data_in <= result_x_temp(31 downto 0) ;
-                        x_high <= '0';
-                        increment_x_address <= '1';
-                        write_x <= '0';
-                    end if;
-                end if;            
-        end if;
-    end process ; -- proc_write_x_coeff
-
-    --4.13: increments X address
-    inc_x_address : process(clk, increment_x_address)
-    begin
-        if rising_edge(clk) and increment_x_address = '1' then
-            if address_inc_1_enbl = '0' then
-                address_inc_1_in <= (others => '0');
-                address_inc_1_in(9 downto 0) <= x_ware_address;
-                address_inc_1_enbl <= '1';
-                x_ware_rd <= '0';
-                x_ware_wr <= '0';
-            else
-                x_ware_address <= address_inc_1_out(9 downto 0);
-                address_inc_1_enbl <= '0';
-                increment_x_address <='0';
-            end if;
-        end if;    
-    end process ; -- inc_x_address
-
-    --4.14: decrements X address
-    dec_x_address : process(clk, decrement_x_address)
-    begin
-        if rising_edge(clk) and decrement_x_address = '1' then
-            if address_dec_1_enbl = '0' then
-                address_dec_1_in <= (others => '0');
-                address_dec_1_in(9 downto 0) <= x_ware_address;
-                address_dec_1_enbl <= '1';
-                x_ware_rd <= '0';
-                x_ware_wr <= '0';
-            else
-                x_ware_address <= address_dec_1_out(9 downto 0);
-                address_dec_1_enbl <= '0';
-                decrement_x_address <='0';
-            end if;
-        end if;       
-    end process ; -- dec_x_address
-
-    --4.15: reads X intermediate
-    proc_read_x_i : process(clk, read_x_i, write_x_i)
-    begin
-        if rising_edge(clk) and read_x_i = '1' and write_x_i = '0' then
-            if x_i_high = '0' then
-                if increment_x_i_address = '0' then
-                    --reading higher part
-                    X_intm_rd <= '1';
-                    x_i_temp(63 downto 32) <= X_intm_data_out;
-                    x_i_high <= '1';
-                    increment_x_i_address <= '1';
-                end if;
-            else
-                if increment_x_i_address = '0' then
-                    --reading lower part
-                    X_intm_rd <= '1';
-                    x_i_temp(31 downto 0) <= X_intm_data_out;
-                    x_i_high <= '0';
-                    decrement_x_i_address <= '1';
-                    read_x_i <= '0';
-                end if;
-            end if;        
-        end if;
-    end process ; -- proc_read_x_i
-    
-    --4.16: writes X intermediate
-    proc_write_x_i : process(clk, read_x_i, write_x_i)
-    begin
-        if rising_edge(clk) and read_x_i = '0' and write_x_i = '1' then
-            if x_i_high = '0' then
-                    if decrement_x_i_address = '0' then 
-                        X_intm_wr <= '1';
-                        X_intm_data_in <= result_x_temp(63 downto 32) ;
-                        x_i_high <= '1';
-                        increment_x_i_address <= '1';
-                    end if;
-                else
-                    if increment_x_i_address = '0' then
-                        X_intm_wr <= '1';
-                        X_intm_data_in <= result_x_i_temp(31 downto 0) ;
-                        x_i_high <= '0';
-                        increment_x_i_address <= '1';
-                        write_x_i <= '0';
-                    end if;
-                end if;            
-        end if;
-    end process ; -- proc_write_x_i_coeff
-
-    --4.17: increments X_i address
-    --when we calculate x_i = x_i + x_c
-    --x_c uses address_inc_1 and address_dec_1
-    --so I need another one...e4m3na hwa :'(
-    inc_x_i_address : process(clk, increment_x_i_address)
-    begin
-        if rising_edge(clk) and increment_x_i_address = '1' then
-            if address_inc_2_enbl = '0' then
-                address_inc_2_in <= (others => '0');
-                address_inc_2_in(6 downto 0) <= X_intm_address;
-                address_inc_2_enbl <= '1';
-                X_intm_rd <= '0';
-                X_intm_wr <= '0';
-            else
-                X_intm_address <= address_inc_2_out(6 downto 0);
-                address_inc_2_enbl <= '0';
-                increment_x_i_address <='0';
-            end if;
-        end if;    
-    end process ; -- inc_x_i_address
-
-    --4.18: decrements X_i address
-    dec_x_i_address : process(clk, decrement_x_i_address)
-    begin
-        if rising_edge(clk) and decrement_x_i_address = '1' then
-            if address_dec_2_enbl = '0' then
-                address_dec_2_in <= (others => '0');
-                address_dec_2_in(6 downto 0) <= X_intm_address;
-                address_dec_2_enbl <= '1';
-                X_intm_rd <= '0';
-                X_intm_wr <= '0';
-            else
-                X_intm_address <= address_dec_2_out(6 downto 0);
-                address_dec_2_enbl <= '0';
-                decrement_x_i_address <='0';
-            end if;
-        end if;       
-    end process ; -- dec_x_i_address
-
-    --4.19: calculates AX
+    --calculates AX
     proc_run_a_x : process(clk, fsm_run_a_x)
     variable N_N_temp : std_logic_vector(15 downto 0) := (others => '0');
     variable N_temp : std_logic_vector(15 downto 0) := (others => '0');
@@ -1240,7 +1166,7 @@ begin
         end if;
     end process; --proc_run_a_x
 
-    --4.20: calculates X+BU
+    --calculates X+BU
     proc_run_x_b_u : process(clk, fsm_run_x_b_u)
     variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0');
     variable M_temp : std_logic_vector(15 downto 0) := (others => '0');
@@ -1329,76 +1255,9 @@ begin
                     null;
             end case ;
         end if;
-    end process; --proc_run_a_x
+    end process; --proc_run_x_b_u
 
-    --4.21: runs main computations for fixed and variable step
-    --fsm_main_eq will be 3 bits for now...
-    --my loop will be like this:
-    --      send h
-    --      X_i = A*X_c
-    --      X_i = X_i + B*U
-    --      X_i = X_i * h, only if we are variable step size
-    --      X_i = X_i + X_c, only if we are variable step size
-    --      exit
-    proc_run_main_eq : process(clk, fsm_main_eq )
-    begin
-        if rising_edge (clk) then
-            case( fsm_main_eq ) is
-            
-                when "001" =>
-                    --send lower bits
-                    adr <= X"2C34";
-                    in_data <= h_doubler(31 downto 0);
-                    --start the AX process
-                    ------------------------------------------------error---------------------
-                    run_a_x <= '1';
-                    fsm_main_eq <= "010";
-                when "010" =>
-                    --don't send anything...CLEAR
-                    adr <= (others => '0');
-                    in_data <= (others => '0');
-                    if run_a_x = '0' then
-                        if interp_done_op = "01" or interp_done_op = "10" then
-                        ----------------------------------------error-------------------------
-                            run_b_u <= '1';
-                            fsm_main_eq <= "011";
-                        end if;
-                    end if;
-                when "011" =>
-                ----------------------------------------error-------------------------
-                    if run_b_u <= '0' then
-                    ----------------------------------------error-------------------------
-                        fsm_run_x_h <="111";
-                        fsm_main_eq <= "100";
-                    end if;
-                when "100" =>
-                                ----------------------------------------error-------------------------
-                    if fsm_run_x_h = "000" then
-                                    ----------------------------------------error-------------------------
-                        fsm_run_x_i_c <= '111';
-                        fsm_main_eq <= "101";
-                    end if;
-                when "101" =>
-                    --END LOOP
-                    if fsm_run_x_i_c = "000" then
-                        fsm_main_eq <= "000";
-                    end if;
-                --when "110" =>
-                when "111" =>
-                    --STARTING POINT...
-                    --Send h_doubler to interpolator..
-                    --Send only the upper bits
-                    adr <= X"2C33";
-                    in_data <= h_doubler(63 downto 32);
-                    fsm_main_eq <= "001";
-                when others =>
-                    --"000" and not used states...
-                    null;
-            end case ;
-        end if;
-    end process ; -- proc_run_main_eq
-
-    --4.22: calculates hX (for variable step)
+    --calculates hX (for variable step)
     proc_run_x_h : process(clk,fsm_run_x_h )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
@@ -1459,28 +1318,7 @@ begin
         end if;
     end process ; -- proc_run_x_h
 
-    --4.23: updates X_ware address pointer                       
-    proc_update_X_ware_address : process( c_ware,listen_to_me )
-    begin
-        case( c_ware,listen_to_me ) is
-            when "000" =>
-                x_ware_address <= (others => '0');
-            when "001" =>
-                x_ware_address <= "0001100100";
-            when "010" =>
-                x_ware_address <=  "0011001000";
-            when "011" =>
-                x_ware_address <=  "0100101100";
-            when "100" =>
-                x_ware_address <=  "0110010000";
-            when "101" =>
-                x_ware_address <=  "0111110100";
-            when others =>
-                null;
-        end case ;
-    end process ; -- proc_update_X_ware_address
-
-    --4.24: calculates X_i+X_c (for variable step)
+    --calculates X_i+X_c (for variable step)
     proc_run_x_i_c : process(clk, fsm_run_x_i_c )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
@@ -1546,4 +1384,168 @@ begin
             end case ;
         end if;
     end process ; -- proc_run_x_i_c
+
+-----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
+    --multiples N*N or N*M
+    proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
+    --variable first_operation: std_logic  := '0';
+    begin
+        if rising_edge (clk) then
+            case( run_mul_n_m ) is
+                when "00" => null;
+                when "01" =>
+                    --assuming answer is ready
+                    N_N <= int_mul_1_out;
+                    int_mul_1_in_2 <= M_U_B_vec;
+                    int_mul_1_enbl <= '1';
+                    run_mul_n_m <= "01";
+                when "10" =>
+                    N_M <= int_mul_1_out;
+                    int_mul_1_enbl <= '0';
+                    run_mul_n_m <= "00";
+                when others =>
+                    --11
+                    --START
+                    int_mul_1_enbl <= '1';
+                    int_mul_1_in_1 <= N_X_A_B_vec;
+                    int_mul_1_in_2 <= N_X_A_B_vec;
+                    run_mul_n_m <= "01";
+            end case ;
+        end if;
+    end process ; -- proc_run_n_m_and_n_n
+
+    --updates X_ware address pointer                       
+    proc_update_X_ware_address : process( c_ware,listen_to_me )
+    begin
+        case( c_ware,listen_to_me ) is
+            when "000" =>
+                x_ware_address <= (others => '0');
+            when "001" =>
+                x_ware_address <= "0001100100";
+            when "010" =>
+                x_ware_address <=  "0011001000";
+            when "011" =>
+                x_ware_address <=  "0100101100";
+            when "100" =>
+                x_ware_address <=  "0110010000";
+            when "101" =>
+                x_ware_address <=  "0111110100";
+            when others =>
+                null;
+        end case ;
+    end process ; -- proc_update_X_ware_address
+
+-----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
+    --Fixed Step Size
+    --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
+    --Let A = 1+hA and B = hB (computed once)
+    --Divided into multiple processes
+
+    --main fixed step driver
+    fixed : process(clk, fixed_or_var, fixed_point_state) 
+    begin
+    --NOTE YA SHAWKY: at the begining of Fixed algorithm,
+    --you need to check that fsm_run_h_b = "000" or wait..
+        if rising_edge(clk) and fixed_or_var = '0' then
+            case fixed_point_state is
+                when "0000" => --wait for loop a and loop b
+                    null;
+                when "0001" => --send lower half of new h to interpolater 
+                    in_data <= h_temp(31 downto 0);
+                    adr <= X"2C33";
+                    fixed_point_state <= "0010";
+                when "0010" => --send higher half of new h to interpolater
+                    in_data <= h_temp(63 downto 32);
+                    adr <= X"2C33";
+                    fixed_point_state <= "0011";
+                when "0011" => --calculate AX
+                    fsm_run_a_x <= '1';
+                when "0100" => --save AX in intermediate register
+                    null;
+                when "0101" => --wait for interpolator done signal
+                    null;
+                when "0110" => --calculate BU
+                    null;
+                when "0111" => --save BU
+                    null;
+                when "1000" => --AX + BU
+                    null;
+                when "1001" => --Xnew checks and save
+                    null;
+                when "1010" => --double h for fixed step
+                    null;    
+                when "1111" => --processing state (FSM hibernation)      
+                    null;   
+                when others =>
+                    null;             
+            end case;
+        end if;
+    end process ;
+
+    --runs main computations for fixed and variable step
+    --fsm_main_eq will be 3 bits for now...
+    --my loop will be like this:
+    --      send h
+    --      X_i = A*X_c
+    --      X_i = X_i + B*U
+    --      X_i = X_i * h, only if we are variable step size
+    --      X_i = X_i + X_c, only if we are variable step size
+    --      exit
+    proc_run_main_eq : process(clk, fsm_main_eq )
+    begin
+        if rising_edge (clk) then
+            case( fsm_main_eq ) is
+            
+                when "001" =>
+                    --send lower bits
+                    adr <= X"2C34";
+                    in_data <= h_doubler(31 downto 0);
+                    --start the AX process
+                    ------------------------------------------------error---------------------
+                    run_a_x <= '1';
+                    fsm_main_eq <= "010";
+                when "010" =>
+                    --don't send anything...CLEAR
+                    adr <= (others => '0');
+                    in_data <= (others => '0');
+                    if run_a_x = '0' then
+                        if interp_done_op = "01" or interp_done_op = "10" then
+                        ----------------------------------------error-------------------------
+                            run_b_u <= '1';
+                            fsm_main_eq <= "011";
+                        end if;
+                    end if;
+                when "011" =>
+                ----------------------------------------error-------------------------
+                    if run_b_u <= '0' then
+                    ----------------------------------------error-------------------------
+                        fsm_run_x_h <="111";
+                        fsm_main_eq <= "100";
+                    end if;
+                when "100" =>
+                                ----------------------------------------error-------------------------
+                    if fsm_run_x_h = "000" then
+                                    ----------------------------------------error-------------------------
+                        fsm_run_x_i_c <= '111';
+                        fsm_main_eq <= "101";
+                    end if;
+                when "101" =>
+                    --END LOOP
+                    if fsm_run_x_i_c = "000" then
+                        fsm_main_eq <= "000";
+                    end if;
+                --when "110" =>
+                when "111" =>
+                    --STARTING POINT...
+                    --Send h_doubler to interpolator..
+                    --Send only the upper bits
+                    adr <= X"2C33";
+                    in_data <= h_doubler(63 downto 32);
+                    fsm_main_eq <= "001";
+                when others =>
+                    --"000" and not used states...
+                    null;
+            end case ;
+        end if;
+    end process ; -- proc_run_main_eq
 end architecture;
