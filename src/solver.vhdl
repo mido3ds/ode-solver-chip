@@ -1334,9 +1334,9 @@ begin
                     end if;
                 when "1000" =>
                     if N_M_temp = X"0000" then --check if the end of the loop is reached
-                        fsm_run_a_x <= "1111"; --return to the NOP state
+                        fsm_run_x_b_u <= "1111"; --return to the NOP state
                     else
-                        fsm_run_a_x <= "0001"; --return to the loop start
+                        fsm_run_x_b_u <= "0001"; --return to the loop start
                     end if;
                 when others =>
                     --NOP
@@ -1532,45 +1532,89 @@ begin
     --main fixed step driver
     fixed : process(clk, fixed_or_var, fixed_point_state) 
     begin
-    --NOTE YA SHAWKY: at the begining of Fixed algorithm,
-    --you need to check that fsm_run_h_b = "000" or wait..
         if rst = '0' and rising_edge(clk) and fixed_or_var = '0' then
             case fixed_point_state is
-                when "0000" => --wait for loop a and loop b
-                    null;
-                when "0001" => --send lower half of new h to interpolater 
-                    in_data <= h_temp(31 downto 0);
-                    adr <= X"2C33";
-                    fixed_point_state <= "0010";
-                when "0010" => --send higher half of new h to interpolater
-                    in_data <= h_temp(63 downto 32);
-                    adr <= X"2C33";
-                    fixed_point_state <= "0011";
-                when "0011" => --calculate AX
-                    fsm_run_a_x <= '1';
-                when "0100" => --save AX in intermediate register
-                    null;
-                when "0101" => --wait for interpolator done signal
-                    null;
-                when "0110" => --calculate BU
-                    null;
-                when "0111" => --save BU
-                    null;
-                when "1000" => --AX + BU
-                    null;
-                when "1001" => --Xnew checks and save
-                    null;
-                when "1010" => --double h for fixed step
-                    null;    
-                when "1111" => --processing state (FSM hibernation)      
-                    null;   
+                when "000" => 
+                    --wait for loop a and loop b 
+                    --send lower half of new h to interpolater
+                    if fsm_run_h_b = "000" and fsm_run_h_a = "0000" then
+                        adr <= X"2C34";
+                        in_data <= h_doubler(31 downto 0);
+                        fixed_point_state <= "001";
+                    end if;
+                when "001" =>
+                    --send higher half of new h to interpolater
+                    --run AX calculation
+                    adr <= X"2C34";
+                    in_data <= h_doubler(63 downto 32);
+                    fsm_run_a_x <= "000";
+                    fixed_point_state <= "010";
+                when "010" =>
+                    --check AX and interpolator done signal
+                    --run X+BU FSM
+                    --navigate to the suitable next state
+                    if fsm_run_a_x = "111" then
+                        if interp_done_op = "01" then
+                            fsm_run_x_b_u <= "0000";
+                            fixed_point_state <= "011";
+                        elsif interp_done_op = "10" then
+                            fsm_run_x_b_u <= "0000";
+                            fixed_point_state <= "101";
+                        end if;
+                    end if;
+                when "011" =>
+                    --activated in case of no current output point
+                    --check X+BU completion
+                    --increment h_doubler by h_main
+                    if fsm_run_x_b_u <= "1111" then
+                        fpu_add_1_in_1 <= h_doubler;
+                        fpu_add_1_in_2 <= h_main;
+                        enable_add_1 <= '1';
+                        fixed_point_state <= "100";
+                    end if;
+                when "100" =>
+                    --check increment completion 
+                    --update h_doubler
+                    if done_add_1 = '1' then
+                        h_doubler <= fpu_add_1_out;
+                        fixed_point_state <= "000"; 
+                    end if;
+                when "101" =>
+                    --activated in case of current output point
+                    --check X+BU completion
+                    --increment h_doubler by h_main
+                    --increment x_ware address
+                    --output lower part of the current X on data bus
+                    if fsm_run_x_b_u <= "1111" then
+                        fpu_add_1_in_1 <= h_doubler;
+                        fpu_add_1_in_2 <= h_main;
+                        enable_add_1 <= '1';
+                        increment_x_address <= '1';
+                        in_data <= result_x_temp(31 downto 0);
+                        fixed_point_state <= "110";
+                    end if;
+                when "110" =>
+                    --check h_doubler and X_c increment completion 
+                    --update h_doubler
+                    --check whether to output higher part of current X or not based on mode
+                    --output interrupt succes signal
+                    if done_add_1 = '1' and increment_x_address = '0' then
+                        h_doubler <= fpu_add_1_out;
+                        if mode_sig = "10" then --case fp64
+                            in_data <= result_x_temp(63 downto 32);
+                        end if;
+                        interrupt <= '1';
+                        error_success <= '1';
+                        fixed_point_state <= "000"; 
+                    end if;
                 when others =>
-                    null;             
+                    --NOP
+                    null;
             end case;
         end if;
     end process ;
 
-    --runs main computations for fixed and variable step
+    --main variable step driver
     --fsm_main_eq will be 3 bits for now...
     --my loop will be like this:
     --      send h
