@@ -366,7 +366,7 @@ begin
     -- handles reset signal for solver
     reset : process (clk, rst)
     begin
-        if rising_edge(clk) and rst = '1' then
+        if rst = '1' then
             ----RESET fpu's:
             --enable_mul_1            <= '1';
             --enable_add_1            <= '1';
