@@ -186,86 +186,86 @@ begin
             done    <= '0';
             cur_adr <= (others => '1');
         elsif rising_edge(clk) and enbl = '1' then
-            case(state) is
+            case state is
                 when STATE_START =>
-                -- start: next hdr(MM_HDR_0) + calculate max_*
-                cur_adr <= MM_HDR_0;
-                state   <= STATE_HDR;
-                header  <= in_data;
+                    -- start: next hdr(MM_HDR_0) + calculate max_*
+                    cur_adr <= MM_HDR_0;
+                    state   <= STATE_HDR;
+                    header  <= in_data;
 
                 when STATE_HDR =>
-                -- hdr: next h_err(MM_H_0)
-                cur_adr <= MM_H_0;
-                state   <= STATE_H_ERR;
+                    -- hdr: next h_err(MM_H_0)
+                    cur_adr <= MM_H_0;
+                    state   <= STATE_H_ERR;
 
                 when STATE_H_ERR =>
-                -- h_err: out (MM_H_0, x"0004"], next a(MM_A_0)
-                cur_adr <= new_adr;
+                    -- h_err: out (MM_H_0, x"0004"], next a(MM_A_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = MM_A_0 then
-                    cur_adr <= MM_A_0;
-                    state   <= STATE_A;
-                end if;
+                    if new_adr = MM_A_0 then
+                        cur_adr <= MM_A_0;
+                        state   <= STATE_A;
+                    end if;
 
                 when STATE_A =>
-                -- a: out (MM_A_0,max_a_adr], next b(MM_B_0)
-                cur_adr <= new_adr;
+                    -- a: out (MM_A_0,max_a_adr], next b(MM_B_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_a_adr then
-                    cur_adr <= MM_B_0;
-                    state   <= STATE_B;
-                end if;
+                    if new_adr = max_a_adr then
+                        cur_adr <= MM_B_0;
+                        state   <= STATE_B;
+                    end if;
 
                 when STATE_B =>
-                -- b: out (MM_B_0,max_b_adr], next x(MM_X_0)
-                cur_adr <= new_adr;
+                    -- b: out (MM_B_0,max_b_adr], next x(MM_X_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_b_adr then
-                    cur_adr <= MM_X_0;
-                    state   <= STATE_X;
-                end if;
+                    if new_adr = max_b_adr then
+                        cur_adr <= MM_X_0;
+                        state   <= STATE_X;
+                    end if;
 
                 when STATE_X =>
-                -- x: out (MM_X_0,max_x_adr], next u0(MM_U0_0)
-                cur_adr <= new_adr;
+                    -- x: out (MM_X_0,max_x_adr], next u0(MM_U0_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_x_adr then
-                    cur_adr <= MM_U0_0;
-                    state   <= STATE_U0;
-                end if;
+                    if new_adr = max_x_adr then
+                        cur_adr <= MM_U0_0;
+                        state   <= STATE_U0;
+                    end if;
 
                 when STATE_U0 =>
-                -- u0: out (MM_U0_0,max_u0_adr], next t(MM_T_0)
-                cur_adr <= new_adr;
+                    -- u0: out (MM_U0_0,max_u0_adr], next t(MM_T_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_u0_adr then
-                    cur_adr <= MM_T_0;
-                    state   <= STATE_T;
-                end if;
+                    if new_adr = max_u0_adr then
+                        cur_adr <= MM_T_0;
+                        state   <= STATE_T;
+                    end if;
 
                 when STATE_T =>
-                -- t: out (MM_T_0,max_t_adr], next us(MM_U_S_0)
-                cur_adr <= new_adr;
+                    -- t: out (MM_T_0,max_t_adr], next us(MM_U_S_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_t_adr then
-                    cur_adr <= MM_U_S_0;
-                    state   <= STATE_US;
-                end if;
+                    if new_adr = max_t_adr then
+                        cur_adr <= MM_U_S_0;
+                        state   <= STATE_US;
+                    end if;
 
                 when STATE_US =>
-                -- us: out (MM_U_S_0,maxu_us_adr], next done(Z)
-                cur_adr <= new_adr;
+                    -- us: out (MM_U_S_0,maxu_us_adr], next done(Z)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_us_adr then
-                    done    <= '1';
-                    cur_adr <= (others => 'Z');
-                    state   <= STATE_DONE;
-                end if;
+                    if new_adr = max_us_adr then
+                        done    <= '1';
+                        cur_adr <= (others => 'Z');
+                        state   <= STATE_DONE;
+                    end if;
 
                 when others =>
-                -- done: out Z
-                done    <= '1';
-                cur_adr <= (others => 'Z');
+                    -- done: out Z
+                    done    <= '1';
+                    cur_adr <= (others => 'Z');
             end case;
         end if;
     end process;
