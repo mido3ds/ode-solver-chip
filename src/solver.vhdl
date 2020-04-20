@@ -1531,38 +1531,55 @@ begin
 
     --main fixed step driver
     fixed : process(clk, fixed_or_var, fixed_point_state) 
+    variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) and fixed_or_var = '0' then
             case fixed_point_state is
-                when "000" => 
+                when "0000" => 
                     --wait for loop a and loop b 
                     --send lower half of new h to interpolater
                     if fsm_run_h_b = "000" and fsm_run_h_a = "0000" then
                         adr <= X"2C34";
                         in_data <= h_doubler(31 downto 0);
-                        fixed_point_state <= "001";
+                        fixed_point_state <= "0001";
                     end if;
-                when "001" =>
+                when "0001" =>
                     --send higher half of new h to interpolater
                     --run AX calculation
                     adr <= X"2C34";
                     in_data <= h_doubler(63 downto 32);
                     fsm_run_a_x <= "000";
-                    fixed_point_state <= "010";
-                when "010" =>
+                    fixed_point_state <= "0010";
+                when "0010" =>
                     --check AX and interpolator done signal
-                    --run X+BU FSM
+                    --read first half of U_new
                     --navigate to the suitable next state
                     if fsm_run_a_x = "111" then
-                        if interp_done_op = "01" then
-                            fsm_run_x_b_u <= "0000";
-                            fixed_point_state <= "011";
-                        elsif interp_done_op = "10" then
-                            fsm_run_x_b_u <= "0000";
-                            fixed_point_state <= "101";
+                        if interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11" then
+                            interp_done_sig := interp_done_op;
+                            result_u_main_temp(31 downto 0) <= in_data;
+                            fixed_point_state <= "0011";
                         end if;
                     end if;
-                when "011" =>
+                when "0011" =>
+                    --read higher part of U_new
+                    --enable U_new write
+                    result_u_main_temp(63 downto 32) <= in_data;
+                    write_u_main <= '1';
+                    fixed_point_state <= "0100";
+                when "0100" =>
+                    --check completion of U_new write
+                    --run X+BU calculation
+                    --navigate to the suitable state
+                    if write_u_main = '0' then
+                        fsm_run_x_b_u <= "0000";
+                        if interp_done_sig = "01" then
+                            fixed_point_state <= "0101";
+                        else
+                            fixed_point_state <= "0111";
+                        end if;
+                    end if;
+                when "0101" =>
                     --activated in case of no current output point
                     --check X+BU completion
                     --increment h_doubler by h_main
@@ -1570,16 +1587,16 @@ begin
                         fpu_add_1_in_1 <= h_doubler;
                         fpu_add_1_in_2 <= h_main;
                         enable_add_1 <= '1';
-                        fixed_point_state <= "100";
+                        fixed_point_state <= "0110";
                     end if;
-                when "100" =>
+                when "0110" =>
                     --check increment completion 
                     --update h_doubler
                     if done_add_1 = '1' then
                         h_doubler <= fpu_add_1_out;
-                        fixed_point_state <= "000"; 
+                        fixed_point_state <= "0000"; 
                     end if;
-                when "101" =>
+                when "0111" =>
                     --activated in case of current output point
                     --check X+BU completion
                     --increment h_doubler by h_main
@@ -1591,9 +1608,9 @@ begin
                         enable_add_1 <= '1';
                         increment_x_address <= '1';
                         in_data <= result_x_temp(31 downto 0);
-                        fixed_point_state <= "110";
+                        fixed_point_state <= "1000";
                     end if;
-                when "110" =>
+                when "1000" =>
                     --check h_doubler and X_c increment completion 
                     --update h_doubler
                     --check whether to output higher part of current X or not based on mode
@@ -1605,7 +1622,11 @@ begin
                         end if;
                         interrupt <= '1';
                         error_success <= '1';
-                        fixed_point_state <= "000"; 
+                        if interp_done_sig = "11" then
+                            fixed_point_state <= "1111"; 
+                        else
+                            fixed_point_state <= "0000"; 
+                        end if;
                     end if;
                 when others =>
                     --NOP
