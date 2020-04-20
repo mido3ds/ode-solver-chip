@@ -26,6 +26,26 @@ end entity;
 -----------------------------------------------------------------ARCHITECTURE-----------------------------------------------------------------------------------
 architecture rtl of interp is
 -----------------------------------------------------------------SIGNALS-----------------------------------------------------------------------------------
+--Header Signals
+--N
+signal N : integer range 0 to 50 ;
+signal N_vec : std_logic_vector(15 downto 0) := (others => '0');
+--M
+signal M : integer range 0 to 50 ;
+signal M_vec : std_logic_vector(15 downto 0) := (others => '0');
+--Data Mode
+signal mode_sig : std_logic_vector(1 downto 0) := "00";
+--Solver Mode
+signal fixed_or_var : std_logic := '0';
+--Output T Size
+signal t_size : std_logic_vector(2 downto 0) := "000";
+
+--Output Times Signals
+signal out_time_1, out_time_2, out_time_3, out_time_4, out_time_5 : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+
+--Received H Signal
+signal h_new : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+
 --FPUs Signals
 --FPU MUL 1
 signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
@@ -56,10 +76,17 @@ signal int_mul_1_enbl : std_logic := '0';
 signal U_s_rd, U_s_wr : std_logic := '0';
 signal U_s_address : std_logic_vector(9 downto 0) := (others => '0');
 signal U_s_data_in, U_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
---Ts Memory
-signal T_s_rd, T_s_wr : std_logic := '0';
-signal T_s_address : std_logic_vector(3 downto 0) := (others => '0');
-signal T_s_data_in, T_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+--U_out Memory
+signal U_out_rd, U_out_wr : std_logic := '0';
+signal U_out_address : std_logic_vector(3 downto 0) := (others => '0');
+signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+
+--Processes Signals
+--Main FSM Signals
+signal interp_state : std_logic_vector(3 downto 0) := (others => '0');
+
+--Range Finder Signals
+signal range_finder_enable : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -105,7 +132,7 @@ begin
             err       => err_add_1,
             zero      => zero_add_1,
             posv      => posv_add_1,
-            add_sub   => thisIsAdder
+            add_sub   => '0'
         );
     fpu_sub_1 : entity work.fpu_adder(rtl)
         port map(
@@ -120,7 +147,7 @@ begin
             err       => err_sub_1,
             zero      => zero_sub_1,
             posv      => posv_sub_1,
-            add_sub   => thisIsSub
+            add_sub   => '1'
         );
     fpu_sub_2 : entity work.fpu_adder(rtl)
         port map(
@@ -135,7 +162,7 @@ begin
             err       => err_sub_2,
             zero      => zero_sub_2,
             posv      => posv_sub_2,
-            add_sub   => thisIsSub
+            add_sub   => '1'
         );
 
     --ALUs (Integer Operations):
@@ -168,22 +195,75 @@ begin
                 data_out => U_s_data_out
             );
     
-    --Holding given output times
-    T_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 10, ADR_LENGTH=>4)
+    --Holding result output U
+    U_out : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
             port map(
                 clk      => clk,
-                rd       => T_s_rd,
-                wr       => T_s_wr,
-                address  => T_s_address,
-                data_in  => T_s_data_in,
-                data_out => T_s_data_out
+                rd       => U_out_rd,
+                wr       => U_out_wr,
+                address  => U_out_address,
+                data_in  => U_out_data_in,
+                data_out => U_out_data_out
             );
 -----------------------------------------------------------------PROCESSES-----------------------------------------------------------------------------------
 -----------------------------------------------------------------RESET-----------------------------------------------------------------------------------
+    --Reset
+    --handles reset signal for interpolator
+    reset : process (clk, rst)
+    begin
+        if rst = '1' then
+            null;
+        end if;
+    end process;
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
+    --Initialization
+    --detects addresses changes
+    detect_adr : process (clk, in_state, in_data, adr)
+    begin
+        null;
+    end process;
+
+    --enables data reading based on address
+    enable_read : process (clk, in_state, in_data, adr)
+    begin
+        null;
+    end process;
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
+    --Error Handling
+    --outputs error interrupt in case of fp errors
+    error_handler : process(clk, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
+    begin
+        null;
+    end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
 -----------------------------------------------------------------MATRIX MANIPULATION-----------------------------------------------------------------------------------
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
+    range_finder : process(clk, range_finder_enable)
+        begin
+            if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
+                null;
+            end if;
+    end process;
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
+    --main interpolator driver FSM
+    interpolate : process(clk, interp_state) 
+    begin
+        if rst = '0' and rising_edge(clk) then
+            case interp_state is
+                when "0000" => 
+                    --check input address
+                    --read lower part of h_new
+                    if adr = X"2C34" then
+                        h_new(31 downto 0) <= in_data;
+                        interp_state <= "0001";
+                    end if;
+                when "0001" =>
+                    h_new(63 downto 32) <= in_data;
+
+                when others =>
+                    --NOP
+                    null;
+            end case;
+        end if;
+    end process ;
 end architecture;
