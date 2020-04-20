@@ -49,14 +49,19 @@ architecture rtl of next_adr is
     alias hdr_tsize is header(16 downto 14);
 
     -- boundries
-    signal max_a_adr                 : std_logic_vector(out_adr'range);
-    signal max_b_adr                 : std_logic_vector(out_adr'range);
-    signal max_x                     : std_logic_vector(out_adr'range);
-    signal max_u0                    : std_logic_vector(out_adr'range);
-    signal max_t                     : std_logic_vector(out_adr'range);
-    signal max_us                    : std_logic_vector(out_adr'range);
+    signal max_a_adr                     : std_logic_vector(out_adr'range);
+    signal max_b_adr                     : std_logic_vector(out_adr'range);
+    signal max_x_adr                     : std_logic_vector(out_adr'range);
+    signal max_u0_adr                    : std_logic_vector(out_adr'range);
+    signal max_t_adr                     : std_logic_vector(out_adr'range);
+    signal max_us_adr                    : std_logic_vector(out_adr'range);
 
-    function increment_size(fpu_mode : std_logic_vector) return std_logic_vector is
+    -- tmp outputs
+    signal hdr_n_square                  : std_logic_vector(hdr_n'range);
+    signal hdr_n_m                       : std_logic_vector(hdr_n'range);
+    signal hdr_tsize_m                   : std_logic_vector(hdr_n'range);
+
+    function get_increment_size(fpu_mode : std_logic_vector) return std_logic_vector is
     begin
         if fpu_mode = FPU_MODE_FXD or fpu_mode = FPU_MODE_F32 then
             return to_vec(2, 2);
@@ -71,10 +76,103 @@ begin
         generic map(N => cur_adr'length, M => 2)
         port map(
             a    => cur_adr,
-            b    => increment_size(hdr_fpu_precision),
+            b    => get_increment_size(hdr_fpu_precision),
             cin  => '0',
             enbl => '1',
             c    => new_adr
+        );
+
+    -- max_a_adr
+    max_a_adr_mul : entity work.int_multiplier
+        generic map(N => hdr_n'length, M => hdr_n'length)
+        port map(
+            a    => hdr_n,
+            b    => hdr_n,
+            enbl => '1',
+            c    => hdr_n_square
+        );
+
+    max_a_adr_add : entity work.int_adder
+        generic map(N => MM_A_0'length, M => hdr_n_square'length)
+        port map(
+            a    => MM_A_0,
+            b    => multiply2(hdr_n_square),
+            cin  => '0',
+            enbl => '1',
+            c    => max_a_adr
+        );
+
+    -- max_b_adr
+    max_b_adr_mul : entity work.int_multiplier
+        generic map(N => hdr_n'length, M => hdr_m'length)
+        port map(
+            a    => hdr_n,
+            b    => hdr_m,
+            enbl => '1',
+            c    => hdr_n_m
+        );
+
+    max_b_adr_add : entity work.int_adder
+        generic map(N => MM_B_0'length, M => hdr_n_m'length)
+        port map(
+            a    => MM_B_0,
+            b    => multiply2(hdr_n_m),
+            cin  => '0',
+            enbl => '1',
+            c    => max_b_adr
+        );
+
+    -- max_x_adr
+    max_x_adr_add : entity work.int_adder
+        generic map(N => MM_X_0'length, M => hdr_n'length)
+        port map(
+            a    => MM_X_0,
+            b    => multiply2(hdr_n),
+            cin  => '0',
+            enbl => '1',
+            c    => max_x_adr
+        );
+
+    -- max_u0_adr
+    max_u0_adr_add : entity work.int_adder
+        generic map(N => MM_U0_0'length, M => hdr_m'length)
+        port map(
+            a    => MM_U0_0,
+            b    => multiply2(hdr_m),
+            cin  => '0',
+            enbl => '1',
+            c    => max_u0_adr
+        );
+
+    -- max_us_adr
+    max_us_adr_mul : entity work.int_multiplier
+        generic map(N => hdr_m'length, M => hdr_tsize'length)
+        port map(
+            a    => hdr_m,
+            b    => hdr_tsize,
+            enbl => '1',
+            c    => hdr_tsize_m
+        );
+
+    max_us_adr_add : entity work.int_adder
+        generic map(N => MM_U_S_0'length, M => hdr_tsize_m'length)
+        port map(
+            a    => MM_U_S_0,
+            b    => multiply2(hdr_tsize_m),
+            cin  => '0',
+            enbl => '1',
+            c    => max_us_adr
+        );
+
+    -- max_t_adr
+    max_t_adr_add : entity work.int_adder
+        generic map(N => MM_T_0'length, M => hdr_tsize'length)
+        port map(
+            a    => MM_T_0,
+            b    => multiply2(hdr_tsize),
+            cin  => '0',
+            enbl => '1',
+            c    => max_t_adr
         );
 
     process (clk, rst, state)
@@ -89,15 +187,15 @@ begin
                 cur_adr <= MM_HDR_0;
                 state   <= STATE_HDR_H_ERR;
                 header  <= in_data;
-                -- TODO: calc dimensions
 
                 when STATE_HDR_H_ERR =>
                 cur_adr <= new_adr;
 
                 if new_adr = MM_A_0 then
-                    state <= STATE_A;
+                    cur_adr <= MM_A_0;
+                    state   <= STATE_A;
                 end if;
-                
+
                 when STATE_A =>
                 cur_adr <= new_adr;
 
@@ -117,7 +215,7 @@ begin
                 when STATE_X =>
                 cur_adr <= new_adr;
 
-                if new_adr = max_x then
+                if new_adr = max_x_adr then
                     cur_adr <= MM_U0_0;
                     state   <= STATE_U0;
                 end if;
@@ -125,7 +223,7 @@ begin
                 when STATE_U0 =>
                 cur_adr <= new_adr;
 
-                if new_adr = max_u0 then
+                if new_adr = max_u0_adr then
                     cur_adr <= MM_T_0;
                     state   <= STATE_T;
                 end if;
@@ -133,7 +231,7 @@ begin
                 when STATE_T =>
                 cur_adr <= new_adr;
 
-                if new_adr = max_t then
+                if new_adr = max_t_adr then
                     cur_adr <= MM_U_S_0;
                     state   <= STATE_US;
                 end if;
@@ -141,7 +239,7 @@ begin
                 when STATE_US =>
                 cur_adr <= new_adr;
 
-                if new_adr = max_us then
+                if new_adr = max_us_adr then
                     done    <= '1';
                     cur_adr <= (others => 'Z');
                     state   <= STATE_DONE;
