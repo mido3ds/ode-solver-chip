@@ -34,22 +34,22 @@ architecture rtl of solver is
     --FPU ADD 1
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
     signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1 : std_logic                                  := '0';
+    signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1, thisIsAdder_1 : std_logic                                  := '0';
 
     --FPU ADD 2
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
     signal fpu_add_2_in_1, fpu_add_2_in_2, fpu_add_2_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_add_2, err_add_2, zero_add_2, posv_add_2, enable_add_2 : std_logic                                  := '0';
+    signal done_add_2, err_add_2, zero_add_2, posv_add_2, enable_add_2, thisIsAdder_2 : std_logic                                  := '0';
 
     --FPU ADD 3
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
-    signal fpu_add_3_in_1, fpu_add_3_in_2, fpu_add_3_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_add_3, err_add_3, zero_add_3, posv_add_3, enable_add_3 : std_logic                                  := '0';
+    --signal fpu_add_3_in_1, fpu_add_3_in_2, fpu_add_3_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    --signal done_add_3, err_add_3, zero_add_3, posv_add_3, enable_add_3, thisIsAdder_3 : std_logic                                  := '0';
 
     --FPU SUB 3
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
-    signal fpu_sub_1_in_1, fpu_sub_1_in_2, fpu_sub_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_sub_1, err_sub_1, zero_sub_1, posv_sub_1, enable_sub_1 : std_logic                                  := '0';
+    --signal fpu_sub_1_in_1, fpu_sub_1_in_2, fpu_sub_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    --signal done_sub_1, err_sub_1, zero_sub_1, posv_sub_1, enable_sub_1 : std_logic                                  := '0';
 
     --ADDRESS INCREMENTOR 1, ADDR_LENGTH is the maximum..
     signal address_inc_1_in, address_inc_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0)  := (others => '0');
@@ -97,17 +97,13 @@ architecture rtl of solver is
     signal X_intm_data_in, X_intm_data_out                             : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
     
     --Solver module's signals:
-    --SEMI PROCESSES ENABLES:
-    signal run_mul_n_m : std_logic_vector(1 downto 0) := "00";
-
+    
     --range [0:5], acts like a pointer to X_ware
     --fp16, fp32, fp64
     signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
     --address pointer: keeps track when initializing
     signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
     --declaring this fpu_adder unit as adder or subtractor
-    signal thisIsAdder : std_logic  := '0';
-    signal thisIsSub : std_logic  := '1';
     --N, used in looping at X, A, B
     signal N_X_A_B : integer range 0 to 50 ;
     signal N_X_A_B_vec : std_logic_vector(15 downto 0) := (others => '0');
@@ -143,12 +139,14 @@ architecture rtl of solver is
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
     --signal read_h_please,h_is_read,h_high : std_logic  := '0';
-    signal h_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal h_main, L_tol : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    signal h_high, L_high : std_logic  := '0';
-    signal h_doubler : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal h_high, L_high : std_logic  := '0'; -- You don't need them ,just listen to both addresses..
 
-    --result of a*H
+    signal h_doubler : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal h_adapt : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
+    signal err_sum : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    
     
     --run b processes
     signal b_high, read_b_coeff, write_b_coeff ,increment_b_address, decrement_b_address: std_logic  := '0';
@@ -161,6 +159,11 @@ architecture rtl of solver is
     signal fsm_main_eq   : std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_h   : std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_i_c : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_var_step_main : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_L_nine : std_logic_vector(1 downto 0) := (others => '0');
+    signal fsm_run_mul_n_m : std_logic_vector(1 downto 0) := "00";
+    signal fsm_run_err_h_L : std_logic_vector(1 downto 0) := "00";
+
 
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
@@ -200,7 +203,7 @@ begin
             err       => err_add_1,
             zero      => zero_add_1,
             posv      => posv_add_1,
-            add_sub   => thisIsAdder
+            add_sub   => thisIsAdder_1
         );
     fpu_add_2 : entity work.fpu_adder(rtl)
         port map(
@@ -215,38 +218,38 @@ begin
             err       => err_add_2,
             zero      => zero_add_2,
             posv      => posv_add_2,
-            add_sub   => thisIsAdder
+            add_sub   => thisIsAdder_2
         );
-    fpu_add_3 : entity work.fpu_adder(rtl)
-        port map(
-            clk       => clk,
-            rst       => rst,
-            mode      => mode_sig,
-            enbl      => enable_add_3,
-            in_a      => fpu_add_3_in_1,
-            in_b      => fpu_add_3_in_2,
-            out_c     => fpu_add_3_out,
-            done      => done_add_3,
-            err       => err_add_3,
-            zero      => zero_add_3,
-            posv      => posv_add_3,
-            add_sub   => thisIsAdder
-        );
-    fpu_sub_1 : entity work.fpu_adder(rtl)
-        port map(
-            clk       => clk,
-            rst       => rst,
-            mode      => mode_sig,
-            enbl      => enable_sub_1,
-            in_a      => fpu_sub_1_in_1,
-            in_b      => fpu_sub_1_in_2,
-            out_c     => fpu_sub_1_out,
-            done      => done_sub_1,
-            err       => err_sub_1,
-            zero      => zero_sub_1,
-            posv      => posv_sub_1,
-            add_sub   => thisIsSub
-        );
+    --fpu_add_3 : entity work.fpu_adder(rtl)
+    --    port map(
+    --        clk       => clk,
+    --        rst       => rst,
+    --        mode      => mode_sig,
+    --        enbl      => enable_add_3,
+    --        in_a      => fpu_add_3_in_1,
+    --        in_b      => fpu_add_3_in_2,
+    --        out_c     => fpu_add_3_out,
+    --        done      => done_add_3,
+    --        err       => err_add_3,
+    --        zero      => zero_add_3,
+    --        posv      => posv_add_3,
+    --        add_sub   => thisIsAdder_3
+    --    );
+    --fpu_add_4 : entity work.fpu_adder(rtl)
+    --    port map(
+    --        clk       => clk,
+    --        rst       => rst,
+    --        mode      => mode_sig,
+    --        enbl      => enable_add_4,
+    --        in_a      => fpu_add_4_in_1,
+    --        in_b      => fpu_add_4_in_2,
+    --        out_c     => fpu_add_4_out,
+    --        done      => done_add_4,
+    --        err       => err_add_4,
+    --        zero      => zero_add_4,
+    --        posv      => posv_add_4,
+    --        add_sub   => thisIsAdder_4
+    --    );
     
     --Integer operators:
     address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
@@ -488,7 +491,7 @@ begin
                     end if;
                     --this signal will initiate both:
                     -- N*M and N*N
-                    run_mul_n_m <= "11"; 
+                    fsm_run_mul_n_m <= "11"; 
 
                 when "011" =>
                     --error tolerance
@@ -498,7 +501,10 @@ begin
                     else
                         L_tol(31 downto 0) <= in_data;
                     end if;
+
                 when "100" =>
+                    --L_tol is read, so:
+                    fsm_run_L_nine <= "11";
                     --a coefficient
                     a_coeff_data_in <= in_data;
                     a_coeff_wr <= '1';
@@ -1043,8 +1049,20 @@ begin
                             --add one
                             fpu_add_1_in_1 <= a_temp;
                             --fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
+                            case( mode_sig ) is
+                            
+                                when "00" =>
+                                    fpu_add_1_in_2 <= (others => '0');
+                                    fpu_add_1_in_2(15 downto 0) <=  "0000000010000000";
+                                when "01" =>
+                                    fpu_add_1_in_2 <= (others => '0');
+                                    fpu_add_1_in_2(31 downto 0) <="00111111100000000000000000000000";
+                                when others =>
+                                    fpu_add_1_in_2 <= "0011111111110000000000000000000000000000000000000000000000000000";
+                            end case ;
                             fpu_add_1_in_2 <= (55 => '1', others => '0');
                             enable_add_1 <= '1';
+                            thisIsAdder_1 <= '0';
                             fsm_run_h_a <= "1011";
                         else
                             --continue 3ady
@@ -1065,6 +1083,7 @@ begin
                 when "0101" => 
                     if done_add_1 = '1' then
                         enable_add_1<= '0';
+                        thisIsAdder_1 <= '0';
                         write_a_coeff <='1';
                         fsm_run_h_a <= "0100";
                     end if;
@@ -1217,6 +1236,7 @@ begin
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= new_entry;
                         enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         fsm_run_a_x <= "100";
                     end if;
                 when "100" =>
@@ -1292,6 +1312,7 @@ begin
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= new_entry;
                         enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         fsm_run_x_b_u <= "0100";
                     end if;
                 when "0100" =>
@@ -1418,7 +1439,7 @@ begin
                     --NOP for now
                     null;
                 when "001" =>
-                    --read B coeff
+                    --read x's coeff
                     --operated only once
                     read_x_i <='1';
                     read_x <= '1';
@@ -1427,6 +1448,7 @@ begin
                     if read_x_i = '0' and read_x = '0' then
                         --b_temp holds current b element..
                         enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         fpu_add_1_in_1 <= x_temp;
                         fpu_add_1_in_2 <= x_i_temp;
                         fsm_run_x_i_c <= "011";
@@ -1475,31 +1497,143 @@ begin
         end if;
     end process ; -- proc_run_x_i_c
 
+
+    --returns : err_sum = sum(abs(Xi[i] - X_w[i]))
+    proc_run_sum_err : process( clk, fsm_run_sum_err )
+    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
+    variable temp_holder : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0'); 
+    variable addThisError: std_logic  := '0'; 
+    begin
+        if rising_edge(clk) then
+            case( fsm_run_sum_err ) is
+            
+                when "1111" =>
+                    --START:
+                    X_intm_address <= (others => '0');
+                    --x_ware_address is already updated as C_ware is updated
+                    --check proc_update_X_ware_address for more info :D
+                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    fsm_run_sum_err <= "0001";
+                    --clear the err_sum first
+                    err_sum <= (others =>'0');
+                when "0001" =>
+                    read_x_i <='1';
+                    read_x <= '1';
+                    fsm_run_sum_err <= "0010";
+                when "0010" =>
+                    if read_x_i = '0' and read_x = '0' then
+                        --b_temp holds current b element..
+                        enable_add_1 <= '1';
+                        fpu_add_1_in_1 <= x_temp;
+                        fpu_add_1_in_2 <= x_i_temp;
+                        thisIsAdder_1 <= '1'; --1 for subtracting
+                        fsm_run_sum_err <= "0011";
+                    end if;
+                when "0011" =>
+                    if done_add_1 = '1' then
+                        --non zero value
+                        enable_add_1 <= '0';
+                        temp_holder <= fpu_add_1_out;
+                        if zero_add_1 = '0' then
+                            if posv_add_1 = '0' then
+                                --negative
+                                --take absolute then continue
+                                enable_mul_1 <= '1';
+                                fpu_mul_1_in_1 <= temp_holder;
+                                --What is -1 ?
+                                case( mode_sig ) is
+                                    when "00" => 
+                                        fpu_mul_1_in_2 <= (others =>'0');
+                                        fpu_mul_1_in_2(15 downto 0) <= "1111111110000000";
+                                    when "01" =>
+                                        fpu_mul_1_in_2 <= (others =>'0');
+                                        fpu_mul_1_in_2(31 downto 0) <= "10111111100000000000000000000000";
+                                    when "10" =>
+                                        fpu_mul_1_in_2(63 downto 0) <= "1011111111110000000000000000000000000000000000000000000000000000";
+                                    when others =>
+                                end case ;
+                                fsm_run_sum_err <= "1000";
+                            else
+                                --positive
+                                --continue
+                                fsm_run_sum_err <= "0100";
+                            end if;
+
+                        else
+                            --we don't have to add it
+                            --jump to where you decrement the counter
+                            addThisError := '1';
+                            fsm_run_sum_err <= "0101";
+                        end if;
+                        
+                    end if;
+                when "0100" =>
+                    --add this error ya 7abeby
+                    enable_add_1 <= '1';
+                    thisIsAdder_1 <= '0';
+                    fpu_add_1_in_1 <= err_sum;
+                    fpu_add_1_in_2 <= temp_holder; --abs (x1[i] - x2[i])
+                    fsm_run_sum_err <= "0101";
+                when "0101" =>
+                    if done_add_1 = '1' or addThisError = '1' then
+                        --decrement the counter
+                        addThisError = '0';
+                        err_sum <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                        address_dec_1_in <= N_X_A_B_TEMP;
+                        address_dec_1_enbl <= '1';
+                        fsm_run_sum_err <= "0110";
+                    end if;
+                when "0110" =>
+                    address_dec_1_enbl <= '0';
+                    N_X_A_B_TEMP := address_dec_1_out;
+                    if N_X_A_B_TEMP = X"0000" then
+                        --end loop
+                        fsm_run_sum_err <= "0000";
+                        fsm_run_err_h_L <= "11";
+                    else
+                        --LOOP AGAIN
+                        fsm_run_sum_err <= "0001";
+                    end if;
+                when "1000" =>
+                    if done_mul_1 = '1' then
+                        temp_holder := fpu_mul_1_out;
+                        enable_mul_1 <='0';
+                        fsm_run_sum_err <= "0100";
+                    end if;
+               
+                when others =>
+                    --zeros and others
+                    null;
+            end case ;
+
+        end if;
+    end process ; -- proc_run_sum_err
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --multiples N*N or N*M
-    proc_run_mul_n_m_and_n_n : process( clk, run_mul_n_m )
+    proc_run_mul_n_m_and_n_n : process( clk, fsm_run_mul_n_m )
     --variable first_operation: std_logic  := '0';
     begin
         if rst = '0' and rising_edge (clk) then
-            case( run_mul_n_m ) is
+            case( fsm_run_mul_n_m ) is
                 when "00" => null;
                 when "01" =>
                     --assuming answer is ready
                     N_N <= int_mul_1_out;
                     int_mul_1_in_2 <= M_U_B_vec;
                     int_mul_1_enbl <= '1';
-                    run_mul_n_m <= "01";
+                    fsm_run_mul_n_m <= "01";
                 when "10" =>
                     N_M <= int_mul_1_out;
                     int_mul_1_enbl <= '0';
-                    run_mul_n_m <= "00";
+                    fsm_run_mul_n_m <= "00";
                 when others =>
                     --11
                     --START
                     int_mul_1_enbl <= '1';
                     int_mul_1_in_1 <= N_X_A_B_vec;
                     int_mul_1_in_2 <= N_X_A_B_vec;
-                    run_mul_n_m <= "01";
+                    fsm_run_mul_n_m <= "01";
             end case ;
         end if;
     end process ; -- proc_run_n_m_and_n_n
@@ -1525,6 +1659,92 @@ begin
         end case ;
     end process ; -- proc_update_X_ware_address
 
+
+    --f16: 0000000001110011
+    --f32: 0011 1111 0110 0110 0110 0110 0110 0110
+    --f64: 0011111111101100110011001100110011001100110011001100110011001101
+    proc_run_L_nine : process(clk, fsm_run_L_nine )
+    variable nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0'); 
+    begin
+        if rising_edge(clk) then
+            case( fsm_run_L_nine ) is
+            
+                when "11" =>
+                    --START
+                    case( mode_sig ) is
+                    
+                        when "00" =>
+                            nine := (others => '0');
+                            nine(7 downto 0) := "01110011";
+                        when "01" =>
+                            nine := (others => '0');
+                            nine(31 downto 0) := "00111111011001100110011001100110";
+                        when "10" =>
+                            nine := "0011111111101100110011001100110011001100110011001100110011001101";
+                        when others =>
+                            null;
+                    end case ;
+                    fsm_run_L_nine <= "01";
+                when "01" =>
+                    enable_mul_1 <= '1';
+                    fpu_mul_1_in_1 <= L_tol;
+                    fpu_mul_1_in_2 <= nine;
+                    fsm_run_L_nine <= "10";
+                when "10" =>
+                    if done_mul_1 = '1' then
+                        L_nine <= fpu_mul_1_out;
+                        enable_mul_1 <= '0';
+                        fsm_run_L_nine <= "00";
+                    end if;
+                when others =>
+                    --zeros and others
+                    null;
+            end case ;
+        end if;
+    end process ; -- proc_run_L_nine
+
+    --you know the regs. err_sum
+    --this process takes err_sum
+    -- and produce : err_sum = (h*h*L*0.9)/err_sum
+    proc_run_err_h_L : process( clk, fsm_run_err_h_L)
+    begin
+        if rising_edge(clk) then
+            case( fsm_run_err_h_L ) is
+            
+                when "11" =>
+                    --start
+                    enable_mul_1<='1';
+                    fpu_mul_1_in_1 <= h_adapt;
+                    fpu_mul_1_in_2 <= h_adapt;
+
+                    enable_div_1 <= '1';
+                    fpu_div_1_in_1 <= L_nine;
+                    fpu_div_1_in_2 <= err_sum;
+
+                    fsm_run_err_h_L <= "01";
+                when "01" =>
+                    if done_mul_1 = '1' and done_div_1 = '1' then
+                        fpu_mul_1_in_1 <= fpu_mul_1_out; --h*h
+                        enable_div_1 <= '0';
+                        fpu_mul_1_in_2 <= fpu_div_1_out; --L*0.9/err_sum
+                        enable_mul_1<='1'; --just to make sure y3ny..
+                        fsm_run_err_h_L <= "10";
+                    end if;
+                when "10" =>
+                    if done_mul_1 = '1' then
+                        err_sum <= fpu_mul_1_out;
+                        enable_mul_1 <= '0';
+                        fsm_run_err_h_L <= "00";
+                    end if;
+                    when others =>
+                    --zeros and others
+                    null;
+            end case ;
+        end if;        
+    end process ; -- proc_run_err_h_L
+
+
+
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
     --Fixed Step Size
     --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
@@ -1532,10 +1752,10 @@ begin
     --Divided into multiple processes
 
     --main fixed step driver
-    fixed : process(clk, fixed_or_var, fixed_point_state) 
+    fixed : process(clk, fixed_or_var, fixed_point_state, in_state) 
     variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
     begin
-        if rst = '0' and rising_edge(clk) and fixed_or_var = '0' then
+        if rst = '0' and rising_edge(clk) and fixed_or_var = '0' and in_state="10" then
             case fixed_point_state is
                 when "0000" => 
                     --wait for loop a and loop b 
@@ -1589,6 +1809,7 @@ begin
                         fpu_add_1_in_1 <= h_doubler;
                         fpu_add_1_in_2 <= h_main;
                         enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         fixed_point_state <= "0110";
                     end if;
                 when "0110" =>
@@ -1608,6 +1829,7 @@ begin
                         fpu_add_1_in_1 <= h_doubler;
                         fpu_add_1_in_2 <= h_main;
                         enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         increment_x_address <= '1';
                         in_data <= result_x_temp(31 downto 0);
                         fixed_point_state <= "1000";
@@ -1637,70 +1859,45 @@ begin
         end if;
     end process ;
 
-    --main variable step driver
-    --fsm_main_eq will be 3 bits for now...
-    --my loop will be like this:
-    --      send h
-    --      X_i = A*X_c
-    --      X_i = X_i + B*U
-    --      X_i = X_i * h, only if we are variable step size
-    --      X_i = X_i + X_c, only if we are variable step size
-    --      exit
-    proc_run_main_eq : process(clk, fsm_main_eq )
+    
+    -- LOOP:
+    -- 0- START:
+    --      h_adapt = h_main
+    
+
+    -- 1- calc two steps equations:
+            --1.1- Xi = X_w[c] + h_div (X_w[c], U_main)
+            --1.2- X_w[c+1] = Xi + h_div (Xi, U_sub) --irrecgular equation fsm :D
+    -- 2- calc one step equation: (fsm_main_eq)
+    --      X_i = X_w[c] + h_adapt(X_w[c], U_main)
+    -- 3- calc error
+    -- 4.1- error is bad (err > L_tol):
+    --      h_adapt = h_adapt * h_adapt * L_nine / err
+    --      jump back to 1
+    -- 4.2- error is good (err <= L_tol):
+    --      run fsm main eq
+    -- 5- check for termination
+
+    --NOTES:
+    -- You can use h_div as h_doubler...
+    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
+    proc_fsm_var_step_main : process( clk,fsm_var_step_main, in_state )
     begin
-        if rst = '0' and rising_edge (clk) then
-            case( fsm_main_eq ) is
+        if rising_edge(clk) and fixed_or_var = '1' and in_state = "10" then
+
+            case( fsm_var_step_main ) is
             
-                when "001" =>
-                    --send lower bits
-                    adr <= X"2C34";
-                    in_data <= h_doubler(31 downto 0);
-                    --start the AX process
-                    ------------------------------------------------error---------------------
-                    fsm_run_a_x <= "000";
-                    fsm_main_eq <= "010";
-                when "010" =>
-                    --don't send anything...CLEAR
-                    adr <= (others => '0');
-                    in_data <= (others => '0');
-                    if fsm_run_a_x = "111" then
-                        if interp_done_op = "01" or interp_done_op = "10" then
-                        ----------------------------------------error-------------------------
-                            fsm_run_x_b_u <= "0000";
-                            fsm_main_eq <= "011";
-                        end if;
-                    end if;
-                when "011" =>
-                ----------------------------------------error-------------------------
-                    if fsm_run_x_b_u <= "1111" then
-                    ----------------------------------------error-------------------------
-                        fsm_run_x_h <="111";
-                        fsm_main_eq <= "100";
-                    end if;
-                when "100" =>
-                                ----------------------------------------error-------------------------
-                    if fsm_run_x_h = "000" then
-                                    ----------------------------------------error-------------------------
-                        fsm_run_x_i_c <= "111";
-                        fsm_main_eq <= "101";
-                    end if;
-                when "101" =>
-                    --END LOOP
-                    if fsm_run_x_i_c = "000" then
-                        fsm_main_eq <= "000";
-                    end if;
-                --when "110" =>
                 when "111" =>
-                    --STARTING POINT...
-                    --Send h_doubler to interpolator..
-                    --Send only the upper bits
-                    adr <= X"2C33";
-                    in_data <= h_doubler(63 downto 32);
-                    fsm_main_eq <= "001";
+                    --START babyyy
+
+            
                 when others =>
-                    --"000" and not used states...
+                    -- zeros and other cases
                     null;
             end case ;
+
+
         end if;
-    end process ; -- proc_run_main_eq
+    end process ; -- proc_fsm_var_step_main
 end architecture;
+
