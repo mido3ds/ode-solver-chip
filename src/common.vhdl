@@ -81,6 +81,7 @@ package common is
     function to_str(a           : std_logic) return string;
 
     function flip(v             : std_logic_vector) return std_logic_vector;
+    function multiply2(i        : std_logic_vector) return std_logic_vector;
 end package;
 
 package body common is
@@ -189,5 +190,10 @@ package body common is
         end if;
 
         return '0';
+    end function;
+
+    function multiply2(i : std_logic_vector) return std_logic_vector is
+    begin
+        return std_logic_vector(shift_left(unsigned(i), 1));
     end function;
 end package body;
