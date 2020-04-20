@@ -13,8 +13,8 @@ entity decompressor is
         out_ready : out std_logic;
         out_data  : out std_logic_vector(31 downto 0);
 
-        -- for testing and debugging 
-        buf_dbg   : out std_logic_vector(128 - 1 downto 0)
+        -- for testing
+        buf_test   : out std_logic_vector(128 - 1 downto 0)
     );
 end entity;
 
@@ -110,7 +110,7 @@ begin
             c    => buf_fill_flush_diff
         );
 
-    buf_dbg <= buf;
+    buf_test <= buf;
 
     process (enbl_in, clk, rst)
         procedure fill_buffer is

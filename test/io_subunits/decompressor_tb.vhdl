@@ -33,7 +33,7 @@ begin
             enbl_in   => enbl_in,
             clk       => clk,
             out_data  => out_data,
-            buf_dbg   => buf,
+            buf_test   => buf,
             out_ready => out_ready
         );
 
