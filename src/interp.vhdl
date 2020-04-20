@@ -79,7 +79,7 @@ begin
             posv      => posv_mul_1
         );
     fpu_div_1 : entity work.fpu_divider(rtl)
-        port (
+        port map(
             clk       => clk,
             rst       => rst,
             mode      => mode_sig,

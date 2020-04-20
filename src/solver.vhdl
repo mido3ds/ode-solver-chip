@@ -146,6 +146,7 @@ architecture rtl of solver is
     signal h_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal h_main, L_tol : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal h_high, L_high : std_logic  := '0';
+    signal h_doubler : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
     --result of a*H
     
@@ -155,15 +156,16 @@ architecture rtl of solver is
     signal result_b_temp : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
 
-    signal fsm_run_h_b : std_logic_vector(2 downto 0) := (others => '0');
-    signal fsm_run_h_a : std_logic_vector(3 downto 0) := (others => '0');
-    signal fsm_main_eq : std_logic_vector(2 downto 0) := (others => '0');
-    signal fsm_run_x_h : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_h_b   : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_h_a   : std_logic_vector(3 downto 0) := (others => '0');
+    signal fsm_main_eq   : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_x_h   : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_x_i_c : std_logic_vector(2 downto 0) := (others => '0');
 
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
-    signal fsm_run_a_x: std_logic := '0';
-    signal fsm_run_x_b_u: std_logic := '0';
+    signal fsm_run_a_x: std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_x_b_u: std_logic_vector(3 downto 0) := (others => '0');
     --Like a pointer at X_ware, once it changes address value is updated
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
@@ -969,7 +971,7 @@ begin
                         u_main_data_in <= result_u_main_temp (31 downto 0) ;
                         u_main_high <= '0';
                         increment_u_main_address <= '1';
-                        write_u_main_coeff <= '0';
+                        write_u_main <= '0';
                     end if;
                 end if;            
 
@@ -1230,14 +1232,14 @@ begin
                     end if;
                 when "101" =>
                     --update counters
-                    N_N_temp <= address_dec_1_out;
-                    N_temp <= address_dec_2_out;
+                    N_N_temp := address_dec_1_out;
+                    N_temp := address_dec_2_out;
                     --check if the end of the column is reached
                     if N_temp = X"0000" then
                         to_write := new_entry;
                         result_x_temp <= to_write; --write the current entry
                         write_x_i <= '1';
-                        N_temp <= N_X_A_B_vec; --reset N
+                        N_temp := N_X_A_B_vec; --reset N
                         new_entry := (others => '0');
                     end if;
                     fsm_run_a_x <= "110";
@@ -1305,11 +1307,11 @@ begin
                     end if;
                 when "0101" =>
                     --update counters
-                    N_M_temp <= address_dec_1_out;
-                    M_temp <= address_dec_2_out;
+                    N_M_temp := address_dec_1_out;
+                    M_temp := address_dec_2_out;
                     --check if the end of the column is reached
                     if M_temp = X"0000" then
-                        M_temp <= M_U_B_vec; --reset M
+                        M_temp := M_U_B_vec; --reset M
                         read_x_i <= '1'; --read corresponding X_i
                         fsm_run_x_b_u <= "0110";
                     else
@@ -1400,7 +1402,7 @@ begin
                 when others =>
                     --START working, init w kda
                     X_intm_address <= (others => '0');
-                    N_X_A_B_TEMP := N_X_A_B;
+                    N_X_A_B_TEMP := N_X_A_B_vec;
                     fsm_run_x_h <= "001";
             end case ;
         end if;
@@ -1505,7 +1507,7 @@ begin
     --updates X_ware address pointer                       
     proc_update_X_ware_address : process( c_ware,listen_to_me )
     begin
-        case( c_ware,listen_to_me ) is
+        case(c_ware) is
             when "000" =>
                 x_ware_address <= (others => '0');
             when "001" =>
@@ -1655,22 +1657,22 @@ begin
                     in_data <= h_doubler(31 downto 0);
                     --start the AX process
                     ------------------------------------------------error---------------------
-                    run_a_x <= '1';
+                    fsm_run_a_x <= "000";
                     fsm_main_eq <= "010";
                 when "010" =>
                     --don't send anything...CLEAR
                     adr <= (others => '0');
                     in_data <= (others => '0');
-                    if run_a_x = '0' then
+                    if fsm_run_a_x = "111" then
                         if interp_done_op = "01" or interp_done_op = "10" then
                         ----------------------------------------error-------------------------
-                            run_b_u <= '1';
+                            fsm_run_x_b_u <= "0000";
                             fsm_main_eq <= "011";
                         end if;
                     end if;
                 when "011" =>
                 ----------------------------------------error-------------------------
-                    if run_b_u <= '0' then
+                    if fsm_run_x_b_u <= "1111" then
                     ----------------------------------------error-------------------------
                         fsm_run_x_h <="111";
                         fsm_main_eq <= "100";
@@ -1679,7 +1681,7 @@ begin
                                 ----------------------------------------error-------------------------
                     if fsm_run_x_h = "000" then
                                     ----------------------------------------error-------------------------
-                        fsm_run_x_i_c <= '111';
+                        fsm_run_x_i_c <= "111";
                         fsm_main_eq <= "101";
                     end if;
                 when "101" =>
