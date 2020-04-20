@@ -2,10 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 
-entity multiplier_tb is
-end multiplier_tb;
+entity fpu_multiplier_tb is
+end fpu_multiplier_tb;
 
-architecture tb of multiplier_tb is
+architecture tb of fpu_multiplier_tb is
     signal testa, testb, testc                              : std_logic_vector (63 downto 0);
     signal mode                                             : std_logic_vector(1 downto 0) := (others => '0');
     signal testDone, testErr, testZero, testPosv, enbl, rst : std_logic                    := '0';
