@@ -16,8 +16,8 @@ main() {
     cd out
 
     docker exec -w "$PWD" ghdld bash -c "
-        find ../src/ | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
-        find ../test/non_vunit | grep .vhdl | xargs -l ghdl -i --ieee=synopsys -fexplicit
+        find ../src/ | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
+        find ../test/non_vunit | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit
 
         set -e
 
