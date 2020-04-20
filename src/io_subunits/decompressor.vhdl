@@ -49,23 +49,37 @@ architecture rtl of decompressor is
     begin
         return flip(in_data)(i * 4 + 3);
     end function;
+
+    -- range_extr inputs
+    signal range_extr_0_in_size : std_logic_vector(2 downto 0);
+
+    type vec_6x3 is array(1 to 7) of std_logic_vector(2 downto 0);
+    signal range_extr_i_in_size : vec_6x3;
 begin
+    range_extr_0_in_size <= flip(flip(in_data)(2 downto 0));
     range_extr_0 : entity work.range_extractor
         port map(
             -- inputs
             in_a    => buf_fill_i,
-            in_size => flip(flip(in_data)(2 downto 0)),
+            in_size => range_extr_0_in_size,
             -- outputs
             out_a   => out_as(0),
             out_b   => out_bs(0)
         );
+
+    process (in_data)
+    begin
+        for i in 1 to 7 loop
+            range_extr_i_in_size(i) <= get_size(i, in_data);
+        end loop;
+    end process;
 
     ranges : for i in 1 to 7 generate
         range_extr_i : entity work.range_extractor
             port map(
                 -- inputs
                 in_a    => out_bs(i - 1),
-                in_size => get_size(i, in_data),
+                in_size => range_extr_i_in_size(i),
                 -- outputs
                 out_a   => out_as(i),
                 out_b   => out_bs(i)
