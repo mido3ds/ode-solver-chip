@@ -22,16 +22,19 @@ architecture rtl of io is
     -- decompressor
     signal dcm_out_data  : std_logic_vector(in_data'range);
     signal dcm_out_ready : std_logic;
+    signal dcm_enbl_in   : std_logic;
 
     -- next adr
     signal nau_out_adr   : std_logic_vector(adr'range);
     signal nau_done      : std_logic;
 begin
+    dcm_enbl_in <= to_std_logic(in_state = STATE_LOAD);
+
     decompressor : entity work.decompressor
         port map(
             in_data   => cpu_data,
             rst       => rst,
-            enbl_in   => to_std_logic(in_state = STATE_LOAD),
+            enbl_in   => dcm_enbl_in,
             clk       => clk,
             out_data  => dcm_out_data,
             out_ready => dcm_out_ready
@@ -39,12 +42,12 @@ begin
 
     nau : entity work.next_adr
         port map(
-            in_data  => dcm_out_data,
-            in_ready => dcm_out_ready,
-            clk      => clk,
-            rst      => rst,
-            out_adr  => nau_out_adr,
-            done     => nau_done
+            in_data => dcm_out_data,
+            enbl    => dcm_out_ready,
+            clk     => clk,
+            rst     => rst,
+            out_adr => nau_out_adr,
+            done    => nau_done
         );
 
     process (clk, rst, in_state)
