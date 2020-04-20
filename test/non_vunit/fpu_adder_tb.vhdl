@@ -1,0 +1,696 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all;
+
+entity fpu_adder_tb is
+end entity;
+
+architecture testing_with_operator of fpu_adder_tb is
+    signal A, B, F        : std_logic_vector(15 downto 0);
+    signal error_Signal   : std_logic;
+    signal zero_signal    : std_logic;
+    signal done_signal    : std_logic;
+    signal posv_signal    : std_logic;
+    signal clk_signal     : std_logic;
+    signal rst_signal     : std_logic;
+    signal enable_signal  : std_logic;
+    signal add_sub_signal : std_logic;
+    signal mode_signal    : std_logic_vector(1 downto 0);
+begin
+    fpu_adder_with_operator : entity work.fpu_adder(with_operators)
+        port map(
+            mode => mode_signal, clk => clk_signal, rst => rst_signal,
+            enbl => enable_signal, add_sub => add_sub_signal, in_a => A, in_b => B, out_c => F, done => done_signal,
+            err => error_signal, zero => zero_signal, posv => posv_signal
+        );
+
+    process
+    begin
+        -- Test addition
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000001100000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 1: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "0000000000100110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 2: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000010");
+        wait for 100 ps;
+        assert(F = "0000000000001010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 3: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "1111111111101000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 4: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000000000000000");
+        assert(zero_signal = '1');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 5: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111101110010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 6: passed";
+
+        -- Test subtraction 
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000000001000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 7: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "1111111110110110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 8: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000100");
+        wait for 100 ps;
+        assert(F = "0000000000000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 9: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "0000000101110000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 10: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000001010000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 11: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111111101010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 12: passed";
+
+        --Test error signal 
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1000000000000001");
+        B              <= ("1111111111110000");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 13: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0111111111111111");
+        B              <= ("0111111111111111");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 14: passed";
+
+        wait;
+    end process;
+end architecture;
+
+architecture testing_cla of fpu_adder_tb is
+    signal A, B, F                                                                                                    : std_logic_vector(15 downto 0);
+    signal error_Signal, zero_signal, done_signal, posv_signal, clk_signal, rst_signal, enable_signal, add_sub_signal : std_logic;
+    signal mode_signal                                                                                                : std_logic_vector(1 downto 0);
+begin
+    fpu_adder_cla : entity work.fpu_adder(first_algo)
+        port map(
+            mode => mode_signal, clk => clk_signal, rst => rst_signal,
+            enbl => enable_signal, add_sub => add_sub_signal, in_a => A, in_b => B, out_c => F, done => done_signal,
+            err => error_signal, zero => zero_signal, posv => posv_signal
+        );
+
+    process
+    begin
+        -- Test addition
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000001100000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 1: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "0000000000100110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 2: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000010");
+        wait for 100 ps;
+        assert(F = "0000000000001010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 3: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "1111111111101000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 4: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000000000000000");
+        assert(zero_signal = '1');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 5: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111101110010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 6: passed";
+
+        -- Test subtraction 
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000000001000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 7: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "1111111110110110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 8: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000100");
+        wait for 100 ps;
+        assert(F = "0000000000000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 9: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "0000000101110000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 10: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000001010000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 11: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111111101010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 12: passed";
+
+        --Test error signal 
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1000000000000001");
+        B              <= ("1111111111110000");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 13: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0111111111111111");
+        B              <= ("0111111111111111");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 14: passed";
+
+        wait;
+    end process;
+end architecture;
+
+architecture testing_carry_select of fpu_adder_tb is
+    signal A, B, F        : std_logic_vector(15 downto 0);
+    signal error_Signal   : std_logic;
+    signal zero_signal    : std_logic;
+    signal done_signal    : std_logic;
+    signal posv_signal    : std_logic;
+    signal clk_signal     : std_logic;
+    signal rst_signal     : std_logic;
+    signal enable_signal  : std_logic;
+    signal add_sub_signal : std_logic;
+    signal mode_signal    : std_logic_vector(1 downto 0);
+begin
+    fpu_adder_carry_select : entity work.fpu_adder(sec_algo)
+        port map(
+            mode => mode_signal, clk => clk_signal, rst => rst_signal,
+            enbl => enable_signal, add_sub => add_sub_signal, in_a => A, in_b => B, out_c => F, done => done_signal,
+            err => error_signal, zero => zero_signal, posv => posv_signal
+        );
+
+    process
+    begin
+        -- Test addition
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000001100000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 1: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "0000000000100110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 2: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000010");
+        wait for 100 ps;
+        assert(F = "0000000000001010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 3: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "1111111111101000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 4: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000000000000000");
+        assert(zero_signal = '1');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 5: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111101110010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 6: passed";
+
+        -- Test subtraction 
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000110100");
+        B              <= ("0000000000101100");
+        wait for 100 ps;
+        assert(F = "0000000000001000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 7: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111111101110");
+        B              <= ("0000000000111000");
+        wait for 100 ps;
+        assert(F = "1111111110110110");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 8: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000000001000");
+        B              <= ("0000000000000100");
+        wait for 100 ps;
+        assert(F = "0000000000000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 9: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000010101100");
+        B              <= ("1111111100111100");
+        wait for 100 ps;
+        assert(F = "0000000101110000");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 10: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("0000000101000010");
+        B              <= ("1111111010111110");
+        wait for 100 ps;
+        assert(F = "0000001010000100");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '1');
+        assert(done_signal = '1');
+        report "Test Passed 11: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('1');
+        A              <= ("1111111110101110");
+        B              <= ("1111111111000100");
+        wait for 100 ps;
+        assert(F = "1111111111101010");
+        assert(zero_signal = '0');
+        assert(error_signal = '0');
+        assert(posv_signal = '0');
+        assert(done_signal = '1');
+        report "Test Passed 12: passed";
+
+        --Test error signal 
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("1000000000000001");
+        B              <= ("1111111111110000");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 13: passed";
+
+        rst_signal <= ('1');
+        wait for 100 ps;
+        enable_signal  <= ('1');
+        rst_signal     <= ('0');
+        add_sub_signal <= ('0');
+        A              <= ("0111111111111111");
+        B              <= ("0111111111111111");
+        wait for 100 ps;
+        assert(error_signal = '1');
+        report "Test Passed 14: passed";
+
+        wait;
+    end process;
+end architecture;
