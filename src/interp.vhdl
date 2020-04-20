@@ -103,7 +103,7 @@ signal read_u_out, write_u_out, increment_u_out, decrement_u_out : std_logic := 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
     --FPUs:
-    fpu_mul_1 : entity work.fpu_multiplier(rtl)
+    fpu_mul_1 : entity work.fpu_multiplier(sec_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -117,7 +117,7 @@ begin
             zero      => zero_mul_1,
             posv      => posv_mul_1
         );
-    fpu_div_1 : entity work.fpu_divider(rtl)
+    fpu_div_1 : entity work.fpu_divider(first_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -131,7 +131,7 @@ begin
             zero      => zero_div_1,
             posv      => posv_div_1
         );
-    fpu_add_1 : entity work.fpu_adder(rtl)
+    fpu_add_1 : entity work.fpu_adder(sec_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -146,7 +146,7 @@ begin
             posv      => posv_add_1,
             add_sub   => '0'
         );
-    fpu_sub_1 : entity work.fpu_adder(rtl)
+    fpu_sub_1 : entity work.fpu_adder(sec_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -161,7 +161,7 @@ begin
             posv      => posv_sub_1,
             add_sub   => '1'
         );
-    fpu_sub_2 : entity work.fpu_adder(rtl)
+    fpu_sub_2 : entity work.fpu_adder(sec_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -386,6 +386,8 @@ begin
                         interp_state <= "0011";
                     end if;
                 when "0011" =>
+                    --check subtraction completion
+                    --divide the resultant Ts
                     if done_sub_1 = '1' and done_sub_2 = '1' then
                         fpu_div_1_in_1 <= fpu_sub_2_out;
                         fpu_div_1_in_2 <= fpu_sub_1_out;
@@ -393,17 +395,23 @@ begin
                         interp_state <= "0100";
                     end if;
                 when "0100" =>
+                    --check division completion
+                    --read lower U
                     if done_div_1 = '1' then
                         t_const <= fpu_div_1_out;
                         read_u_s_low <= '1';
                         interp_state <= "0101";
                     end if;
                 when "0101" =>
+                    --check read completion
+                    --read higher U
                     if read_u_s_low = '0' then
                         read_u_s_high <= '1';
                         interp_state <= "0110";
                     end if;
                 when "0110" =>
+                    --check read completion
+                    --subtract two Us
                     if read_u_s_high = '0' then
                         fpu_sub_1_in_1 <= u_high_temp;
                         fpu_sub_1_in_2 <= u_low_temp;
@@ -411,6 +419,8 @@ begin
                         interp_state <= "0111";
                     end if;
                 when "0111" =>
+                    --check subtraction completion
+                    --multiply resultant T with subtraction result
                     if done_sub_1 = '1' then
                         fpu_mul_1_in_1 <= fpu_sub_1_out;
                         fpu_mul_1_in_2 <= t_const;
@@ -418,6 +428,8 @@ begin
                         interp_state <= "1000";
                     end if;
                 when "1000" =>
+                    --check multiplication completion
+                    --add multiplication result to U low
                     if done_mul_1 = '1' then
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= u_low_temp;
@@ -425,9 +437,12 @@ begin
                         interp_state <= "1001";
                     end if;
                 when "1001" =>
+                    --check addition completion
+                    --write current U out
                     if done_add_1 = '1' then
                         u_out_result <= fpu_add_1_out;
                         write_u_out <= '1';
+                        interp_state <= "0100";
                     end if;
                 when others =>
                     --NOP
