@@ -25,6 +25,7 @@ architecture rtl of io is
 
     -- next adr
     signal nau_out_adr   : std_logic_vector(adr'range);
+    signal nau_done      : std_logic;
 begin
     decompressor : entity work.decompressor
         port map(
@@ -42,10 +43,11 @@ begin
             in_ready => dcm_out_ready,
             clk      => clk,
             rst      => rst,
-            out_adr  => nau_out_adr
+            out_adr  => nau_out_adr,
+            done     => nau_done
         );
 
-    process (clk, rst)
+    process (clk, rst, in_state)
     begin
         if rst = '1' then
             interrupt     <= '0';
@@ -56,29 +58,35 @@ begin
                 adr     <= nau_out_adr;
                 in_data <= dcm_out_data;
 
+                if nau_done = '1' then
+                    interrupt <= '1';
+                end if;
+
                 when STATE_OUT =>
                 cpu_data <= in_data;
 
                 when others => null;
             end case;
         end if;
-    end process;
 
-    -- put Z on read-only busses to avoid conflicts with writers
-    process (in_state)
-    begin
-        case(in_state) is
-            when STATE_LOAD | STATE_WAIT =>
-            cpu_data <= (others          => 'Z');
+        -- change in state
+        if in_state'event then
+            interrupt <= '0';
 
-            when STATE_OUT               =>
-            in_data <= (others           => 'Z');
-            adr     <= (others           => 'Z');
+            -- put Z on read-only busses to avoid conflicts with writers
+            case(in_state) is
+                when STATE_LOAD | STATE_WAIT =>
+                cpu_data <= (others          => 'Z');
 
-            when others                  =>
-            cpu_data <= (others          => 'Z');
-            in_data  <= (others          => 'Z');
-            adr      <= (others          => 'Z');
-        end case;
+                when STATE_OUT               =>
+                in_data <= (others           => 'Z');
+                adr     <= (others           => 'Z');
+
+                when others                  =>
+                cpu_data <= (others          => 'Z');
+                in_data  <= (others          => 'Z');
+                adr      <= (others          => 'Z');
+            end case;
+        end if;
     end process;
 end architecture;

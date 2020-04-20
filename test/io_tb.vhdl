@@ -36,13 +36,18 @@ begin
             in_data       => in_data,
             cpu_data      => cpu_data,
             interrupt     => interrupt,
-            error_success => error_success
+            error_success => error_success,
+            adr           => adr
         );
 
     main : process
     begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
+
+        rst <= '1';
+        wait for 1 ps;
+        rst <= '0';
 
         if run("test_case_name") then
             -- TODO
