@@ -313,6 +313,7 @@ begin
                 u_0_temp(63 downto 32) <= U_0_data_out;
                 u_0_high <= '0';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+                read_u_0 <= '0';
             end if;
         end if;
     end process;
@@ -336,6 +337,7 @@ begin
                 u_low_temp(63 downto 32) <= U_s_data_out;
                 u_s_low_high <= '0';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+                read_u_s_low <= '0';
             end if;           
         end if;
     end process; 
@@ -358,6 +360,7 @@ begin
                 u_high_temp(63 downto 32) <= U_s_data_out;
                 u_s_high_high <= '0';
                 u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+                read_u_s_high <= '0';
             end if;           
         end if;
     end process; 
@@ -381,6 +384,7 @@ begin
                 u_out_temp(63 downto 32) <= U_out_data_out;
                 u_out_high <= '0';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+                read_u_out <= '0';
             end if;    
         end if;
     end process ; 
@@ -403,6 +407,7 @@ begin
                 U_out_wr <= '1';
                 u_out_high <= '0';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+                write_u_out <= '0';
             end if; 
         end if;
     end process ;
@@ -489,6 +494,7 @@ begin
                 u_low_adr <= "110010000";
                 u_0_adr <= (others => '0');
             end if;
+            range_finder_enable <= '0';
         end if;
     end process;
 
@@ -496,7 +502,19 @@ begin
     send_output : process(clk, send_output_enable)
     begin
         if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
-            null;
+            if u_out_adr = X"0000" then
+                U_out_address <= u_out_adr;
+                U_out_wr <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            elsif u_out_adr = "001100100" then
+                in_data <= U_out_data_out;
+                send_output_enable <= '0';
+            else
+                in_data <= U_out_data_out;
+                U_out_address <= u_out_adr;
+                U_out_wr <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if;
         end if;
     end process;
 
