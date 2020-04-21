@@ -605,28 +605,34 @@ begin
                 when "0000" => 
                     --check input address
                     --read lower part of h_new
-                    if adr = MM_H_NEW_0 then
+                    if adr = MM_H_NEW_0 and send_output_enable = '0' then
                         M <= to_int(M_vec);
-                        h_new(MAX_LENGTH-1 downto 32)  <= in_data;
+                        u_out_adr <= (others => '0');
+                        h_new(MAX_LENGTH-1 downto 32) <= in_data;
                         interp_state <= "0001";
                     end if;
                 when "0001" =>
+                    --check input address
                     --read higher part of h_new
                     --start range finder process
-                    h_new(31 downto 0) <= in_data;
-                    range_finder_enable <= '1';
-                    interp_state <= "0010";
+                    if adr = MM_H_NEW_1 then
+                        h_new(31 downto 0) <= in_data;
+                        range_finder_enable <= '1';
+                        interp_state <= "0010";
+                    end if;
                 when "0010" =>
                     --check range finder completion
                     --subtract Tz-Tn and Tk-Tn
                     if range_finder_enable = '0' then
-                        fpu_sub_1_in_1 <= t_high;
-                        fpu_sub_1_in_2 <= t_low;
-                        enable_sub_1 <= '1';
-                        fpu_sub_2_in_1 <= h_new;
-                        fpu_sub_2_in_2 <= t_low;
-                        enable_sub_2 <= '1';
-                        interp_state <= "0011";
+                        if is_stored = '0' then
+                            fpu_sub_1_in_1 <= t_high;
+                            fpu_sub_1_in_2 <= t_low;
+                            enable_sub_1 <= '1';
+                            fpu_sub_2_in_1 <= h_new;
+                            fpu_sub_2_in_2 <= t_low;
+                            enable_sub_2 <= '1';
+                            interp_state <= "0011";
+                        end if;
                     end if;
                 when "0011" =>
                     --check subtraction completion
@@ -695,6 +701,7 @@ begin
                     --add time step to received time to check outut points
                     if write_u_out = '0' then
                         if M = 0 then
+                            u_out_adr <= (others => '0');
                             fpu_add_1_in_1 <= h_step;
                             fpu_add_1_in_2 <= h_new;
                             enable_add_1 <= '1';
