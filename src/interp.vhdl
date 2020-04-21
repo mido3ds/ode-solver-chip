@@ -94,7 +94,8 @@ signal interp_state : std_logic_vector(3 downto 0) := "1111";
 signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
 signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
 signal u_low_adr, u_high_adr : std_logic_vector(9 downto 0) := (others => '0'); --boundary Us addresses
-signal u_low_temp, u_high_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
+signal u_0_adr, u_out_adr : std_logic_vector(6 downto 0) := (others => '0'); --initial and output U addresses
+signal u_0_temp, u_low_temp, u_high_temp, u_out_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
 signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --result of Uout
 
 --Range Finder Signals
@@ -103,12 +104,15 @@ signal range_finder_enable : std_logic := '0';
 --Send Output Signals
 signal send_output_enable : std_logic := '0';
 
+--U0 IO Signals
+signal read_u_0, u_0_high : std_logic := '0';
+
 --Us IO Signals
-signal read_u_s_low, write_u_s_low, increment_u_s_low, decrement_u_s_low : std_logic := '0';
-signal read_u_s_high, write_u_s_high, increment_u_s_high, decrement_u_s_high : std_logic := '0';
+signal read_u_s_low, u_s_low_high : std_logic := '0';
+signal read_u_s_high, u_s_high_high : std_logic := '0';
 
 --Uout IO Signals
-signal read_u_out, write_u_out, increment_u_out, decrement_u_out : std_logic := '0';
+signal read_u_out, write_u_out, u_out_high : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -267,8 +271,6 @@ begin
                 h_step(31 downto 0) <= in_data;
             --read U_0
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
-                U_0_wr <= '0';
-                U_0_address <= (others => '0');
                 U_0_data_in <= in_data;
                 U_0_wr <= '1';
                 -- shift adr from [MM_U0_0:MM_U0_1] to [0:MM_U0_1-MM_U0_0]
@@ -319,102 +321,117 @@ begin
         null;
     end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
+    --U_0
+    --reads U0
+    read_u0 : process(clk, read_u_0)
+    begin
+        if rst = '0' and rising_edge(clk) and read_u_0 = '1' then
+            if u_0_high = '0' then
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_temp(31 downto 0) <= U_0_data_out;
+                u_0_high <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1); 
+            else
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_temp(63 downto 32) <= U_0_data_out;
+                u_0_high <= '0';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            end if;
+        end if;
+    end process;
+
     --U_s
     --reads low Us
-    read_low_us : process(clk, read_u_s_low, write_u_s_low)
+    read_low_us : process(clk, read_u_s_low)
     begin
-        if rst = '0' and rising_edge(clk) and read_u_s_low = '1' and write_u_s_low = '0' then
-            null;            
-    end if;
-    end process; 
-
-    --writes low Us
-    write_low_us : process(clk, read_u_s_low, write_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_low = '0' and write_u_s_low = '1' then       
-            null;
+        if rst = '0' and rising_edge(clk) and read_u_s_low = '1' then
+            if u_s_low_high = '0' then
+                U_s_address <= u_low_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_low_temp(31 downto 0) <= U_s_data_out;
+                u_s_low_high <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1); 
+            else
+                U_s_address <= u_low_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_low_temp(63 downto 32) <= U_s_data_out;
+                u_s_low_high <= '0';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+            end if;           
         end if;
-    end process;
-
-    --increments low Us address
-    inc_low_us : process(clk, increment_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_s_low = '1' then
-            null;
-        end if;    
-    end process;
-
-    --decrements low Us address
-    dec_low_us : process(clk, decrement_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_s_low = '1' then
-            null;
-        end if;    
-    end process;
+    end process; 
 
     --reads high Us
-    read_high_us : process(clk, read_u_s_high, write_u_s_high)
+    read_high_us : process(clk, read_u_s_high)
     begin
-        if rst = '0' and rising_edge(clk) and read_u_s_high = '1' and write_u_s_high = '0' then
-            null;            
-    end if;
-    end process; 
-
-    --writes high Us
-    write_high_us : process(clk, read_u_s_high, write_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_high = '0' and write_u_s_high = '1' then       
-            null;
+        if rst = '0' and rising_edge(clk) and read_u_s_high = '1' then
+            if u_s_high_high = '0' then
+                U_s_address <= u_high_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_high_temp(31 downto 0) <= U_s_data_out;
+                u_s_high_high <= '1';
+                u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1); 
+            else
+                U_s_address <= u_high_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_high_temp(63 downto 32) <= U_s_data_out;
+                u_s_high_high <= '0';
+                u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+            end if;           
         end if;
-    end process ;
-
-    --increments high Us address
-    inc_high_us : process(clk, increment_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_s_high = '1' then
-            null;
-        end if;    
-    end process ;
-
-    --decrements high Us address
-    dec_high_us : process(clk, decrement_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_s_high = '1' then
-            null;
-        end if;    
-    end process ;
+    end process; 
 
     --U_out
     --reads Uout
     read_uout : process(clk, read_u_out, write_u_out)
     begin
         if rst = '0' and rising_edge(clk) and read_u_out = '1' and write_u_out = '0' then
-            null;            
-    end if;
+            if u_out_high = '0' then
+                U_out_address <= u_out_adr;
+                U_out_wr <= '0';
+                U_out_rd <= '1';
+                u_out_temp(31 downto 0) <= U_out_data_out;
+                u_out_high <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
+            else
+                U_out_address <= u_out_adr;
+                U_out_wr <= '0';
+                U_out_rd <= '1';
+                u_out_temp(63 downto 32) <= U_out_data_out;
+                u_out_high <= '0';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if;    
+        end if;
     end process ; 
 
     --writes Uout
     write_uout : process(clk, read_u_out, write_u_out)
     begin
         if rst = '0' and rising_edge(clk) and read_u_out = '0' and write_u_out = '1' then       
-            null;
+            if u_out_high = '0' then
+                U_out_address <= u_out_adr;
+                U_out_data_in <= u_out_result(31 downto 0);
+                U_out_rd <= '0';
+                U_out_wr <= '1';
+                u_out_high <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
+            else
+                U_out_address <= u_out_adr;
+                U_out_data_in <= u_out_result(63 downto 32);
+                U_out_rd <= '0';
+                U_out_wr <= '1';
+                u_out_high <= '0';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if; 
         end if;
-    end process ;
-
-    --increments Uout address
-    inc_uout : process(clk, increment_u_out)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_out = '1' then
-            null;
-        end if;    
-    end process ;
-
-    --decrements Uout address
-    dec_uout : process(clk, decrement_u_out)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_out = '1' then
-            null;
-        end if;    
     end process ;
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --finds the range in which the received T lies
