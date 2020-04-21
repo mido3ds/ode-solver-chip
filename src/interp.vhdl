@@ -15,8 +15,8 @@ entity interp is
         in_state       : in std_logic_vector(1 downto 0); --state signal sent from CPU
         clk            : in std_logic;
         rst            : in std_logic;
-        adr            : in std_logic_vector(15 downto 0);
-        in_data        : inout std_logic_vector(31 downto 0);
+        adr            : in std_logic_vector(ADDR_LENGTH - 1 downto 0);
+        in_data        : inout std_logic_vector(WORD_LENGTH - 1 downto 0);
         interp_done_op : out std_logic_vector(1 downto 0);
         interrupt      : out std_logic;
         error_success  : out std_logic
@@ -41,6 +41,7 @@ signal t_size : std_logic_vector(2 downto 0) := "000";
 
 --Output Times Signals
 signal out_time_1, out_time_2, out_time_3, out_time_4, out_time_5 : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal t_count : integer range 0 to 10;
 
 --Received H Signal
 signal h_step : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --main step size (read in init and updated in variable step)
@@ -274,7 +275,31 @@ begin
                 U_0_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));     
             --read output times           
             elsif adr >= MM_T_0 and adr <= MM_T_1 then
-               null;
+                if adr = MM_T_0 then
+                    t_count <= 0;
+                end if;
+                t_count <= T_count + 1;
+                if t_count = 1 then
+                    out_time_1(31 downto 0) <= in_data;
+                elsif t_count = 2 then
+                    out_time_1(63 downto 32) <= in_data;
+                elsif t_count = 3 then
+                    out_time_2(31 downto 0) <= in_data;
+                elsif t_count = 4 then
+                    out_time_2(63 downto 32) <= in_data;
+                elsif t_count = 5 then
+                    out_time_3(31 downto 0) <= in_data;
+                elsif t_count = 6 then
+                    out_time_3(63 downto 32) <= in_data;
+                elsif t_count = 7 then
+                    out_time_4(31 downto 0) <= in_data;
+                elsif t_count = 8 then
+                    out_time_4(63 downto 32) <= in_data;
+                elsif t_count = 9 then
+                    out_time_5(31 downto 0) <= in_data;
+                elsif t_count = 10 then
+                    out_time_5(63 downto 32) <= in_data;
+                end if;    
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
                 U_s_wr <= '0';
