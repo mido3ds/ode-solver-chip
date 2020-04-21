@@ -185,6 +185,15 @@ architecture rtl of solver is
     signal div_or_zero, div_or_adapt: std_logic  := '0';
     signal from_i_to_c, error_tolerance_is_good: std_logic  := '0';
 
+    --ITERATORS
+    signal N_Counter, N_Counter_2, N_M_counter, N_N_counter, N_N_counter_2, N_incremented : std_logic_vector(15 downto 0) := (others => '0'); 
+    signal M_Counter : std_logic_vector(15 downto 0) := (others => '0'); 
+    signal beenThere_1, beenThere_2, beenThere_3, addThisError, write_high_low : std_logic  := '0';
+    signal new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+
+
+
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
     --FPUs:
@@ -411,7 +420,6 @@ begin
 
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
     process (clk, rst, adr, in_state)
-    variable beenThere_1, beenThere_2, beenThere_3 : std_logic := '0';
     begin
         if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
             a_coeff_wr <= '0';
@@ -438,7 +446,7 @@ begin
                 --this signal will initiate both: N*M and N*N
                 if beenThere_3 = '0' then
                     fsm_run_mul_n_m <= "11"; 
-                    beenThere_3 := '1';
+                    beenThere_3 <= '1';
                 end if;
             elsif adr = MM_ERR_0 then
                 L_tol (MAX_LENGTH-1 downto 32) <= in_data;
@@ -464,7 +472,7 @@ begin
                         --L_tol is read, so:
                         fsm_run_L_nine <= "11";
                     end if;
-                    beenThere_1 := '1';
+                    beenThere_1 <= '1';
                 end if;
             elsif adr >= MM_X_0 and adr <= MM_X_1 then
                 --X_ware[0] = X0
@@ -476,7 +484,7 @@ begin
                  -- Since we got here, then B and H are ready
                 if fixed_or_var = '0' and beenThere_2 = '0' then 
                     fsm_run_h_b <= "111";
-                    beenThere_2 := '1';
+                    beenThere_2 <= '1';
                 end if;
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
                 U_main_data_in <= in_data;
@@ -935,8 +943,6 @@ begin
 -----------------------------------------------------------------MATRIX MANIPULATION-----------------------------------------------------------------------------------
     --calculates (I+hA)
     proc_run_h_a : process( clk, fsm_run_h_a )
-    variable N_N_temp, N_N_temp_2 : std_logic_vector(15 downto 0) :=(others => '0');
-    variable N_X_A_B_2 : std_logic_vector(15 downto 0) :=(others => '0');
     begin
         if rst = '0' and rising_edge (clk) then
             case( fsm_run_h_a ) is
@@ -957,7 +963,7 @@ begin
                     if done_mul_1 = '1' then
                         enable_mul_1 <= '0';
                         --SHOULD WE ADD 1 ?????
-                        if N_N_temp_2 = N_N_temp then
+                        if N_N_counter_2 = N_N_counter then
                             --add one
                             fpu_add_1_in_1 <= a_temp;
                             --fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
@@ -985,7 +991,7 @@ begin
                     end if;
                 when "0100" =>
                     if write_a_coeff = '0' then
-                        if N_N_temp = X"0000" then
+                        if N_N_counter = X"0000" then
                             --END LOOOOOP
                             a_coeff_address <= (others => '0');
                             fsm_run_h_a <= "0000";
@@ -1005,37 +1011,37 @@ begin
                 --when "1000" =>
                 --when "1001" =>
                 when "1010" =>
-                    N_N_temp_2 := int_adder_1_out;
+                    N_N_counter_2 <= int_adder_1_out;
                     int_adder_1_enbl <='0';
                     fsm_run_h_a <= "0101";
                 when "1011" =>
-                    --DECREMENT N_N_temp_2 with N+1 (N_X_A_B_2)
+                    --DECREMENT N_N_temp_2 with N+1 (N_incremented)
                     int_adder_1_enbl <='1';
-                    int_adder_1_in_1 <= N_N_temp_2;
-                    int_adder_1_in_2 <= not N_X_A_B_2;
+                    int_adder_1_in_1 <= N_N_counter_2;
+                    int_adder_1_in_2 <= not N_incremented;
                     int_adder_1_cin  <= '1';
                     fsm_run_h_a <= "1010";
                 when "1100" =>
-                    address_dec_1_in <= N_N_temp;
+                    address_dec_1_in <= N_N_counter;
                     address_dec_1_enbl <= '1';
                     fsm_run_h_a <= "1101";
 
                 when "1101" =>
                     --disable dec
                     address_dec_1_enbl <= '0';
-                    N_N_temp := address_dec_1_out;
+                    N_N_counter <= address_dec_1_out;
                     fsm_run_h_a <= "0001";
 
                 when "1110" =>
-                    N_X_A_B_2 := address_inc_1_out;
+                    N_incremented <= address_inc_1_out;
                     address_inc_1_enbl <= '0';
                     fsm_run_h_a <= "1100";
                 when "1111" =>
                     --start here :D
                     --This variable to keep track of the main loop
-                    N_N_temp := N_N;
+                    N_N_counter <= N_N;
                     --this var to keep track of % N+1
-                    N_N_temp_2 := N_N;
+                    N_N_counter_2 <= N_N;
                     address_inc_1_in <= N_X_A_B_vec;
                     address_inc_1_enbl <= '1';
                     a_coeff_address <= (others =>'0');
@@ -1052,7 +1058,6 @@ begin
     --fsm_run_h_b <= "111"
     --and wait until it equals "000"
     proc_run_h_b : process( clk, fsm_run_h_b )
-    variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
         if rst = '0' and rising_edge(clk) then
             case( fsm_run_h_b ) is
@@ -1085,28 +1090,28 @@ begin
                     --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
                     -- if it's zero, we escape
                     if write_b_coeff = '0' then
-                        address_dec_1_in <= N_M_temp;
+                        address_dec_1_in <= N_M_counter;
                         address_dec_1_enbl <= '1';
                         fsm_run_h_b <= "101";
                     end if;
                 when "101" =>
                     address_dec_1_enbl <= '0';
-                    N_M_temp := address_dec_1_out;
-                    if N_M_temp = X"0000" then
-                        --end loop
-                        b_coeff_address <= (others => '0');
-                        fsm_run_h_b <= "000";
-                    else
-                        --LOOP AGAIN
-                        fsm_run_h_b <= "001";
-                    end if;
+                    N_M_counter <= address_dec_1_out;
+                    fsm_run_h_b <= "110";
                 when "110" =>
-                        null;
+                        if N_M_counter = X"0000" then
+                            --end loop
+                            b_coeff_address <= (others => '0');
+                            fsm_run_h_b <= "000";
+                        else
+                            --LOOP AGAIN
+                            fsm_run_h_b <= "001";
+                        end if;
                 when others =>
                     if fsm_run_h_a = "0000" then
                         --START working, init w kda
                         b_coeff_address <= (others => '0');
-                        N_M_temp := N_M;
+                        N_M_counter <= N_M;
                         fsm_run_h_b <= "001";
                     end if;
             end case ;
@@ -1115,19 +1120,15 @@ begin
 
     --calculates AX
     proc_run_a_x : process(clk, fsm_run_a_x)
-    variable N_N_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable N_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) then
             case(fsm_run_a_x) is
                 when "111" =>
                     -- initialization
-                    N_N_temp := N_N;
-                    N_temp := N_X_A_B_vec;
-                    new_entry := (others => '0');
-                    to_write := (others => '0');
+                    N_N_counter <= N_N;
+                    N_counter <= N_X_A_B_vec;
+                    new_entry <= (others => '0');
+                    to_write <= (others => '0');
                     fsm_run_a_x <= "001";
                 when "001" =>
                     --read A coeff nad X_c
@@ -1154,10 +1155,10 @@ begin
                     end if;
                 when "100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_N_temp and N_temp
+                        --get output and decrement N_N_counter and N_counter
                         enable_add_1 <= '0';
-                        new_entry := fpu_add_1_out;
-                        address_dec_1_in <= N_N_temp;
+                        new_entry <= fpu_add_1_out;
+                        address_dec_1_in <= N_N_counter;
                         address_dec_1_enbl <= '1';
                         address_dec_2_in <= N_temp;
                         address_dec_2_enbl <= '1';
@@ -1165,21 +1166,21 @@ begin
                     end if;
                 when "101" =>
                     --update counters
-                    N_N_temp := address_dec_1_out;
-                    N_temp := address_dec_2_out;
+                    N_N_counter <= address_dec_1_out;
+                    N_counter <= address_dec_2_out;
                     --check if the end of the column is reached
-                    if N_temp = X"0000" then
-                        to_write := new_entry;
+                    if N_counter = X"0000" then
+                        to_write <= new_entry;
                         --ERROR DETECTED HERE YA SHAWKY
                         --result_x_temp <= to_write; --write the current entry
                         result_x_i_temp <= to_write; --write the current entry
                         write_x_i <= '1';
-                        N_temp := N_X_A_B_vec; --reset N
-                        new_entry := (others => '0');
+                        N_counter <= N_X_A_B_vec; --reset N
+                        new_entry <= (others => '0');
                     end if;
                     fsm_run_a_x <= "110";
                 when "110" =>
-                    if N_N_temp = X"0000" then --check if the end of the loop is reached
+                    if N_N_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_a_x <= "000"; --return to the NOP state
                     else
                         fsm_run_a_x <= "001"; --return to the loop start
@@ -1194,19 +1195,15 @@ begin
     --another version of X = A*X
     --that calculates: X_w[c] = A * X_i
     proc_run_a_x_2 : process(clk, fsm_run_a_x_2)
-    variable N_N_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable N_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) then
             case(fsm_run_a_x_2) is
                 when "111" =>
                     -- initialization
-                    N_N_temp := N_N;
-                    N_temp := N_X_A_B_vec;
-                    new_entry := (others => '0');
-                    to_write := (others => '0');
+                    N_N_counter <= N_N;
+                    N_counter <= N_X_A_B_vec;
+                    new_entry <= (others => '0');
+                    to_write <= (others => '0');
                     fsm_run_a_x_2 <= "001";
                 when "001" =>
                     --read A coeff nad X_c
@@ -1233,30 +1230,30 @@ begin
                     end if;
                 when "100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_N_temp and N_temp
+                        --get output and decrement N_N_counter and N_counter
                         enable_add_1 <= '0';
-                        new_entry := fpu_add_1_out;
-                        address_dec_1_in <= N_N_temp;
+                        new_entry <= fpu_add_1_out;
+                        address_dec_1_in <= N_N_counter;
                         address_dec_1_enbl <= '1';
-                        address_dec_2_in <= N_temp;
+                        address_dec_2_in <= N_counter;
                         address_dec_2_enbl <= '1';
                         fsm_run_a_x_2 <= "101";
                     end if;
                 when "101" =>
                     --update counters
-                    N_N_temp := address_dec_1_out;
-                    N_temp := address_dec_2_out;
+                    N_N_counter <= address_dec_1_out;
+                    N_counter <= address_dec_2_out;
                     --check if the end of the column is reached
-                    if N_temp = X"0000" then
-                        to_write := new_entry;
+                    if N_counter = X"0000" then
+                        to_write <= new_entry;
                         result_x_temp <= to_write; --write the current entry
                         write_x <= '1';
-                        N_temp := N_X_A_B_vec; --reset N
-                        new_entry := (others => '0');
+                        N_counter <= N_X_A_B_vec; --reset N
+                        new_entry <= (others => '0');
                     end if;
                     fsm_run_a_x_2 <= "110";
                 when "110" =>
-                    if N_N_temp = X"0000" then --check if the end of the loop is reached
+                    if N_N_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_a_x_2 <= "000"; --return to the NOP state
                     else
                         fsm_run_a_x_2 <= "001"; --return to the loop start
@@ -1270,19 +1267,15 @@ begin
 
     --calculates X+BU
     proc_run_x_b_u : process(clk, fsm_run_x_b_u)
-    variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable M_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) then
             case(fsm_run_x_b_u) is
                 when "1111" =>
                     -- initialization
-                    N_M_temp := N_M;
-                    M_temp := M_U_B_vec;
-                    new_entry := (others => '0');
-                    to_write := (others => '0');
+                    N_M_counter <= N_M;
+                    M_Counter <= M_U_B_vec;
+                    new_entry <= (others => '0');
+                    to_write <= (others => '0');
                     fsm_run_x_b_u <= "0001";
                 when "0001" =>
                     --read B coeff nad U_main
@@ -1309,22 +1302,22 @@ begin
                     end if;
                 when "0100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_M_temp and M_temp
+                        --get output and decrement N_M_counter and M_Counter
                         enable_add_1 <= '0';
-                        new_entry := fpu_add_1_out;
-                        address_dec_1_in <= N_M_temp;
+                        new_entry <= fpu_add_1_out;
+                        address_dec_1_in <= N_M_counter;
                         address_dec_1_enbl <= '1';
-                        address_dec_2_in <= M_temp;
+                        address_dec_2_in <= M_Counter;
                         address_dec_2_enbl <= '1';
                         fsm_run_x_b_u <= "0101";
                     end if;
                 when "0101" =>
                     --update counters
-                    N_M_temp := address_dec_1_out;
-                    M_temp := address_dec_2_out;
+                    N_M_counter <= address_dec_1_out;
+                    M_Counter <= address_dec_2_out;
                     --check if the end of the column is reached
-                    if M_temp = X"0000" then
-                        M_temp := M_U_B_vec; --reset M
+                    if M_Counter = X"0000" then
+                        M_Counter <= M_U_B_vec; --reset M
                         read_x_i <= '1'; --read corresponding X_i
                         fsm_run_x_b_u <= "0110";
                     else
@@ -1341,14 +1334,14 @@ begin
                 when "0111" =>
                     if done_add_2 = '1' then --check for add completion
                         enable_add_2 <= '0';
-                        to_write := fpu_add_2_out;
+                        to_write <= fpu_add_2_out;
                         result_x_temp <= to_write; --write the current entry
                         write_x <= '1';
-                        new_entry := (others => '0'); --reset the new entry
+                        new_entry <= (others => '0'); --reset the new entry
                         fsm_run_x_b_u <= "1000";
                     end if;
                 when "1000" =>
-                    if N_M_temp = X"0000" then --check if the end of the loop is reached
+                    if N_M_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_x_b_u <= "0000"; --return to the NOP state
                     else
                         fsm_run_x_b_u <= "0001"; --return to the loop start
@@ -1365,19 +1358,15 @@ begin
     --another version of X = X + BU function
     --calculates: X_w[c] = X_w[c] + B * U
     proc_run_x_b_u_2 : process(clk, fsm_run_x_b_u_2)
-    variable N_M_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable M_temp : std_logic_vector(15 downto 0) := (others => '0');
-    variable new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-    variable to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) then
             case(fsm_run_x_b_u_2) is
                 when "1111" =>
                     -- initialization
-                    N_M_temp := N_M;
-                    M_temp := M_U_B_vec;
-                    new_entry := (others => '0');
-                    to_write := (others => '0');
+                    N_M_counter <= N_M;
+                    M_Counter <= M_U_B_vec;
+                    new_entry <= (others => '0');
+                    to_write <= (others => '0');
                     fsm_run_x_b_u_2 <= "0001";
                 when "0001" =>
                     --read B coeff nad U_main
@@ -1404,22 +1393,22 @@ begin
                     end if;
                 when "0100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_M_temp and M_temp
+                        --get output and decrement N_M_counter and M_Counter
                         enable_add_1 <= '0';
-                        new_entry := fpu_add_1_out;
-                        address_dec_1_in <= N_M_temp;
+                        new_entry <= fpu_add_1_out;
+                        address_dec_1_in <= N_M_counter;
                         address_dec_1_enbl <= '1';
-                        address_dec_2_in <= M_temp;
+                        address_dec_2_in <= M_Counter;
                         address_dec_2_enbl <= '1';
                         fsm_run_x_b_u_2 <= "0101";
                     end if;
                 when "0101" =>
                     --update counters
-                    N_M_temp := address_dec_1_out;
-                    M_temp := address_dec_2_out;
+                    N_M_counter <= address_dec_1_out;
+                    M_Counter <= address_dec_2_out;
                     --check if the end of the column is reached
-                    if M_temp = X"0000" then
-                        M_temp := M_U_B_vec; --reset M
+                    if M_Counter = X"0000" then
+                        M_Counter <= M_U_B_vec; --reset M
                         read_x <= '1'; --read corresponding X
                         fsm_run_x_b_u_2 <= "0110";
                     else
@@ -1436,14 +1425,14 @@ begin
                 when "0111" =>
                     if done_add_2 = '1' then --check for add completion
                         enable_add_2 <= '0';
-                        to_write := fpu_add_2_out;
+                        to_write <= fpu_add_2_out;
                         result_x_i_temp <= to_write; --write the current entry
                         write_x_i <= '1';
-                        new_entry := (others => '0'); --reset the new entry
+                        new_entry <= (others => '0'); --reset the new entry
                         fsm_run_x_b_u_2 <= "1000";
                     end if;
                 when "1000" =>
-                    if N_M_temp = X"0000" then --check if the end of the loop is reached
+                    if N_M_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_x_b_u_2 <= "0000"; --return to the NOP state
                     else
                         fsm_run_x_b_u_2 <= "0001"; --return to the loop start
@@ -1456,18 +1445,12 @@ begin
     end process; --proc_run_x_b_u_2
 
 
-
-
-
-
-
     --this proc is called only from var_step_proc
     --and we need to define:
     --  which h is used? h_div or h_adapt-->signal div_or_adapt
     --  which X's are used? Xi-> XC or Xc->Xi --> from_i_to_c
     --calculates hX (for variable step)
     proc_run_x_h : process(clk,fsm_run_x_h )
-    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
         if rst = '0' and rising_edge(clk) then
             case( fsm_run_x_h ) is
@@ -1550,14 +1533,14 @@ begin
                     if from_i_to_c = '0' then
                         --from c to i then
                         if write_x_i = '0' then
-                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_in <= N_counter;
                             address_dec_1_enbl <= '1';
                             fsm_run_x_h <= "101";
                         end if;
                     else
                         --from i to c then
                         if write_x = '0' then
-                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_in <= N_counter;
                             address_dec_1_enbl <= '1';
                             fsm_run_x_h <= "101";
                         end if;
@@ -1566,8 +1549,8 @@ begin
                     
                 when "101" =>
                     address_dec_1_enbl <= '0';
-                    N_X_A_B_TEMP := address_dec_1_out;
-                    if N_X_A_B_TEMP = X"0000" then
+                    N_counter <= address_dec_1_out;
+                    if N_counter = X"0000" then
                         --end loop
                         X_intm_address <= (others => '0');
                         fsm_run_x_h <= "000";
@@ -1580,7 +1563,7 @@ begin
                 when others =>
                     --START working, init w kda
                     X_intm_address <= (others => '0');
-                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    N_counter <= N_X_A_B_vec;
                     fsm_run_x_h <= "001";
             end case ;
         end if;
@@ -1592,7 +1575,6 @@ begin
     --or
     --X_w = X-w + X_i
     proc_run_x_i_c : process(clk, fsm_run_x_i_c )
-    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
         if rst = '0' and rising_edge(clk) then
             case( fsm_run_x_i_c ) is
@@ -1639,14 +1621,14 @@ begin
                     if from_i_to_c = '0' then
                         --from c to i then
                         if write_x_i = '0' then
-                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_in <= N_counter;
                             address_dec_1_enbl <= '1';
                             fsm_run_x_i_c <= "101";
                         end if;
                     else
                         --from i to c then
                         if write_x = '0' then
-                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_in <= N_counter;
                             address_dec_1_enbl <= '1';
                             fsm_run_x_i_c <= "101";
                         end if;
@@ -1654,8 +1636,8 @@ begin
 
                 when "101" =>
                     address_dec_1_enbl <= '0';
-                    N_X_A_B_TEMP := address_dec_1_out;
-                    if N_X_A_B_TEMP = X"0000" then
+                    N_counter <= address_dec_1_out;
+                    if N_counter = X"0000" then
                         --end loop
                         --This trick to make sure that adress of X_ware is updated
                         --without updating c_ware
@@ -1673,7 +1655,7 @@ begin
                     X_intm_address <= (others => '0');
                     --x_ware_address is already updated as C_ware is updated
                     --check proc_update_X_ware_address for more info :D
-                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    N_counter <= N_X_A_B_vec;
                     fsm_run_x_i_c <= "001";
             end case ;
         end if;
@@ -1682,9 +1664,6 @@ begin
 
     --returns : err_sum = sum(abs(Xi[i] - X_w[i]))
     proc_run_sum_err : process( clk, fsm_run_sum_err )
-    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
-    variable temp_holder : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0'); 
-    variable addThisError: std_logic  := '0'; 
     begin
         if rising_edge(clk) then
             case( fsm_run_sum_err ) is
@@ -1694,7 +1673,7 @@ begin
                     X_intm_address <= (others => '0');
                     --x_ware_address is already updated as C_ware is updated
                     --check proc_update_X_ware_address for more info :D
-                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    N_counter <= N_X_A_B_vec;
                     fsm_run_sum_err <= "0001";
                     --clear the err_sum first
                     err_sum <= (others =>'0');
@@ -1715,13 +1694,13 @@ begin
                     if done_add_1 = '1' then
                         --non zero value
                         enable_add_1 <= '0';
-                        temp_holder := fpu_add_1_out;
+                        to_write <= fpu_add_1_out;
                         if zero_add_1 = '0' then
                             if posv_add_1 = '0' then
                                 --negative
                                 --take absolute then continue
                                 enable_mul_1 <= '1';
-                                fpu_mul_1_in_1 <= temp_holder;
+                                fpu_mul_1_in_1 <= to_write;
                                 --What is -1 ?
                                 case( mode_sig ) is
                                     when "00" => 
@@ -1744,7 +1723,7 @@ begin
                         else
                             --we don't have to add it
                             --jump to where you decrement the counter
-                            addThisError := '1';
+                            addThisError <= '1';
                             fsm_run_sum_err <= "0101";
                         end if;
                         
@@ -1754,12 +1733,12 @@ begin
                     enable_add_1 <= '1';
                     thisIsAdder_1 <= '0';
                     fpu_add_1_in_1 <= err_sum;
-                    fpu_add_1_in_2 <= temp_holder; --abs (x1[i] - x2[i])
+                    fpu_add_1_in_2 <= to_write; --abs (x1[i] - x2[i])
                     fsm_run_sum_err <= "0101";
                 when "0101" =>
                     if done_add_1 = '1' or addThisError = '1' then
                         --decrement the counter
-                        addThisError := '0';
+                        addThisError <= '0';
                         err_sum <= fpu_add_1_out;
                         enable_add_1 <= '0';
                         fsm_run_sum_err <= "0110";
@@ -1773,7 +1752,7 @@ begin
                     fsm_run_sum_err <= "1001";
                 when "1000" =>
                     if done_mul_1 = '1' then
-                        temp_holder := fpu_mul_1_out;
+                        to_write <= fpu_mul_1_out;
                         enable_mul_1 <='0';
                         fsm_run_sum_err <= "0100";
                     end if;
@@ -1790,13 +1769,13 @@ begin
                         end if;
                     end if;
                 when "1010" =>
-                    address_dec_1_in <= N_X_A_B_TEMP;
+                    address_dec_1_in <= N_counter;
                     address_dec_1_enbl <= '1';
                     fsm_run_sum_err <= "1011";
                 when "1011" =>
                     address_dec_1_enbl <= '0';
-                    N_X_A_B_TEMP := address_dec_1_out;
-                    if N_X_A_B_TEMP = X"0000" then
+                    N_counter <= address_dec_1_out;
+                    if N_counter = X"0000" then
                         --end loop
                         if error_tolerance_is_good = '1' then
                             fsm_run_sum_err <= "1100";
@@ -1918,8 +1897,6 @@ begin
     --NOTE: this proc sends zero or h_div, depending on a signal called div_or_zero
     proc_h_sent_U_recv : process( clk, fsm_h_sent_U_recv )
     --variable read_high_low:  std_logic  := '0'; 
-    variable write_high_low:  std_logic  := '0'; 
-    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
         if rising_edge (clk) then
             case( fsm_h_sent_U_recv ) is
@@ -1932,32 +1909,32 @@ begin
                             if div_or_zero = '0' then
                                 --div
                                 in_data <= h_div(63 downto 32);
-                                write_high_low := '1';
+                                write_high_low <= '1';
                             else
                                 --zeros
                                 in_data <= (others => '0');
-                                write_high_low := '1';
+                                write_high_low <= '1';
                             end if;
                         else
                             adr <= X"2C34";
                             if div_or_zero = '0' then
                                 --div
                                 in_data <= h_div(31 downto 0);
-                                write_high_low := '0';
+                                write_high_low <= '0';
                                 u_main_address <= (others =>'0');
                                 fsm_h_sent_U_recv <= "001";
                             else
                                 --zero
                                 in_data <= (others => '0');
                                 U_main_address <= (others => '0');
-                                write_high_low := '0';
+                                write_high_low <= '0';
                                 fsm_h_sent_U_recv <= "001";
                                 end if;
                         end if;
                     end if;
                 when "001" =>
                     --start the reading loop
-                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    N_counter_2 <= N_X_A_B_vec;
                     fsm_h_sent_U_recv <= "010";
                 when "010" =>
                     if (interp_done_op = "01" or interp_done_op = "10") then
@@ -1983,14 +1960,14 @@ begin
                     end if;
                 when "100" =>
                     -- decrement the counter
-                    address_dec_1_in <= N_X_A_B_TEMP;
+                    address_dec_1_in <= N_counter_2;
                     address_dec_1_enbl <= '1';
                     fsm_h_sent_U_recv <= "101";
                 when "101" =>
                     --decrement the counter
                     address_dec_1_enbl <= '0';
-                    N_X_A_B_TEMP := address_dec_1_out;
-                    if N_X_A_B_TEMP = X"0000" then
+                    N_counter_2 <= address_dec_1_out;
+                    if N_counter_2 = X"0000" then
                         --end loop
                         u_main_high <= '0';
                         u_main_address <= (others => '0');
@@ -2027,7 +2004,6 @@ begin
 
     --Used at variable step only
     proc_place_x_i_at_x_c_or_vv : process(clk, fsm_place_x_i_at_x_c_or_vv )
-    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
         if rst = '0' and rising_edge(clk) then
             case( fsm_place_x_i_at_x_c_or_vv ) is
@@ -2077,14 +2053,14 @@ begin
                     -- check if we reached end of the loop!!
                     --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
                     -- if it's zero, we escape
-                    address_dec_1_in <= N_X_A_B_TEMP;
+                    address_dec_1_in <= N_counter;
                     address_dec_1_enbl <= '1';
                     fsm_place_x_i_at_x_c_or_vv <= "101";
                     
                 when "101" =>
                     address_dec_1_enbl <= '0';
-                    N_X_A_B_TEMP := address_dec_1_out;
-                    if N_X_A_B_TEMP = X"0000" then
+                    N_counter <= address_dec_1_out;
+                    if N_counter = X"0000" then
                         --end loop
                         X_intm_address <= (others => '0');
                         fsm_place_x_i_at_x_c_or_vv <= "000";
@@ -2097,7 +2073,7 @@ begin
                 when others =>
                     --START working, init w kda
                     X_intm_address <= (others => '0');
-                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    N_counter <= N_X_A_B_vec;
                     fsm_place_x_i_at_x_c_or_vv <= "001";
             end case ;
         end if;
@@ -2105,7 +2081,6 @@ begin
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --multiples N*N or N*M
     proc_run_mul_n_m_and_n_n : process( clk, fsm_run_mul_n_m )
-    --variable first_operation: std_logic  := '0';
     begin
         if rst = '0' and rising_edge (clk) then
             case( fsm_run_mul_n_m ) is
@@ -2162,7 +2137,6 @@ begin
     --f32: 0011 1111 0110 0110 0110 0110 0110 0110
     --f64: 0011111111101100110011001100110011001100110011001100110011001101
     proc_run_L_nine : process(clk, fsm_run_L_nine )
-    variable nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0'); 
     begin
         if rising_edge(clk) then
             case( fsm_run_L_nine ) is
@@ -2172,13 +2146,13 @@ begin
                     case( mode_sig ) is
                     
                         when "00" =>
-                            nine := (others => '0');
-                            nine(7 downto 0) := "01110011";
+                            fpu_mul_1_in_2 <= (others => '0');
+                            fpu_mul_1_in_2(7 downto 0) := "01110011";
                         when "01" =>
-                            nine := (others => '0');
-                            nine(31 downto 0) := "00111111011001100110011001100110";
+                            fpu_mul_1_in_2 <= (others => '0');
+                            fpu_mul_1_in_2(31 downto 0) := "00111111011001100110011001100110";
                         when "10" =>
-                            nine := "0011111111101100110011001100110011001100110011001100110011001101";
+                            fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
                         when others =>
                             null;
                     end case ;
@@ -2186,7 +2160,6 @@ begin
                 when "01" =>
                     enable_mul_1 <= '1';
                     fpu_mul_1_in_1 <= L_tol;
-                    fpu_mul_1_in_2 <= nine;
                     fsm_run_L_nine <= "10";
                 when "10" =>
                     if done_mul_1 = '1' then
@@ -2382,7 +2355,8 @@ begin
 
     --main fixed step driver
     fixed : process(clk, fixed_or_var, fixed_point_state, in_state) 
-    variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
+    --YA SHAWKY, replaced interp_done_sig with interp_done_op...
+    --variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
     begin
         if rst = '0' and rising_edge(clk) and fixed_or_var = '0' and in_state="10" then
             case fixed_point_state is
@@ -2409,7 +2383,7 @@ begin
                         --ERROR HERE YA SHAWKY
                         --if interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11" then
                         if interp_done_op = "01" or interp_done_op = "10" then
-                            interp_done_sig := interp_done_op;
+                            interp_done_op := interp_done_op;
                             result_u_main_temp(31 downto 0) <= in_data;
                             fixed_point_state <= "0011";
                         end if;
@@ -2426,7 +2400,7 @@ begin
                     --navigate to the suitable state
                     if write_u_main = '0' then
                         fsm_run_x_b_u <= "1111";
-                        if interp_done_sig = "01" then
+                        if interp_done_op = "01" then
                             fixed_point_state <= "0101";
                         else
                             fixed_point_state <= "0111";
@@ -2477,7 +2451,7 @@ begin
                         end if;
                         interrupt <= '1';
                         error_success <= '1';
-                        if interp_done_sig = "11" then
+                        if interp_done_op = "11" then
                             fixed_point_state <= "1111"; 
                         else
                             fixed_point_state <= "0000"; 
