@@ -81,7 +81,7 @@ signal U_0_address : std_logic_vector(6 downto 0) := (others => '0');
 signal U_0_data_in, U_0_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --Us Memory
 signal U_s_rd, U_s_wr : std_logic := '0';
-signal U_s_address : std_logic_vector(9 downto 0) := (others => '0');
+signal U_s_address : std_logic_vector(8 downto 0) := (others => '0');
 signal U_s_data_in, U_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --U_out Memory
 signal U_out_rd, U_out_wr : std_logic := '0';
@@ -93,13 +93,14 @@ signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0
 signal interp_state : std_logic_vector(3 downto 0) := "1111";
 signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
 signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
-signal u_low_adr, u_high_adr : std_logic_vector(9 downto 0) := (others => '0'); --boundary Us addresses
+signal u_low_adr, u_high_adr : std_logic_vector(8 downto 0) := (others => '0'); --boundary Us addresses
 signal u_0_adr, u_out_adr : std_logic_vector(6 downto 0) := (others => '0'); --initial and output U addresses
 signal u_0_temp, u_low_temp, u_high_temp, u_out_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
 signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --result of Uout
 
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
+signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
 
 --Send Output Signals
 signal send_output_enable : std_logic := '0';
@@ -221,7 +222,7 @@ begin
         data_out => U_0_data_out
     );
     --Holding all given Us
-    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
+    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 500, ADR_LENGTH=>9)
             port map(
                 clk      => clk,
                 rd       => U_s_rd,
@@ -304,8 +305,6 @@ begin
                 end if;    
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
-                U_s_wr <= '0';
-                U_s_address <= (others => '0');
                 U_s_data_in <= in_data;
                 U_s_wr <= '1';
                 -- shift adr from [MM_U_S_0:MM_U_S_1] to [0:MM_U_S_1-MM_U_S_0]
@@ -438,7 +437,84 @@ begin
     range_finder : process(clk, range_finder_enable)
     begin
         if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
-            null;
+            if h_new = X"0000" then
+                is_stored <= '1';
+                t_low <= h_new;
+                t_high <= h_new;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new > X"0000" and h_new < out_time_1 then
+                is_stored <= '0';
+                t_low <= X"0000";
+                t_high <= out_time_1;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_1 then
+                is_stored <= '1';
+                t_low <= out_time_1;
+                t_high <= out_time_1;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_1 and h_new < out_time_2 then 
+                is_stored <= '0';
+                t_low <= out_time_1;
+                t_high <= out_time_2;
+                u_high_adr <= (others => '0');
+                u_low_adr <= "001100100";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_2 then
+                is_stored <= '1';
+                t_low <= out_time_2;
+                t_high <= out_time_2;
+                u_high_adr <= "001100100";
+                u_low_adr <= "001100100";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_2 and h_new < out_time_3 then 
+                is_stored <= '0';
+                t_low <= out_time_2;
+                t_high <= out_time_3;
+                u_high_adr <= "001100100";
+                u_low_adr <= "011001000";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_3 then
+                is_stored <= '1';
+                t_low <= out_time_3;
+                t_high <= out_time_3;
+                u_high_adr <= "011001000";
+                u_low_adr <= "011001000";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_3 and h_new < out_time_4 then 
+                is_stored <= '0';
+                t_low <= out_time_3;
+                t_high <= out_time_4;
+                u_high_adr <= "011001000";
+                u_low_adr <= "100101100";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_4 then
+                is_stored <= '1';
+                t_low <= out_time_4;
+                t_high <= out_time_4;
+                u_high_adr <= "100101100";
+                u_low_adr <= "100101100";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_4 and h_new < out_time_5 then 
+                is_stored <= '0';
+                t_low <= out_time_4;
+                t_high <= out_time_5;
+                u_high_adr <= "100101100";
+                u_low_adr <= "110010000";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_5 then
+                is_stored <= '1';
+                t_low <= out_time_5;
+                t_high <= out_time_5;
+                u_high_adr <= "110010000";
+                u_low_adr <= "110010000";
+                u_0_adr <= (others => '0');
+            end if;
         end if;
     end process;
 
