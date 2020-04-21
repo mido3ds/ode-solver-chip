@@ -28,10 +28,9 @@ architecture rtl of interp is
 -----------------------------------------------------------------SIGNALS-----------------------------------------------------------------------------------
 --Header Signals
 --N
-signal N : integer range 0 to 50 ;
 signal N_vec : std_logic_vector(15 downto 0) := (others => '0');
 --M
-signal M : integer range 0 to 50 ;
+signal M : integer range 0 to 50;
 signal M_vec : std_logic_vector(15 downto 0) := (others => '0');
 --Data Mode
 signal mode_sig : std_logic_vector(1 downto 0) := "00";
@@ -75,18 +74,22 @@ signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LEN
 signal int_mul_1_enbl : std_logic := '0';
 
 --Memory Signals
+--U0 Memory
+signal U_0_rd, U_0_wr : std_logic := '0';
+signal U_0_address : std_logic_vector(6 downto 0) := (others => '0');
+signal U_0_data_in, U_0_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --Us Memory
 signal U_s_rd, U_s_wr : std_logic := '0';
 signal U_s_address : std_logic_vector(9 downto 0) := (others => '0');
 signal U_s_data_in, U_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --U_out Memory
 signal U_out_rd, U_out_wr : std_logic := '0';
-signal U_out_address : std_logic_vector(3 downto 0) := (others => '0');
+signal U_out_address : std_logic_vector(6 downto 0) := (others => '0');
 signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 
 --Processes Signals
 --Main FSM Signals
-signal interp_state : std_logic_vector(3 downto 0) := (others => '0');
+signal interp_state : std_logic_vector(3 downto 0) := "1111";
 signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
 signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
 signal u_low_adr, u_high_adr : std_logic_vector(9 downto 0) := (others => '0'); --boundary Us addresses
@@ -202,6 +205,16 @@ begin
         );
     
     --Memories:
+    --Holding initial U
+    U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    port map(
+        clk      => clk,
+        rd       => U_0_rd,
+        wr       => U_0_wr,
+        address  => U_0_address,
+        data_in  => U_0_data_in,
+        data_out => U_0_data_out
+    );
     --Holding all given Us
     U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
             port map(
@@ -235,16 +248,43 @@ begin
     end process;
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
     --Initialization
-    --detects addresses changes
-    detect_adr : process (clk, in_state, in_data, adr)
+    --initializes memories and signals with IO values
+    init_data : process (clk, in_state, in_data, adr)
     begin
-        null;
-    end process;
-
-    --enables data reading based on address
-    enable_read : process (clk, in_state, in_data, adr)
-    begin
-        null;
+        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+            --read header data
+            if adr = MM_HDR_0 then
+                N_vec(5 downto 0) <= in_data(31 downto 26);
+                M_vec(5 downto 0) <= in_data(25 downto 20);
+                fixed_or_var <= in_data(19);
+                mode_sig <= in_data(18 downto 17);
+                t_size <= in_data(16 downto 14);
+            --read time step (h)
+            elsif adr = MM_H_0 then
+                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_1 then
+                h_step(31 downto 0) <= in_data;
+            --read U_0
+            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                U_0_wr <= '0';
+                U_0_address <= (others => '0');
+                U_0_data_in <= in_data;
+                U_0_wr <= '1';
+                -- shift adr from [MM_U0_0:MM_U0_1] to [0:MM_U0_1-MM_U0_0]
+                U_0_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));     
+            --read output times           
+            elsif adr >= MM_T_0 and adr <= MM_T_1 then
+               null;
+            --read U_s
+            elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
+                U_s_wr <= '0';
+                U_s_address <= (others => '0');
+                U_s_data_in <= in_data;
+                U_s_wr <= '1';
+                -- shift adr from [MM_U_S_0:MM_U_S_1] to [0:MM_U_S_1-MM_U_S_0]
+                U_s_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U_S_0));
+            end if;
+        end if;
     end process;
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
     --Error Handling
@@ -377,14 +417,15 @@ begin
     end process;
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
     --main interpolator driver FSM
-    interpolate : process(clk, interp_state, adr) 
+    interpolate : process(clk, interp_state, adr, in_state) 
     begin
-        if rst = '0' and rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) and in_state = STATE_PROC then
             case interp_state is
                 when "0000" => 
                     --check input address
                     --read lower part of h_new
-                    if adr = X"2C34" then
+                    if adr = MM_H_NEW_0 then
+                        M <= to_int(M_vec);
                         h_new(31 downto 0) <= in_data;
                         interp_state <= "0001";
                     end if;
@@ -464,7 +505,7 @@ begin
                     if done_add_1 = '1' then
                         u_out_result <= fpu_add_1_out;
                         write_u_out <= '1';
-                        M <= M -1;
+                        M <= M - 1;
                         interp_state <= "1010";
                     end if;
                 when "1010" =>
@@ -473,7 +514,6 @@ begin
                     --add time step to received time to check outut points
                     if write_u_out = '0' then
                         if M = 0 then
-                            M <= to_int(M_vec);
                             fpu_add_1_in_1 <= h_step;
                             fpu_add_1_in_2 <= h_new;
                             enable_add_1 <= '1';
