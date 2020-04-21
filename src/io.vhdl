@@ -63,6 +63,7 @@ begin
 
                     if nau_done = '1' then
                         interrupt <= '1';
+                        error_success <= '1';
                     end if;
 
                 when STATE_OUT =>
@@ -75,6 +76,7 @@ begin
         -- change in state
         if in_state'event then
             interrupt <= '0';
+            error_success <= '0';
 
             -- put Z on read-only busses to avoid conflicts with writers
             case in_state is
