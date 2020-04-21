@@ -95,7 +95,7 @@ signal range_finder_enable : std_logic := '0';
 signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
 
 --Send Output Signals
-signal send_output_enable : std_logic := '0';
+signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
 
 --U0 IO Signals
 signal read_u_0, u_0_high : std_logic := '0';
@@ -272,6 +272,8 @@ begin
             range_finder_enable <= '0';
             is_stored <= '0';
             send_output_enable <= '0';
+            send_u_0_enable <= '0';
+            send_u_s_enable <= '0';
             read_u_0 <= '0';
             u_0_high <= '0';
             read_u_s_low <= '0';
@@ -571,7 +573,8 @@ begin
         if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
             if u_out_adr = X"0000" then
                 U_out_address <= u_out_adr;
-                U_out_wr <= '1';
+                U_out_wr <= '0';
+                U_out_rd <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
             elsif u_out_adr = std_logic_vector(unsigned(M_vec) * 2) then
                 in_data <= U_out_data_out;
@@ -579,8 +582,51 @@ begin
             else
                 in_data <= U_out_data_out;
                 U_out_address <= u_out_adr;
-                U_out_wr <= '1';
+                U_out_wr <= '0';
+                U_out_rd <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if;
+        end if;
+    end process;
+
+    --sends U_0 on output bus cycle by cycle
+    send_u_0 : process(clk, send_u_0_enable)
+    begin
+        if rst = '0' and rising_edge(clk) and send_u_0_enable = '1' then
+            if u_0_adr = X"0000" then
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            elsif u_0_adr = std_logic_vector(unsigned(M_vec) * 2) then
+                in_data <= U_0_data_out;
+                send_u_0_enable <= '0';
+            else
+                in_data <= U_0_data_out;
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            end if;
+        end if;
+    end process;
+
+    --sends U_s on output bus cycle by cycle
+    send_u_s : process(clk, send_u_s_enable)
+    begin
+        if rst = '0' and rising_edge(clk) and send_u_s_enable = '1' then
+            if u_low_adr = X"0000" then
+                U_s_address <= u_low_adr;
+                U_s_wr <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+            elsif u_low_adr = std_logic_vector(unsigned(M_vec) * 2) then
+                in_data <= U_s_data_out;
+                send_u_s_enable <= '0';
+            else
+                in_data <= U_s_data_out;
+                U_s_address <= u_low_adr;
+                U_s_wr <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
             end if;
         end if;
     end process;
@@ -605,7 +651,7 @@ begin
                 when "0000" => 
                     --check input address
                     --read lower part of h_new
-                    if adr = MM_H_NEW_0 and send_output_enable = '0' then
+                    if adr = MM_H_NEW_0 and send_output_enable = '0' and send_u_0_enable = '0' and send_u_s_enable = '0' then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
                         h_new(MAX_LENGTH-1 downto 32) <= in_data;
