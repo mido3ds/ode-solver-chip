@@ -56,28 +56,25 @@ begin
             done    => nau_done
         );
 
-    process (clk, rst, in_state, nau_out_adr, dcm_out_data, dcm_error_success, nau_done, dcm_error_success, in_data)
+    process (clk, rst, in_state, nau_out_adr, dcm_out_data, dcm_error_success, nau_done, in_data)
     begin
-        -- reset or change in state
-        if rst = '1' or in_state'event then
-            interrupt     <= '0';
-            error_success <= '1';
+        interrupt     <= '0';
+        error_success <= '1';
 
-            -- put Z on read-only busses to avoid conflicts with writers
-            case in_state is
-                when STATE_LOAD | STATE_WAIT =>
-                    cpu_data <= (others          => 'Z');
+        -- put Z on read-only busses to avoid conflicts with writers
+        case in_state is
+            when STATE_LOAD | STATE_WAIT =>
+                cpu_data <= (others          => 'Z');
 
-                when STATE_OUT               =>
-                    in_data <= (others           => 'Z');
-                    adr     <= (others           => 'Z');
+            when STATE_OUT               =>
+                in_data <= (others           => 'Z');
+                adr     <= (others           => 'Z');
 
-                when others                  =>
-                    cpu_data <= (others          => 'Z');
-                    in_data  <= (others          => 'Z');
-                    adr      <= (others          => 'Z');
-            end case;
-        end if;
+            when others                  =>
+                cpu_data <= (others          => 'Z');
+                in_data  <= (others          => 'Z');
+                adr      <= (others          => 'Z');
+        end case;
 
         if rst = '0' then
             case in_state is

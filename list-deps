@@ -2,9 +2,9 @@
 set -e
 
 run-daemon() {
-    if [[ `docker ps|grep ghdld|wc -l` = 0 ]]; then
+    if [[ `docker ps|grep ghdld_vlsi|wc -l` = 0 ]]; then
         echo running container daemon...
-        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld ghdl/ext sleep 1h >/dev/null
+        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld_vlsi ghdl/ext sleep 1h >/dev/null
         echo daemon is up
     fi
 }
@@ -15,7 +15,7 @@ main() {
     mkdir -p out/waves
     cd out
 
-    docker exec -w "$PWD" ghdld bash -c "
+    docker exec -w "$PWD" ghdld_vlsi bash -c "
         find ../src/ | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit 2>/dev/null
         find ../test/non_vunit | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit 2>/dev/null
 
