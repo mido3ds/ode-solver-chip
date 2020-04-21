@@ -257,25 +257,25 @@ begin
                 end if;
                 t_count <= T_count + 1;
                 if t_count = 1 then
-                    out_time_1(31 downto 0) <= in_data;
+                    out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 2 then
-                    out_time_1(63 downto 32) <= in_data;
+                    out_time_1(31 downto 0) <= in_data;
                 elsif t_count = 3 then
-                    out_time_2(31 downto 0) <= in_data;
+                    out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 4 then
-                    out_time_2(63 downto 32) <= in_data;
+                    out_time_2(31 downto 0) <= in_data;
                 elsif t_count = 5 then
-                    out_time_3(31 downto 0) <= in_data;
+                    out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 6 then
-                    out_time_3(63 downto 32) <= in_data;
+                    out_time_3(31 downto 0) <= in_data;
                 elsif t_count = 7 then
-                    out_time_4(31 downto 0) <= in_data;
+                    out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 8 then
-                    out_time_4(63 downto 32) <= in_data;
+                    out_time_4(31 downto 0) <= in_data;
                 elsif t_count = 9 then
-                    out_time_5(31 downto 0) <= in_data;
+                    out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 10 then
-                    out_time_5(63 downto 32) <= in_data;
+                    out_time_5(31 downto 0) <= in_data;
                 end if;    
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
@@ -303,14 +303,14 @@ begin
                 U_0_address <= u_0_adr;
                 U_0_wr <= '0';
                 U_0_rd <= '1';
-                u_0_temp(31 downto 0) <= U_0_data_out;
+                u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
                 u_0_high <= '1';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1); 
             else
                 U_0_address <= u_0_adr;
                 U_0_wr <= '0';
                 U_0_rd <= '1';
-                u_0_temp(63 downto 32) <= U_0_data_out;
+                u_0_temp(31 downto 0) <= U_0_data_out;
                 u_0_high <= '0';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
                 read_u_0 <= '0';
@@ -327,14 +327,14 @@ begin
                 U_s_address <= u_low_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_low_temp(31 downto 0) <= U_s_data_out;
+                u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
                 u_s_low_high <= '1';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1); 
             else
                 U_s_address <= u_low_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_low_temp(63 downto 32) <= U_s_data_out;
+                u_low_temp(31 downto 0) <= U_s_data_out;
                 u_s_low_high <= '0';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
                 read_u_s_low <= '0';
@@ -350,14 +350,14 @@ begin
                 U_s_address <= u_high_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_high_temp(31 downto 0) <= U_s_data_out;
+                u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
                 u_s_high_high <= '1';
                 u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1); 
             else
                 U_s_address <= u_high_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_high_temp(63 downto 32) <= U_s_data_out;
+                u_high_temp(31 downto 0) <= U_s_data_out;
                 u_s_high_high <= '0';
                 u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
                 read_u_s_high <= '0';
@@ -374,14 +374,14 @@ begin
                 U_out_address <= u_out_adr;
                 U_out_wr <= '0';
                 U_out_rd <= '1';
-                u_out_temp(31 downto 0) <= U_out_data_out;
+                u_out_temp(MAX_LENGTH-1 downto 32) <= U_out_data_out;
                 u_out_high <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             else
                 U_out_address <= u_out_adr;
                 U_out_wr <= '0';
                 U_out_rd <= '1';
-                u_out_temp(63 downto 32) <= U_out_data_out;
+                u_out_temp(31 downto 0) <= U_out_data_out;
                 u_out_high <= '0';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
                 read_u_out <= '0';
@@ -395,14 +395,14 @@ begin
         if rst = '0' and rising_edge(clk) and read_u_out = '0' and write_u_out = '1' then       
             if u_out_high = '0' then
                 U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(31 downto 0);
+                U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
                 U_out_rd <= '0';
                 U_out_wr <= '1';
                 u_out_high <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             else
                 U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(63 downto 32);
+                U_out_data_in <= u_out_result(31 downto 0);
                 U_out_rd <= '0';
                 U_out_wr <= '1';
                 u_out_high <= '0';
@@ -521,8 +521,12 @@ begin
     --listens to address bus and update h_step (for variable step)
     step_update : process(clk, adr)
     begin
-        if rst = '0' and rising_edge(clk) and adr = MM_H_ADA_0 then
-            null;
+        if rst = '0' and rising_edge(clk) then
+            if adr = MM_H_ADA_0 then
+                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_ADA_1 then
+                h_step(31 downto 0) <= in_data;
+            end if;
         end if;
     end process;
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
@@ -536,13 +540,13 @@ begin
                     --read lower part of h_new
                     if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
-                        h_new(31 downto 0) <= in_data;
+                        h_new(MAX_LENGTH-1 downto 32)  <= in_data;
                         interp_state <= "0001";
                     end if;
                 when "0001" =>
                     --read higher part of h_new
                     --start range finder process
-                    h_new(63 downto 32) <= in_data;
+                    h_new(31 downto 0) <= in_data;
                     range_finder_enable <= '1';
                     interp_state <= "0010";
                 when "0010" =>
