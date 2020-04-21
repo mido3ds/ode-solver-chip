@@ -175,7 +175,8 @@ architecture rtl of solver is
     --Like a pointer at X_ware, once it changes address value is updated
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
-    signal div_or_doubler: std_logic  := '0';
+    signal div_or_zero, div_or_adapt: std_logic  := '0';
+    signal from_i_to_c: std_logic  := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -1372,6 +1373,10 @@ begin
         end if;
     end process; --proc_run_x_b_u
 
+    --this proc is called only from var_step_proc
+    --and we need to define:
+    --  which h is used? h_div or h_adapt-->signal div_or_adapt
+    --  which X's are used? Xi-> XC or Xc->Xi --> from_i_to_c
     --calculates hX (for variable step)
     proc_run_x_h : process(clk,fsm_run_x_h )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
@@ -1382,35 +1387,95 @@ begin
                     --NOP for now
                     null;
                 when "001" =>
-                    --read B coeff
+                    --read X coeff
                     --operated only once
-                    read_x_i <='1';
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        read_x <='1';
+                    else
+                        --from i to c then
+                        read_x_i <= '1';
+                    end if;
                     fsm_run_x_h <= "010";
                 when "010" =>
-                    if read_x_i = '0' then
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        if read_x = '0' then
                         --b_temp holds current b element..
-                        enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= x_temp;
-                        fpu_mul_1_in_2 <= h_main;
-                        result_x_i_temp<= fpu_mul_1_out;
-                        fsm_run_x_h <= "011";
+                            if div_or_adapt = '0' then
+                                --div
+                                enable_mul_1 <= '1';
+                                fpu_mul_1_in_1 <= x_temp;
+                                fpu_mul_1_in_2 <= h_div;
+                                fsm_run_x_h <= "011";
+                            else
+                                --adapt
+                                enable_mul_1 <= '1';
+                                fpu_mul_1_in_1 <= x_temp;
+                                fpu_mul_1_in_2 <= h_adapt;
+                                fsm_run_x_h <= "011";
+                            end if;
+                        end if;
+                    else
+                        --from i to c then
+                        if read_x = '0' then
+                            --b_temp holds current b element..
+                            if div_or_adapt = '0' then
+                                --div
+                                enable_mul_1 <= '1';
+                                fpu_mul_1_in_1 <= x_i_temp;
+                                fpu_mul_1_in_2 <= h_div;
+                                fsm_run_x_h <= "011";
+                            else
+                                --adapt
+                                enable_mul_1 <= '1';
+                                fpu_mul_1_in_1 <= x_temp;
+                                fpu_mul_1_in_2 <= h_adapt;
+                                fsm_run_x_h <= "011";
+                            end if;
+                        end if;
                     end if;
+
+                    
                 when "011" =>
                     --store hb at b
                     if done_mul_1 = '1' then
-                        enable_mul_1 <= '0';
-                        write_x_i <= '1';
-                        fsm_run_x_h <= "100";
+                        if from_i_to_c = '0' then
+                            --from c to i then
+                            result_x_i_temp<= fpu_mul_1_out;
+                            enable_mul_1 <= '0';
+                            write_x_i <= '1';
+                            fsm_run_x_h <= "100";
+                        else
+                            --from i to c then
+                            result_x_temp<= fpu_mul_1_out;
+                            enable_mul_1 <= '0';
+                            write_x <= '1';
+                            fsm_run_x_h <= "100";
+                        end if;
+                        
                     end if;
                 when "100" =>
                     -- check if we reached end of the loop!!
                     --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
                     -- if it's zero, we escape
-                    if write_x_i = '0' then
-                        address_dec_1_in <= N_X_A_B_TEMP;
-                        address_dec_1_enbl <= '1';
-                        fsm_run_x_h <= "101";
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        if write_x_i = '0' then
+                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_enbl <= '1';
+                            fsm_run_x_h <= "101";
+                        end if;
+                    else
+                        --from i to c then
+                        if write_x = '0' then
+                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_enbl <= '1';
+                            fsm_run_x_h <= "101";
+                        end if;
                     end if;
+
+                    
                 when "101" =>
                     address_dec_1_enbl <= '0';
                     N_X_A_B_TEMP := address_dec_1_out;
@@ -1627,7 +1692,7 @@ begin
     --But also I can not proceed with case() without making sure that U is read perfectly
     --this proc is only called within variable step size
     --so we know for sure that it is a variable step size operation
-    pric_run_main_eq : process( clk,fsm_main_eq )
+    proc_run_main_eq : process( clk,fsm_main_eq )
     begin
         if rising_edge(clk) then
             case( fsm_main_eq ) is
@@ -1648,7 +1713,7 @@ begin
                         fsm_main_eq <= "010";
                     end if;
                 when "010" => 
-                    if fsm_run_x_b_u = "0000" then
+                    if fsm_run_x_b_u = "0000" and fsm_run_h_2 = "00" then
                         --then X_i = X_i + BU
                         fsm_run_x_h <= (others =>'1');
                         fsm_main_eq <= "011";
@@ -1673,7 +1738,9 @@ begin
                     null;
             end case ;
         end if;
-    end process ; -- pric_run_main_eq
+    end process ; -- proc_run_main_eq
+
+    --A copy of the main equation, used to calculate:
 
     --Steps:
     --1- send h_high at 2C33
@@ -1681,7 +1748,7 @@ begin
     --3- wait for done signal...
     --   when recevied, store U at U_main
     --4- end :D
-    --NOTE: this proc sends h_doubler or h_div, depending on a signal called div_or_doubler
+    --NOTE: this proc sends zero or h_div, depending on a signal called div_or_zero
     proc_h_sent_U_recv : process( clk, fsm_h_sent_U_recv )
     --variable read_high_low:  std_logic  := '0'; 
     variable write_high_low:  std_logic  := '0'; 
@@ -1692,34 +1759,36 @@ begin
             case( fsm_h_sent_U_recv ) is
             
                 when "111" =>
-                    if write_high_low = '0' then
-                        adr <= X"2C33";
-                        if div_or_doubler = '0' then
-                            --div
-                            in_data <= h_div(63 downto 32);
-                            write_high_low := '1';
-                        else
-                            --doubler
-                            in_data <= h_doubler(63 downto 32);
-                            write_high_low := '1';
-                        end if;
-                    else
-                        adr <= X"2C34";
-                        if div_or_doubler = '0' then
-                            --div
-                            in_data <= h_div(31 downto 0);
-                            write_high_low := '0';
-                            u_main_address <= (others =>'0');
-                            fsm_h_sent_U_recv <= "01";
-                        else
-                            --doubler
-                            in_data <= h_doubler(31 downto 0);
-                            U_main_address <= (others => '0');
-                            write_high_low := '0';
-                            fsm_h_sent_U_recv <= "001";
+                    -- we may use h_div, so we need to wait until its counted...
+                    if fsm_run_h_2 = "00" then
+                        if write_high_low = '0' then
+                            adr <= X"2C33";
+                            if div_or_zero = '0' then
+                                --div
+                                in_data <= h_div(63 downto 32);
+                                write_high_low := '1';
+                            else
+                                --zeros
+                                in_data <= (others => '0');
+                                write_high_low := '1';
                             end if;
+                        else
+                            adr <= X"2C34";
+                            if div_or_zero = '0' then
+                                --div
+                                in_data <= h_div(31 downto 0);
+                                write_high_low := '0';
+                                u_main_address <= (others =>'0');
+                                fsm_h_sent_U_recv <= "001";
+                            else
+                                --zero
+                                in_data <= (others => '0');
+                                U_main_address <= (others => '0');
+                                write_high_low := '0';
+                                fsm_h_sent_U_recv <= "001";
+                                end if;
+                        end if;
                     end if;
-
                 when "001" =>
                     --start the reading loop
                     N_X_A_B_TEMP := N_X_A_B_vec;
@@ -1790,7 +1859,7 @@ begin
         end if;
     end process ; -- proc_send_h_init
 
-    
+
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --multiples N*N or N*M
     proc_run_mul_n_m_and_n_n : process( clk, fsm_run_mul_n_m )
@@ -1925,6 +1994,7 @@ begin
         end if;        
     end process ; -- proc_run_err_h_L
 
+    --h_div = h_adapt/2
     proc_run_h_2 : process( clk, fsm_run_h_2 )
     begin
         if rising_edge(clk) then
@@ -1982,7 +2052,7 @@ begin
                 when "0001" =>
                     --send higher half of new h to interpolater
                     --run AX calculation
-                    adr <= X"2C34";
+                    adr <= X"2C33";
                     in_data <= h_doubler(63 downto 32);
                     fsm_run_a_x <= "000";
                     fixed_point_state <= "0010";
@@ -2080,10 +2150,14 @@ begin
     
 
     -- 1- calc two steps equations:
-            --1.1- Xi = X_w[c] + h_div (X_w[c], U_main)
-            --1.2- X_w[c+1] = Xi + h_div (Xi, U_sub) --irrecgular equation fsm :D
+            --h_sent = 0 (n), U_recv = U0 (n)
+            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
+            --h_sent = h_adapt/2, U_recv is interpolated
+            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
     -- 2- calc one step equation: (fsm_main_eq)
-    --      X_i = X_w[c] + h_adapt(X_w[c], U_main)
+    --        h_sent = h_adapt, U_recv is interpolated,
+    --          not every time actually.. 
+    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
     -- 3- calc error
     -- 4.1- error is bad (err > L_tol):
     --      h_adapt = h_adapt * h_adapt * L_nine / err
@@ -2103,7 +2177,16 @@ begin
             
                 when "111" =>
                     --START babyyy
-
+                    -- we reach here when output is produced and c_ware is incremented
+                    
+                when "001" => 
+                    
+                when "010" =>
+                when "011" =>
+                when "100" =>
+                when "101" =>
+                when "110" =>
+                    
             
                 when others =>
                     -- zeros and other cases
