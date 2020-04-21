@@ -403,180 +403,65 @@ begin
     end process;
 
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
-    -- Init:
-    -- Divided into two processes:
-
-    --detects what type of addresses is this!  
-    adr_detector : process (clk, in_state, in_data, adr)
-    variable adr_var :unsigned(15 downto 0); 
+    process (clk, rst, adr, in_state)
     begin
-        adr_var := resize(unsigned(adr),16);
-        -- if in_State is           LOAD         or            WAIT      I can read..
         if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
-            case adr_var is
-                --Header
-                when X"0000" =>
-                    address_pointer <= "001";
-                --H
-                when X"0001" =>
-                    h_high <= '0';
-                    address_pointer <= "010";
-                --error ie. Tolerance
-                when X"0003" =>
-                    L_high <= '0';
-                    address_pointer <= "011";
-                --A
-                when X"0005" =>
-                    a_coeff_address <= (others => '0');
-                    address_pointer <= "100";
-                --B
-                when X"138D" =>
-                    a_coeff_wr <= '0';
-                    a_coeff_address <= (others => '0');
-                    b_coeff_address <= (others => '0');
-                    address_pointer <= "101";
-                --X0 ie. X_w[0]
-                when X"2715" =>
-                    b_coeff_wr <= '0';
-                    b_coeff_address <= (others => '0');
-                    X_ware_address <= (others => '0');
-                    address_pointer <= "110";
-                --U0 ie. Umain
-                when X"296D" =>
-                    X_ware_wr <= '0';
-                    X_ware_address <= (others => '0');
-                    U_main_address <= (others => '0');
-                    address_pointer <= "111";
-                --X_out, not mine
-                when X"2779" =>
-                    address_pointer <= "000";
-                --T, not mine
-                when X"29D1" =>
-                    U_main_address <= (others => '0');
-                    U_main_wr <= '0';
-                    address_pointer <= "000";
-                --Us, not mine
-                when X"29DB" =>
-                    address_pointer <= "000";
-                --Uint
-                when X"2BCF" =>
-                    address_pointer <= "000";
-                --h_new
-                when X"2C33" =>
-                    address_pointer <= "000";
-                -- Not our address :D
-                when others =>
-                    null;
-            end case;
-        end if;
-    end process;
+            if adr = MM_HDR_0 then
+                N_X_A_B_vec <= in_data(31 downto 26);
+                M_U_B_vec <= in_data(25 downto 20);
+                N_X_A_B <= to_int(in_data(31 downto 26));
+                M_U_B <= to_int(in_data(25 downto 20));
+                fixed_or_var <= in_data(19);
+                mode_sig <= in_data(18 downto 17);
+                t_size <= in_data(16 downto 14);
+            elsif adr = MM_H_0 then
+                h_main(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_1 then
+                h_main(31 downto 0) <= in_data;
+                
+                --this signal will initiate both: N*M and N*N
+                fsm_run_mul_n_m <= "11"; 
+            elsif adr = MM_ERR_0 then
+                L_tol (MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_ERR_1 then
+                L_tol(31 downto 0) <= in_data;
+            elsif adr >= MM_A_0 and adr <= MM_A_1 then
+                a_coeff_data_in <= in_data;
+                a_coeff_wr <= '1';
+                -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
+                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));
 
-    --enables reading on my address
-    enable_read : process (clk, in_state, in_data, adr)
-    begin
-        -- if in_State is           LOAD         or            WAIT      I can read..
-        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
-            case address_pointer is
-                when "001" =>
-                    --Header only one clock for one variable:
-                    --Up till now, 'header' register is useless
-                    N_X_A_B_vec <= in_data(31 downto 26);
-                    M_U_B_vec <= in_data(25 downto 20);
-                    N_X_A_B <= to_int(in_data(31 downto 26));
-                    M_U_B <= to_int(in_data(25 downto 20));
-                    fixed_or_var <= in_data(19);
-                    mode_sig <= in_data(18 downto 17);
-                    t_size <= in_data(16 downto 14);
-                    --NOTE: You can not use the adder unit untill the next clock cycle
-                    --and you don't need to use it anyways...
-                when "010" =>
-                    --H
-                    if h_high = '0' then
-                        h_main(MAX_LENGTH-1 downto 32) <= in_data;
-                        h_high <= '1';
-                    else
-                        h_main(31 downto 0) <= in_data;
-                    end if;
-                    --this signal will initiate both:
-                    -- N*M and N*N
-                    fsm_run_mul_n_m <= "11"; 
+                --L_tol is read, so:
+                fsm_run_L_nine <= "11";
+            elsif adr >= MM_B_0 and adr <= MM_B_1 then
+                --b coefficient
+                b_coeff_data_in <= in_data;
+                b_coeff_wr <= '1';
+                -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
+                b_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_B_0));
 
-                when "011" =>
-                    --error tolerance
-                    if L_high = '0' then
-                        L_tol (MAX_LENGTH-1 downto 32) <= in_data;
-                        L_high <= '1';
-                    else
-                        L_tol(31 downto 0) <= in_data;
-                    end if;
+                --since we got here, then A and H are ready
+                if fixed_or_var = '0' then 
+                    fsm_run_h_a <= "1111";
+                end if;
+            elsif adr >= MM_X_0 and adr <= MM_X_1 then
+                --X_ware[0] = X0
+                X_ware_data_in <= in_data;
+                X_ware_wr <= '1';
+                -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
+                X_ware_address <= std_logic_vector(unsigned(adr) - unsigned(MM_X_0));
 
-                when "100" =>
-                    --L_tol is read, so:
-                    fsm_run_L_nine <= "11";
-                    --a coefficient
-                    a_coeff_data_in <= in_data;
-                    a_coeff_wr <= '1';
-
-                    --then increment adr+=1
-                    if done_add_1 = '0' then
-                        fpu_add_1_in_1 <= a_coeff_address;
-                        fpu_add_1_in_2 <= X"0001";
-                        enable_add_1 <= '1';
-                    else
-                        a_coeff_address <= fpu_add_1_out;
-                        enable_add_1 <= '0';
-                    end if;        
-                when "101" =>
-                    --since we got here, then A and H are ready
-                    if fixed_or_var = '0' then 
-                        fsm_run_h_a <= "1111";
-                    end if;
-                    --b coefficient
-                    b_coeff_data_in <= in_data;
-                    b_coeff_wr <= '1';
-                    --then increment adr+=1
-                    if done_add_1 = '0' then
-                        fpu_add_1_in_1 <= b_coeff_address;
-                        fpu_add_1_in_2 <= X"0001";
-                        enable_add_1 <= '1';
-                    else
-                        b_coeff_address <= fpu_add_1_out;
-                        enable_add_1 <= '0';
-                    end if;
-                when "110" =>
-                    --Since we got here, then B and H are ready
-                    if fixed_or_var = '0' then 
-                        fsm_run_h_b <= "111";
-                        --at the begining of Fixed algorithm, you need to check that fsm_run_h_b = "000" or wait..
-                    end if;
-                    --X_ware[0] = X0
-                    X_ware_data_in <= in_data;
-                    X_ware_wr <= '1';
-                    --then increment adr+=1
-                    if done_add_1 = '0' then
-                        fpu_add_1_in_1 <= X_ware_address;
-                        fpu_add_1_in_2 <= X"0001";
-                        enable_add_1 <= '1';
-                    else
-                        X_ware_address <= fpu_add_1_out;
-                        enable_add_1 <= '0';
-                    end if;
-                when "111" =>
-                    --X0
-                    U_main_data_in <= in_data;
-                    U_main_wr <= '1';
-                    --then increment adr+=1
-                    if done_add_1 = '0' then
-                        fpu_add_1_in_1 <= U_main_address;
-                        fpu_add_1_in_2 <= X"0001";
-                        enable_add_1 <= '1';
-                    else
-                        U_main_address <= fpu_add_1_out;
-                        enable_add_1 <= '0';
-                    end if;
-                when others =>
-                    null;
-            end case;
+                 -- Since we got here, then B and H are ready
+                if fixed_or_var = '0' then 
+                    fsm_run_h_b <= "111";
+                    -- at the begining of Fixed algorithm, you need to check that fsm_run_h_b = "000" or wait..
+                end if;
+            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                U_main_data_in <= in_data;
+                U_main_wr <= '1';
+                -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
+                U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
+            end if;
         end if;
     end process;
 
@@ -1854,7 +1739,7 @@ begin
                 when "0101" =>
                     if done_add_1 = '1' or addThisError = '1' then
                         --decrement the counter
-                        addThisError = '0';
+                        addThisError := '0';
                         err_sum <= fpu_add_1_out;
                         enable_add_1 <= '0';
                         fsm_run_sum_err <= "0110";
