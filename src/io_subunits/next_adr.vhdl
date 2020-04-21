@@ -5,43 +5,38 @@ use work.common.all;
 
 entity next_adr is
     port (
-        in_data : in std_logic_vector(31 downto 0);
-        enbl    : in std_logic;
-        clk     : in std_logic;
-        rst     : in std_logic;
+        in_data    : in std_logic_vector(31 downto 0);
+        enbl       : in std_logic;
+        clk        : in std_logic;
+        rst        : in std_logic;
 
-        out_adr : out std_logic_vector(15 downto 0);
-        done    : out std_logic
+        out_adr    : out std_logic_vector(15 downto 0);
+        done       : out std_logic;
+
+        -- for testing
+        state_test : out std_logic_vector(3 downto 0)
     );
 end entity;
 
 architecture rtl of next_adr is
     -- states
-    signal state             : std_logic_vector(3 downto 0);
-    ---- idle: reset state, out x"FFFF", next hdr(x"0000")
-    constant STATE_START     : std_logic_vector(state'range) := x"0";
-    ---- hdr: calculate dimensions, next h(x"0001")
-    constant STATE_HDR_H_ERR : std_logic_vector(state'range) := x"1";
-    ---- a: out (x"0005",x"138C"], next b(x"138D")
-    constant STATE_A         : std_logic_vector(state'range) := x"4";
-    ---- b: out (x"138D",x"2714"], next x(x"2715")
-    constant STATE_B         : std_logic_vector(state'range) := x"5";
-    ---- x: out (x"2715",x"296C"], next u0(x"296D")
-    constant STATE_X         : std_logic_vector(state'range) := x"6";
-    ---- u0: out (x"296D",x"29D0"], next t(x"29D1")
-    constant STATE_U0        : std_logic_vector(state'range) := x"7";
-    ---- t: out (x"29D1",x"29D7"], next us(x"29DB")
-    constant STATE_T         : std_logic_vector(state'range) := x"8";
-    ---- us: out (x"29DB",x"2BCB"]
-    constant STATE_US        : std_logic_vector(state'range) := x"9";
-    ---- done: out Z
-    constant STATE_DONE      : std_logic_vector(state'range) := x"A";
+    signal state         : std_logic_vector(3 downto 0);
+    constant STATE_START : std_logic_vector(state'range) := x"0";
+    constant STATE_HDR   : std_logic_vector(state'range) := x"1";
+    constant STATE_H_ERR : std_logic_vector(state'range) := x"2";
+    constant STATE_A     : std_logic_vector(state'range) := x"3";
+    constant STATE_B     : std_logic_vector(state'range) := x"4";
+    constant STATE_X     : std_logic_vector(state'range) := x"5";
+    constant STATE_U0    : std_logic_vector(state'range) := x"6";
+    constant STATE_T     : std_logic_vector(state'range) := x"7";
+    constant STATE_US    : std_logic_vector(state'range) := x"8";
+    constant STATE_DONE  : std_logic_vector(state'range) := x"9";
 
-    signal cur_adr           : std_logic_vector(out_adr'range);
-    signal new_adr           : std_logic_vector(out_adr'range);
+    signal cur_adr       : std_logic_vector(out_adr'range);
+    signal new_adr       : std_logic_vector(out_adr'range);
 
     -- header parts
-    signal header            : std_logic_vector(31 downto 0);
+    signal header        : std_logic_vector(31 downto 0);
     alias hdr_n is header(31 downto 26);
     alias hdr_m is header(25 downto 20);
     alias hdr_mode is header(19);
@@ -56,10 +51,14 @@ architecture rtl of next_adr is
     signal max_t_adr                     : std_logic_vector(out_adr'range);
     signal max_us_adr                    : std_logic_vector(out_adr'range);
 
+    -- tmp inputs
+    signal hdr_n_with_padding            : std_logic_vector(out_adr'range);
+    signal hdr_m_with_padding            : std_logic_vector(out_adr'range);
+
     -- tmp outputs
-    signal hdr_n_square                  : std_logic_vector(hdr_n'range);
-    signal hdr_n_m                       : std_logic_vector(hdr_n'range);
-    signal hdr_tsize_m                   : std_logic_vector(hdr_n'range);
+    signal hdr_n_square                  : std_logic_vector(out_adr'range);
+    signal hdr_n_m                       : std_logic_vector(out_adr'range);
+    signal hdr_tsize_m                   : std_logic_vector(out_adr'range);
 
     function get_increment_size(fpu_mode : std_logic_vector) return std_logic_vector is
     begin
@@ -70,7 +69,8 @@ architecture rtl of next_adr is
         return to_vec(1, 2);
     end function;
 begin
-    out_adr <= cur_adr;
+    state_test <= state;
+    out_adr    <= cur_adr;
 
     iterator : entity work.int_adder
         generic map(N => cur_adr'length, M => 2)
@@ -83,11 +83,13 @@ begin
         );
 
     -- max_a_adr
+    hdr_n_with_padding <= "0000000000" & hdr_n;
+
     max_a_adr_mul : entity work.int_multiplier
-        generic map(N => hdr_n'length, M => hdr_n'length)
+        generic map(N => hdr_n_with_padding'length, M => hdr_n_with_padding'length)
         port map(
-            a    => hdr_n,
-            b    => hdr_n,
+            a    => hdr_n_with_padding,
+            b    => hdr_n_with_padding,
             enbl => '1',
             c    => hdr_n_square
         );
@@ -103,11 +105,13 @@ begin
         );
 
     -- max_b_adr
+    hdr_m_with_padding <= "0000000000" & hdr_m;
+
     max_b_adr_mul : entity work.int_multiplier
-        generic map(N => hdr_n'length, M => hdr_m'length)
+        generic map(N => hdr_n_with_padding'length, M => hdr_m_with_padding'length)
         port map(
-            a    => hdr_n,
-            b    => hdr_m,
+            a    => hdr_n_with_padding,
+            b    => hdr_m_with_padding,
             enbl => '1',
             c    => hdr_n_m
         );
@@ -146,9 +150,9 @@ begin
 
     -- max_us_adr
     max_us_adr_mul : entity work.int_multiplier
-        generic map(N => hdr_m'length, M => hdr_tsize'length)
+        generic map(N => hdr_m_with_padding'length, M => hdr_tsize'length)
         port map(
-            a    => hdr_m,
+            a    => hdr_m_with_padding,
             b    => hdr_tsize,
             enbl => '1',
             c    => hdr_tsize_m
@@ -182,72 +186,86 @@ begin
             done    <= '0';
             cur_adr <= (others => '1');
         elsif rising_edge(clk) and enbl = '1' then
-            case(state) is
+            case state is
                 when STATE_START =>
-                cur_adr <= MM_HDR_0;
-                state   <= STATE_HDR_H_ERR;
-                header  <= in_data;
+                    -- start: next hdr(MM_HDR_0) + calculate max_*
+                    cur_adr <= MM_HDR_0;
+                    state   <= STATE_HDR;
+                    header  <= in_data;
 
-                when STATE_HDR_H_ERR =>
-                cur_adr <= new_adr;
+                when STATE_HDR =>
+                    -- hdr: next h_err(MM_H_0)
+                    cur_adr <= MM_H_0;
+                    state   <= STATE_H_ERR;
 
-                if new_adr = MM_A_0 then
-                    cur_adr <= MM_A_0;
-                    state   <= STATE_A;
-                end if;
+                when STATE_H_ERR =>
+                    -- h_err: out (MM_H_0, x"0004"], next a(MM_A_0)
+                    cur_adr <= new_adr;
+
+                    if new_adr = MM_A_0 then
+                        cur_adr <= MM_A_0;
+                        state   <= STATE_A;
+                    end if;
 
                 when STATE_A =>
-                cur_adr <= new_adr;
+                    -- a: out (MM_A_0,max_a_adr], next b(MM_B_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_a_adr then
-                    cur_adr <= MM_B_0;
-                    state   <= STATE_B;
-                end if;
+                    if new_adr = max_a_adr then
+                        cur_adr <= MM_B_0;
+                        state   <= STATE_B;
+                    end if;
 
                 when STATE_B =>
-                cur_adr <= new_adr;
+                    -- b: out (MM_B_0,max_b_adr], next x(MM_X_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_b_adr then
-                    cur_adr <= MM_X_0;
-                    state   <= STATE_X;
-                end if;
+                    if new_adr = max_b_adr then
+                        cur_adr <= MM_X_0;
+                        state   <= STATE_X;
+                    end if;
 
                 when STATE_X =>
-                cur_adr <= new_adr;
+                    -- x: out (MM_X_0,max_x_adr], next u0(MM_U0_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_x_adr then
-                    cur_adr <= MM_U0_0;
-                    state   <= STATE_U0;
-                end if;
+                    if new_adr = max_x_adr then
+                        cur_adr <= MM_U0_0;
+                        state   <= STATE_U0;
+                    end if;
 
                 when STATE_U0 =>
-                cur_adr <= new_adr;
+                    -- u0: out (MM_U0_0,max_u0_adr], next t(MM_T_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_u0_adr then
-                    cur_adr <= MM_T_0;
-                    state   <= STATE_T;
-                end if;
+                    if new_adr = max_u0_adr then
+                        cur_adr <= MM_T_0;
+                        state   <= STATE_T;
+                    end if;
 
                 when STATE_T =>
-                cur_adr <= new_adr;
+                    -- t: out (MM_T_0,max_t_adr], next us(MM_U_S_0)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_t_adr then
-                    cur_adr <= MM_U_S_0;
-                    state   <= STATE_US;
-                end if;
+                    if new_adr = max_t_adr then
+                        cur_adr <= MM_U_S_0;
+                        state   <= STATE_US;
+                    end if;
 
                 when STATE_US =>
-                cur_adr <= new_adr;
+                    -- us: out (MM_U_S_0,maxu_us_adr], next done(Z)
+                    cur_adr <= new_adr;
 
-                if new_adr = max_us_adr then
-                    done    <= '1';
-                    cur_adr <= (others => 'Z');
-                    state   <= STATE_DONE;
-                end if;
+                    if new_adr = max_us_adr then
+                        done    <= '1';
+                        cur_adr <= (others => 'Z');
+                        state   <= STATE_DONE;
+                    end if;
 
                 when others =>
-                done    <= '1';
-                cur_adr <= (others => 'Z');
+                    -- done: out Z
+                    done    <= '1';
+                    cur_adr <= (others => 'Z');
             end case;
         end if;
     end process;

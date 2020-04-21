@@ -20,7 +20,7 @@ begin
     h_sum           <= in_a xor in_b;
     carry_generate  <= in_a and in_b;
     carry_propagate <= in_a xor in_b;
-    process (carry_generate, carry_propagate, carry_in_internal)
+    process (carry_generate, carry_propagate, carry_in_internal,carry_in)
     begin
         carry_in_internal(1) <= carry_generate(0) or (carry_propagate(0) and carry_in);
         inst : for i in 1 to 14 loop

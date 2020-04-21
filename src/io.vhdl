@@ -56,17 +56,18 @@ begin
             interrupt     <= '0';
             error_success <= '0';
         elsif rising_edge(clk) then
-            case(in_state) is
+            case in_state is
                 when STATE_LOAD | STATE_WAIT =>
-                adr     <= nau_out_adr;
-                in_data <= dcm_out_data;
+                    adr     <= nau_out_adr;
+                    in_data <= dcm_out_data;
 
-                if nau_done = '1' then
-                    interrupt <= '1';
-                end if;
+                    if nau_done = '1' then
+                        interrupt <= '1';
+                        error_success <= '1';
+                    end if;
 
                 when STATE_OUT =>
-                cpu_data <= in_data;
+                    cpu_data <= in_data;
 
                 when others => null;
             end case;
@@ -75,20 +76,21 @@ begin
         -- change in state
         if in_state'event then
             interrupt <= '0';
+            error_success <= '0';
 
             -- put Z on read-only busses to avoid conflicts with writers
-            case(in_state) is
+            case in_state is
                 when STATE_LOAD | STATE_WAIT =>
-                cpu_data <= (others          => 'Z');
+                    cpu_data <= (others          => 'Z');
 
                 when STATE_OUT               =>
-                in_data <= (others           => 'Z');
-                adr     <= (others           => 'Z');
+                    in_data <= (others           => 'Z');
+                    adr     <= (others           => 'Z');
 
                 when others                  =>
-                cpu_data <= (others          => 'Z');
-                in_data  <= (others          => 'Z');
-                adr      <= (others          => 'Z');
+                    cpu_data <= (others          => 'Z');
+                    in_data  <= (others          => 'Z');
+                    adr      <= (others          => 'Z');
             end case;
         end if;
     end process;
