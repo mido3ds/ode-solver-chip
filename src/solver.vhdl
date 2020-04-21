@@ -104,8 +104,6 @@ architecture rtl of solver is
     --range [0:5], acts like a pointer to X_ware
     --fp16, fp32, fp64
     signal mode_sig     : std_logic_vector(1 downto 0)               := "00";
-    --address pointer: keeps track when initializing
-    signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
     --declaring this fpu_adder unit as adder or subtractor
     --N, used in looping at X, A, B
     --signal N_X_A_B : integer range 0 to 50 ;
@@ -176,11 +174,11 @@ architecture rtl of solver is
     signal fsm_run_a_x_2: std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_b_u_2: std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(2 downto 0) := (others => '0');
+    signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     
 
 
     --fixed point special signals
-    signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     --Like a pointer at X_ware, once it changes address value is updated
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
@@ -248,36 +246,6 @@ begin
             zero      => zero_div_1,
             posv      => posv_div_1
         );
-    --fpu_add_3 : entity work.fpu_adder(rtl)
-    --    port map(
-    --        clk       => clk,
-    --        rst       => rst,
-    --        mode      => mode_sig,
-    --        enbl      => enable_add_3,
-    --        in_a      => fpu_add_3_in_1,
-    --        in_b      => fpu_add_3_in_2,
-    --        out_c     => fpu_add_3_out,
-    --        done      => done_add_3,
-    --        err       => err_add_3,
-    --        zero      => zero_add_3,
-    --        posv      => posv_add_3,
-    --        add_sub   => thisIsAdder_3
-    --    );
-    --fpu_add_4 : entity work.fpu_adder(rtl)
-    --    port map(
-    --        clk       => clk,
-    --        rst       => rst,
-    --        mode      => mode_sig,
-    --        enbl      => enable_add_4,
-    --        in_a      => fpu_add_4_in_1,
-    --        in_b      => fpu_add_4_in_2,
-    --        out_c     => fpu_add_4_out,
-    --        done      => done_add_4,
-    --        err       => err_add_4,
-    --        zero      => zero_add_4,
-    --        posv      => posv_add_4,
-    --        add_sub   => thisIsAdder_4
-    --    );
     
     --Integer operators:
     address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
@@ -397,30 +365,47 @@ begin
 -----------------------------------------------------------------RESET-----------------------------------------------------------------------------------
     -- RESET
     -- handles reset signal for solver
-    reset : process (clk, rst)
+    reset : process (rst)
     begin
         --Dont forget to set interrupt = 0
         --and raise error_success = 1
         if rst = '1' then
             ----RESET fpu's:
-            --enable_mul_1            <= '1';
-            --enable_add_1            <= '1';
-            --enable_add_2            <= '1';
-            ----Reset memory
-            --address_pointer <= (others => '0');
+            enable_mul_1            <= '1';
+            enable_add_1            <= '1';
+            enable_add_2            <= '1';
+            enable_div_1            <= '1';
+            --Reset memory
+            U_main_address          <= (others => '0');
+            X_ware_address          <= (others => '0');
+            a_coeff_address         <= (others => '0');
+            b_coeff_address         <= (others => '0');
+            X_intm_address          <= (others => '0');
+            --RESET FSM's
+            fsm_run_h_b   <= (others => '0');
+            fsm_run_h_a   <= (others => '0');
+            fsm_main_eq   <= (others => '0');
+            fsm_run_x_h   <= (others => '0');
+            fsm_run_x_i_c <= (others => '0');
+            fsm_var_step_main <= (others => '0');
+            fsm_run_L_nine <= (others => '0');
+            fsm_run_mul_n_m <= "00";
+            fsm_run_err_h_L <= "00";
+            fsm_run_h_2 <= "00";
+            fsm_run_sum_err <= "0000";
+            fsm_h_sent_U_recv <= "000";     
+            fsm_send_h_init <= "00";
+            fsm_run_a_x<= (others => '0');
+            fsm_run_x_b_u<= (others => '0');
+            fsm_run_a_x_2<= (others => '0');
+            fsm_run_x_b_u_2<= (others => '0');
+            fsm_place_x_i_at_x_c_or_vv<= (others => '0');
+            fixed_point_state   <= (others => '0');
 
-            ----Reset system's signals
-            ----counter                 <= "00";
-            --h_main_address          <= (others => '0');
-            --h_doubler_address       <= (others => '0');
-            --L_tol_address           <= (others => '0');
-            --header_address          <= (others => '0');
-            --U_main_address          <= (others => '0');
-            --U_sub_address           <= (others => '0');
-            --X_ware_address          <= (others => '0');
-            --a_coeff_address         <= (others => '0');
-            --b_coeff_address         <= (others => '0');
-            --error_address           <= (others => '0');
+            --Signals
+            error_tolerance_is_good <= '0';
+
+
         end if;
     end process;
 
@@ -429,6 +414,14 @@ begin
     variable beenThere_1, beenThere_2, beenThere_3 : std_logic := '0';
     begin
         if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
+            a_coeff_wr <= '0';
+            b_coeff_wr <= '0';
+            X_ware_wr <= '0';
+            U_main_wr <= '0';
+            U_main_address <= (others => '0');
+            a_coeff_address <= (others => '0');
+            b_coeff_address <= (others => '0');
+            x_ware_address <= (others => '0');
             if adr = MM_HDR_0 then
                 N_X_A_B_vec(5 downto 0) <= in_data(31 downto 26);
                 M_U_B_vec(5 downto 0) <= in_data(25 downto 20);
@@ -458,8 +451,6 @@ begin
                 a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
             elsif adr >= MM_B_0 and adr <= MM_B_1 then
                 --b coefficient
-                a_coeff_wr <= '0';
-                a_coeff_address <= (others => '0');
                 b_coeff_data_in <= in_data;
                 b_coeff_wr <= '1';
                 -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
@@ -477,8 +468,6 @@ begin
                 end if;
             elsif adr >= MM_X_0 and adr <= MM_X_1 then
                 --X_ware[0] = X0
-                b_coeff_wr <= '0';
-                b_coeff_address <= (others => '0');
                 X_ware_data_in <= in_data;
                 X_ware_wr <= '1';
                 -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
@@ -490,15 +479,11 @@ begin
                     beenThere_2 := '1';
                 end if;
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
-                X_ware_wr <= '0';
-                x_ware_address <= (others => '0');
                 U_main_data_in <= in_data;
                 U_main_wr <= '1';
                 -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
                 U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
-            elsif adr > MM_U0_1 then
-                U_main_wr <= '0';
-                U_main_address <= (others => '0');
+                
             end if;
         end if;
     end process;
@@ -512,14 +497,11 @@ begin
             if (err_mul_1 = '1'
             or  err_add_1 = '1'
             or  err_add_2 = '1'
+            or  err_div_1 = '1'
             )
             then
                 error_success <= '0';
                 interrupt <= '1';
-                -- "wait" is not applicable with process
-                -- std.env.stop;, std.env package does not exist
-                -- you cant write: clk <= '0';
-                -- you may try another solution if you wish  
             end if;
         end if;
     end process ;
