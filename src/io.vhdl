@@ -82,8 +82,10 @@ begin
         if rst = '0' then
             case in_state is
                 when STATE_LOAD | STATE_WAIT =>
-                    adr           <= nau_out_adr;
-                    in_data       <= dcm_out_data;
+                    adr <= nau_out_adr;
+                    if falling_edge(clk) then
+                        in_data <= dcm_out_data;
+                    end if;
                     error_success <= dcm_error_success;
                     interrupt     <= nau_done or to_std_logic(dcm_error_success = '0');
 
