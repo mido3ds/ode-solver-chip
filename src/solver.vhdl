@@ -40,6 +40,9 @@ architecture rtl of solver is
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
     signal fpu_add_2_in_1, fpu_add_2_in_2, fpu_add_2_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     signal done_add_2, err_add_2, zero_add_2, posv_add_2, enable_add_2, thisIsAdder_2 : std_logic                                  := '0';
+    --FPU DIV 1
+    signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
 
     --FPU ADD 3
     --signal operation_sig_2                                             : std_logic_vector(1 downto 0)               := "00";
@@ -139,11 +142,12 @@ architecture rtl of solver is
     --signal N_N_temp: integer range 0 to 2500 ;
     --read h
     --signal read_h_please,h_is_read,h_high : std_logic  := '0';
-    signal h_main, L_tol : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal h_main, L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal h_high, L_high : std_logic  := '0'; -- You don't need them ,just listen to both addresses..
 
     signal h_doubler : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal h_adapt : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal h_div : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
 
     signal err_sum : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     
@@ -159,7 +163,7 @@ architecture rtl of solver is
     signal fsm_main_eq   : std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_h   : std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_i_c : std_logic_vector(2 downto 0) := (others => '0');
-    signal fsm_var_step_main : std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_var_step_main : std_logic_vector(4 downto 0) := (others => '0');
     signal fsm_run_L_nine : std_logic_vector(1 downto 0) := (others => '0');
     signal fsm_run_mul_n_m : std_logic_vector(1 downto 0) := "00";
     signal fsm_run_err_h_L : std_logic_vector(1 downto 0) := "00";
@@ -171,7 +175,9 @@ architecture rtl of solver is
     signal fsm_run_x_b_u: std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_run_a_x_2: std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_b_u_2: std_logic_vector(3 downto 0) := (others => '0');
+    signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(2 downto 0) := (others => '0');
     
+
 
     --fixed point special signals
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
@@ -179,7 +185,7 @@ architecture rtl of solver is
     signal c_ware :  std_logic_vector(2 downto 0) := (others => '0');
     signal listen_to_me:  std_logic  := '0';
     signal div_or_zero, div_or_adapt: std_logic  := '0';
-    signal from_i_to_c: std_logic  := '0';
+    signal from_i_to_c, error_tolerance_is_good: std_logic  := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -227,6 +233,20 @@ begin
             zero      => zero_add_2,
             posv      => posv_add_2,
             add_sub   => thisIsAdder_2
+        );
+    fpu_div_1 : entity work.fpu_divider(rtl)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_div_1,
+            in_a      => fpu_div_1_in_1,
+            in_b      => fpu_div_1_in_2,
+            out_c     => fpu_div_1_out,
+            done      => done_div_1,
+            err       => err_div_1,
+            zero      => zero_div_1,
+            posv      => posv_div_1
         );
     --fpu_add_3 : entity work.fpu_adder(rtl)
     --    port map(
@@ -404,11 +424,12 @@ begin
 
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
     process (clk, rst, adr, in_state)
+    variable beenThere_1, beenThere_2, beenThere_3 : std_logic := '0';
     begin
-        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
             if adr = MM_HDR_0 then
-                N_X_A_B_vec <= in_data(31 downto 26);
-                M_U_B_vec <= in_data(25 downto 20);
+                N_X_A_B_vec(5 downto 0) <= in_data(31 downto 26);
+                M_U_B_vec(5 downto 0) <= in_data(25 downto 20);
                 N_X_A_B <= to_int(in_data(31 downto 26));
                 M_U_B <= to_int(in_data(25 downto 20));
                 fixed_or_var <= in_data(19);
@@ -420,7 +441,10 @@ begin
                 h_main(31 downto 0) <= in_data;
                 
                 --this signal will initiate both: N*M and N*N
-                fsm_run_mul_n_m <= "11"; 
+                if beenThere_3 = '0' then
+                    fsm_run_mul_n_m <= "11"; 
+                    beenThere_3 := '1';
+                end if;
             elsif adr = MM_ERR_0 then
                 L_tol (MAX_LENGTH-1 downto 32) <= in_data;
             elsif adr = MM_ERR_1 then
@@ -429,38 +453,50 @@ begin
                 a_coeff_data_in <= in_data;
                 a_coeff_wr <= '1';
                 -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
-                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));
-
-                --L_tol is read, so:
-                fsm_run_L_nine <= "11";
+                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
             elsif adr >= MM_B_0 and adr <= MM_B_1 then
                 --b coefficient
+                a_coeff_wr <= '0';
+                a_coeff_address <= (others => '0');
                 b_coeff_data_in <= in_data;
                 b_coeff_wr <= '1';
                 -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
                 b_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_B_0));
 
                 --since we got here, then A and H are ready
-                if fixed_or_var = '0' then 
-                    fsm_run_h_a <= "1111";
+                if beenThere_1 = '0' then
+                    if fixed_or_var = '0' then 
+                        fsm_run_h_a <= "1111";
+                    else
+                        --L_tol is read, so:
+                        fsm_run_L_nine <= "11";
+                    end if;
+                    beenThere_1 := '1';
                 end if;
             elsif adr >= MM_X_0 and adr <= MM_X_1 then
                 --X_ware[0] = X0
+                b_coeff_wr <= '0';
+                b_coeff_address <= (others => '0');
                 X_ware_data_in <= in_data;
                 X_ware_wr <= '1';
                 -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
                 X_ware_address <= std_logic_vector(unsigned(adr) - unsigned(MM_X_0));
 
                  -- Since we got here, then B and H are ready
-                if fixed_or_var = '0' then 
+                if fixed_or_var = '0' and beenThere_2 = '0' then 
                     fsm_run_h_b <= "111";
-                    -- at the begining of Fixed algorithm, you need to check that fsm_run_h_b = "000" or wait..
+                    beenThere_2 := '1';
                 end if;
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                X_ware_wr <= '0';
+                x_ware_address <= (others => '0');
                 U_main_data_in <= in_data;
                 U_main_wr <= '1';
                 -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
                 U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
+            elsif adr > MM_U0_1 then
+                U_main_wr <= '0';
+                U_main_address <= (others => '0');
             end if;
         end if;
     end process;
@@ -468,13 +504,12 @@ begin
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
     --Error process:
     --add here any other error_out signal that might occur
-    error_occured : process(clk, err_mul_1, err_add_1,err_add_2,err_add_3)
+    error_occured : process(clk, err_mul_1, err_add_1,err_add_2)
     begin
         if rst = '0' and rising_edge(clk) then
             if (err_mul_1 = '1'
             or  err_add_1 = '1'
             or  err_add_2 = '1'
-            or  err_add_3 = '1'
             )
             then
                 error_success <= '0';
@@ -883,12 +918,12 @@ begin
         if rst = '0' and rising_edge(clk) and increment_u_main_address = '1' then
             if address_inc_1_enbl = '0' then
                 address_inc_1_in <= (others => '0');
-                address_inc_1_in(12 downto 0) <= u_main_address;
+                address_inc_1_in(6 downto 0) <= u_main_address;
                 address_inc_1_enbl <= '1';
                 u_main_rd <= '0';
                 u_main_wr <= '0';
             else
-                u_main_address <= address_inc_1_out(12 downto 0);
+                u_main_address <= address_inc_1_out(6 downto 0);
                 address_inc_1_enbl <= '0';
                 increment_u_main_address <='0';
             end if;
@@ -901,12 +936,12 @@ begin
         if rst = '0' and rising_edge(clk) and decrement_u_main_address = '1' then
             if address_dec_1_enbl = '0' then
                 address_dec_1_in <= (others => '0');
-                address_dec_1_in(12 downto 0) <= u_main_address;
+                address_dec_1_in(6 downto 0) <= u_main_address;
                 address_dec_1_enbl <= '1';
                 u_main_rd <= '0';
                 u_main_wr <= '0';
             else
-                u_main_address <= address_dec_1_out(12 downto 0);
+                u_main_address <= address_dec_1_out(6 downto 0);
                 address_dec_1_enbl <= '0';
                 decrement_u_main_address <='0';
             end if;
@@ -953,7 +988,8 @@ begin
                                 when others =>
                                     fpu_add_1_in_2 <= "0011111111110000000000000000000000000000000000000000000000000000";
                             end case ;
-                            fpu_add_1_in_2 <= (55 => '1', others => '0');
+                            fpu_add_1_in_2 <= (others =>'0');
+                            fpu_add_1_in_2(55) <= '1';
                             enable_add_1 <= '1';
                             thisIsAdder_1 <= '0';
                             fsm_run_h_a <= "1011";
@@ -1695,7 +1731,7 @@ begin
                     if done_add_1 = '1' then
                         --non zero value
                         enable_add_1 <= '0';
-                        temp_holder <= fpu_add_1_out;
+                        temp_holder := fpu_add_1_out;
                         if zero_add_1 = '0' then
                             if posv_add_1 = '0' then
                                 --negative
@@ -1992,13 +2028,13 @@ begin
             
                 when "11" =>
                     adr <= X"2C35";
-                    in_data <= h_adapt (63 downto 32)
-                    fsm_send_h_init <= "01"
+                    in_data <= h_adapt (63 downto 32);
+                    fsm_send_h_init <= "01";
                 
                 when "01" =>
                     adr <= X"2C36";
-                    in_data <= h_adapt (31 downto 0)
-                    fsm_send_h_init <= "00"
+                    in_data <= h_adapt (31 downto 0);
+                    fsm_send_h_init <= "00";
                 when others =>
                     null;
             end case ;
@@ -2240,7 +2276,7 @@ begin
                     end case ;
                 when "01" =>
                     if done_div_1 = '1' then
-                        enable_div_1 = '0';
+                        enable_div_1 <= '0';
                         h_div <= fpu_div_1_out;
                         fsm_run_h_2 <= "00";
                     end if;
@@ -2422,8 +2458,8 @@ begin
                     if fsm_main_eq = "000" then
                         --NOW: calculate the irregular equation
                         --only when you're finished, increment c_ware
-                        address_inc_1 <= (others => '0');
-                        address_inc_1(2 downto 0) <= c_ware;
+                        address_inc_1_in <= (others => '0');
+                        address_inc_1_in(2 downto 0) <= c_ware;
                         address_inc_1_enbl <= '1';
                         fsm_var_step_main <= "00011";
                     end if;
@@ -2443,8 +2479,8 @@ begin
                     if fsm_main_eq = "000" then
                         --Decrement C_ware first
                         address_dec_1_enbl <= '1';
-                        address_dec_1 <= (others => '0');
-                        address_dec_1(2 downto 0) <= c_ware;
+                        address_dec_1_in <= (others => '0');
+                        address_dec_1_in(2 downto 0) <= c_ware;
                         fsm_var_step_main <= "00101";
                     end if;
                 when "00101" =>
@@ -2479,8 +2515,8 @@ begin
                     --Place what's inside X_w[c+] at X_i
                     --then place what's inside X_i at X_w[c]
                     --but first increment c_ware
-                    address_inc_1 <= (others => '0');
-                    address_inc_1(2 downto 0) <= c_ware;
+                    address_inc_1_in <= (others => '0');
+                    address_inc_1_in(2 downto 0) <= c_ware;
                     address_inc_1_enbl <= '1';
                     fsm_var_step_main <= "01010";
 
@@ -2495,8 +2531,8 @@ begin
                     if fsm_place_x_i_at_x_c_or_vv = "000" then
                         --decrement c_ware
                         address_dec_1_enbl <= '1';
-                        address_dec_1 <= (others => '0');
-                        address_dec_1(2 downto 0) <= c_ware;
+                        address_dec_1_in <= (others => '0');
+                        address_dec_1_in(2 downto 0) <= c_ware;
                         fsm_var_step_main <= "01100";
                     end if;
                 when "01100" =>
@@ -2535,8 +2571,8 @@ begin
                     elsif interp_done_op = "10" then
                         --it is an output point
                         --increment c, then go to 10011
-                        address_inc_1 <= (others => '0');
-                        address_inc_1(2 downto 0) <= c_ware;
+                        address_inc_1_in <= (others => '0');
+                        address_inc_1_in(2 downto 0) <= c_ware;
                         address_inc_1_enbl <= '1';
                         fsm_var_step_main <= "10110";
                     end if;
@@ -2571,8 +2607,8 @@ begin
                     thisIsAdder_1 <= '0';
                     fsm_var_step_main <= "11000";
                 when "10110" =>
-                    address_inc_1 <= (others => '0');
-                    address_inc_1(2 downto 0) <= c_ware;
+                    address_inc_1_in <= (others => '0');
+                    address_inc_1_in(2 downto 0) <= c_ware;
                     address_inc_1_enbl <= '1';
                     fsm_var_step_main <= "10111";
                 when "10111" =>
