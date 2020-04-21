@@ -175,8 +175,8 @@ architecture rtl of solver is
     signal fsm_run_x_b_u_2: std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(2 downto 0) := (others => '0');
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
-    
-
+    signal fsm_terminate: std_logic_vector(1 downto 0) := (others => '0');
+    signal fsm_outing: std_logic_vector(3 downto 0) := (others => '0');
 
     --fixed point special signals
     --Like a pointer at X_ware, once it changes address value is updated
@@ -191,8 +191,8 @@ architecture rtl of solver is
     signal beenThere_1, beenThere_2, beenThere_3, addThisError, write_high_low : std_logic  := '0';
     signal new_entry : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     signal to_write : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
-
-
+    signal x_address_out : std_logic_vector(ADDR_LENGTH-1 downto 0) := (others => '0');
+    signal interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -410,6 +410,10 @@ begin
             fsm_run_x_b_u_2<= (others => '0');
             fsm_place_x_i_at_x_c_or_vv<= (others => '0');
             fixed_point_state   <= (others => '0');
+            fsm_terminate   <= (others => '0');
+            fsm_outing   <= (others => '0');
+
+
 
             --Signals
             error_tolerance_is_good <= '0';
@@ -433,8 +437,8 @@ begin
             if adr = MM_HDR_0 then
                 N_X_A_B_vec(5 downto 0) <= in_data(31 downto 26);
                 M_U_B_vec(5 downto 0) <= in_data(25 downto 20);
-                N_X_A_B <= to_int(in_data(31 downto 26));
-                M_U_B <= to_int(in_data(25 downto 20));
+                --N_X_A_B <= to_int(in_data(31 downto 26));
+                --M_U_B <= to_int(in_data(25 downto 20));
                 fixed_or_var <= in_data(19);
                 mode_sig <= in_data(18 downto 17);
                 t_size <= in_data(16 downto 14);
@@ -1160,7 +1164,7 @@ begin
                         new_entry <= fpu_add_1_out;
                         address_dec_1_in <= N_N_counter;
                         address_dec_1_enbl <= '1';
-                        address_dec_2_in <= N_temp;
+                        address_dec_2_in <= N_counter;
                         address_dec_2_enbl <= '1';
                         fsm_run_a_x <= "101";
                     end if;
@@ -2253,7 +2257,7 @@ begin
     proc_termination : process( clk, fsm_terminate )
     begin
         if rising_edge(clk) then
-            case( termination ) is
+            case( fsm_terminate ) is
             
                 when "11" =>
                     error_success <= '1';
@@ -2283,7 +2287,7 @@ begin
                     fsm_outing <= "0001";
                 when "0001" =>
                     --start sending x_w[c]
-                    read_x <= (others => '1');
+                    read_x <= '1';
                     fsm_outing <= "0010";
                 when "0010" =>
                     if read_x = '0' then
@@ -2383,7 +2387,7 @@ begin
                         --ERROR HERE YA SHAWKY
                         --if interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11" then
                         if interp_done_op = "01" or interp_done_op = "10" then
-                            interp_done_op <= interp_done_op;
+                            interp_done_sig <= interp_done_op;
                             result_u_main_temp(31 downto 0) <= in_data;
                             fixed_point_state <= "0011";
                         end if;
@@ -2400,7 +2404,7 @@ begin
                     --navigate to the suitable state
                     if write_u_main = '0' then
                         fsm_run_x_b_u <= "1111";
-                        if interp_done_op = "01" then
+                        if interp_done_sig = "01" then
                             fixed_point_state <= "0101";
                         else
                             fixed_point_state <= "0111";
