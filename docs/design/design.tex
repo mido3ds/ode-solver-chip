@@ -359,6 +359,20 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
        \end{tabular}
 \end{center}
 
+\section{Output Format}
+Table \ref{tab:output_format} shows the solver-to-IO output structure. Solver at state(OUT) starts from the start of the output address and increments address by either 1(f64) or 2(f16/f32) words.
+
+\begin{center}
+    \captionof{table}{Inputs Specifications\label{tab:output_format}}
+    \begin{tabular}{||l| c| c| c||} 
+        \hline
+        Address & Type & Max Words & Name  \\ [0.5ex] 
+        \hline\hline
+        0x2779  & f64[50][5] & 500 & X$_{out}$\\
+        \hline
+       \end{tabular}
+\end{center}
+
 \section{Modules}
 
 \subsection{IO}
