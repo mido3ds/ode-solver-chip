@@ -108,10 +108,10 @@ architecture rtl of solver is
     signal address_pointer: std_logic_vector(2 downto 0) := (others => '0');
     --declaring this fpu_adder unit as adder or subtractor
     --N, used in looping at X, A, B
-    signal N_X_A_B : integer range 0 to 50 ;
+    --signal N_X_A_B : integer range 0 to 50 ;
     signal N_X_A_B_vec : std_logic_vector(15 downto 0) := (others => '0');
     --M, used in looping at B, U
-    signal M_U_B :  integer range 0 to 50 ;
+    --signal M_U_B :  integer range 0 to 50 ;
     signal M_U_B_vec :  std_logic_vector(15 downto 0) := (others => '0');
     --FIXED or VAR
     signal fixed_or_var : std_logic  := '0';
@@ -399,6 +399,8 @@ begin
     -- handles reset signal for solver
     reset : process (clk, rst)
     begin
+        --Dont forget to set interrupt = 0
+        --and raise error_success = 1
         if rst = '1' then
             ----RESET fpu's:
             --enable_mul_1            <= '1';
@@ -2153,14 +2155,19 @@ begin
         case(c_ware) is
             when "000" =>
                 x_ware_address <= (others => '0');
+                x_address_out <= x"2779";
             when "001" =>
                 x_ware_address <= "0001100100";
+                x_address_out <= x"27DD";
             when "010" =>
                 x_ware_address <=  "0011001000";
+                x_address_out <= x"2841";
             when "011" =>
                 x_ware_address <=  "0100101100";
+                x_address_out <= x"28A5";
             when "100" =>
                 x_ware_address <=  "0110010000";
+                x_address_out <= x"2909";
             when "101" =>
                 x_ware_address <=  "0111110100";
             when others =>
@@ -2287,6 +2294,104 @@ begin
 
         end if;
     end process ; -- proc_run_h_2
+
+    proc_termination : process( clk, fsm_terminate )
+    begin
+        if rising_edge(clk) then
+            case( termination ) is
+            
+                when "11" =>
+                    error_success <= '1';
+                    interrupt <= '1';
+                    fsm_terminate <= "01";
+                when "01" =>
+                    if in_state = "11" then
+                        fsm_outing <= (others => '1');
+                        fsm_terminate <= "00";
+                    end if;
+                when others =>
+                    null;
+            end case ;
+        end if;
+    end process ; -- proc_termination
+
+    proc_outing : process( clk, fsm_outing )
+    begin
+        if rising_edge(clk) and in_state = "11" then
+            case( fsm_outing ) is
+            
+                when "1111" =>
+                    --reset c_Ware
+                    c_ware <= (others => '0');
+                    adr <= x_address_out;
+
+                    fsm_outing <= "0001";
+                when "0001" =>
+                    --start sending x_w[c]
+                    read_x <= (others => '1');
+                    fsm_outing <= "0010";
+                when "0010" =>
+                    if read_x = '0' then
+                        in_data <= x_temp(63 downto 32);
+                        fsm_outing <= "0011";
+                    end if;
+                when "0011" =>
+                    address_inc_1_in <= adr;
+                    address_inc_1_enbl <= '1';
+                    fsm_outing <= "0100";
+                when "0100" =>
+                    adr <= address_inc_1_out;
+                    address_inc_1_enbl <= '0';
+                    in_data <= x_temp(31 downto 0);
+                    fsm_outing <= "0101";
+                when "0101" =>
+                    --check for the end of the loop against N_X_A_B_vec
+                    address_inc_1_in <= N_Counter;
+                    address_inc_1_enbl <= '1';
+                    fsm_outing <= "0110";
+                when "0110" =>
+                    N_Counter <= address_inc_1_out;
+                    address_inc_1_enbl <= '0';
+                    --N_X_A_B_vec [1:50]
+                    fsm_outing <= "1001";
+
+                    
+                when "0111" =>
+                    --check for c_Ware and inc or terminate..
+                    address_inc_1_in <= c_ware;
+                    address_inc_1_enbl <= '1';
+                    fsm_outing <= "1000";
+                when "1000" =>
+                    c_ware <= address_inc_1_out;
+                    address_inc_1_enbl <= '0';
+                    fsm_outing <= "1010";
+                when "1001" =>
+                    if N_Counter = N_X_A_B_vec then
+                        --done
+                        fsm_outing <= "0111";
+                    else
+                        --continue
+                        fsm_outing <= "0001";
+                    end if;
+                when "1010" =>
+                    if c_ware = t_size then
+                        --we are done
+                        fsm_outing <= "0000";
+                    else
+                        adr <= x_address_out;
+                        fsm_outing <= "0001";
+                    end if;
+                --when "1011" =>
+                --when "1100" =>
+                --when "1101" =>
+                --when "1110" =>
+                
+                when others =>
+                    null;
+            end case ;
+
+        end if;
+    end process ; -- proc_outing
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
     --Fixed Step Size
     --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
@@ -2435,6 +2540,46 @@ begin
     --div_or_adapt
     --from_i_to_c
 
+    --STATES:
+    -- 00000: nop or done
+    -- 11111: start at a new point
+    -- 00001: first equation
+    -- 00010: inc c_Ware
+    -- 00011: second equation
+    -- 00100: dec c_ware
+    -- 00101: when decremented go to 00110
+    -- 00110: third equation
+    -- 00111: run error calculator
+    -- 01000: if error is bad, repeat: 00001,
+    --                          with h_adapt updated
+    --                          with c_ware decremented (the same)
+    --                          with x_w[c] holds x0 (not updated)
+    --          if it is good, go to: 10001
+    --------break-----------------------------
+    -- 01001: inc c_ware
+    -- 01010: place x_w[c] at x_i
+    -- 01011: dec c_ware
+    -- 01100: place x_w[c] at x_i
+    -- 01101: h_div = h_adapt and start main equation at: 01110
+    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
+    -- 01111: when it is finished go to 10000
+    -- 10000: navigates you to 10011
+    ---------break-------------------------------
+    -- REMEMBER we are here cuz error is good!
+    -- 10001: send h_adapt to interpolator at the unique address for it to store it
+    -- 10010: when it is sent, proceed with the main equation at 01001
+    --------break-------------------------------
+    -- REMEMBER we are here cuz 10000 navigates us
+    -- 10011: place what's inside x_i at x_w
+    -- 10100: when done, if x_w[c] is an output point: go to: 10110
+    --                                                  if not: 10101
+    -- 10101: h_div = h_div + h_adapt then go to 11000
+    -- 11000: go to 01110 to start main equation
+
+    -- 10110: inc c_Ware
+    -- 10111: go to 11001 to check for termination..
+
+    -- 11001: terminate (00000) or move to next point (00001)
     proc_fsm_var_step_main : process( clk,fsm_var_step_main, in_state )
     begin
         if rising_edge(clk) and fixed_or_var = '1' and in_state = "10" then
@@ -2495,12 +2640,14 @@ begin
                     fsm_var_step_main <= "00111"; 
                 when "00111" =>
                     if fsm_main_eq = "000" then
+                        error_tolerance_is_good <= '0';
                         fsm_run_sum_err <= (others => '1');
                         fsm_var_step_main <= "01000"; 
                     end if;
                 when "01000" =>
                     if fsm_run_sum_err = "0000" then
                         if error_tolerance_is_good = '1' then
+                            --yes it is good
                             error_tolerance_is_good<='0';
                             --eventually you'll hit this :D
                             --first go to interpolator and send h_adapt
@@ -2564,18 +2711,20 @@ begin
                         fsm_var_step_main <= "10000";
                     end if;
                 when "10000" =>
-                    if interp_done_op = "01" then
-                        --it is not an output point
-                        --just place X_i at X_c
-                        fsm_var_step_main <= "10011";
-                    elsif interp_done_op = "10" then
-                        --it is an output point
-                        --increment c, then go to 10011
-                        address_inc_1_in <= (others => '0');
-                        address_inc_1_in(2 downto 0) <= c_ware;
-                        address_inc_1_enbl <= '1';
-                        fsm_var_step_main <= "10110";
-                    end if;
+                    --Replace X_w[c+] -> X_w[c]
+                    fsm_var_step_main <= "10011";
+                    --if interp_done_op = "01" then
+                    --    --it is not an output point
+                    --    --just place X_i at X_c
+                    --    fsm_var_step_main <= "10011";
+                    --elsif interp_done_op = "10" then
+                    --    --it is an output point
+                    --    --increment c, then go to 10011
+                    --    address_inc_1_in <= (others => '0');
+                    --    address_inc_1_in(2 downto 0) <= c_ware;
+                    --    address_inc_1_enbl <= '1';
+                    --    fsm_var_step_main <= "10110";
+                    --end if;
                 when "10001" =>
                     fsm_send_h_init <= "11";
                     fsm_var_step_main <= "10010";
@@ -2596,7 +2745,8 @@ begin
                             fsm_var_step_main <= "10101";
                         elsif interp_done_op = "10" then
                             --it is an output point
-                            fsm_var_step_main <= "11111";
+                            --GO INC C_ware
+                            fsm_var_step_main <= "10110";
                         end if;
                     end if; 
                 when "10101" =>
@@ -2615,20 +2765,33 @@ begin
                     c_ware <= address_inc_1_out;
                     listen_to_me <= not listen_to_me; --just to make sure :D
                     address_inc_1_enbl <= '0';
-                    fsm_var_step_main <= "10011";
+                    --we incremented c_ware...
+                    --check for termination..
+                    fsm_var_step_main <= "11001";
+                    --fsm_var_step_main <= "10011";
                 when "11000" =>
                     if done_add_1 = '0' then
-                        fsm_var_step_main <= "11000";
+                        h_div <= fpu_add_1_out;
+                        enable_add_1 <= '0';
+                        fsm_var_step_main <= "01110";
                     end if;
-                --when "11001" =>
+                when "11001" =>
+                    --check for termination
+                    --and go to 00001 or 00000
+                    if c_ware = t_size then
+                        --terminate
+                        fsm_terminate <= (others => '1');
+                        fsm_var_step_main <= "00000";
+                    else
+                        --go to 00001
+                        fsm_var_step_main <= "00001";
+                    end if;
                 --when "11010" =>
                 --when "11011" =>
                 when others =>
                     -- zeros and other cases
                     null;
             end case ;
-
-
         end if;
     end process ; -- proc_fsm_var_step_main
 end architecture;
