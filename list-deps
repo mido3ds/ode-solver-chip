@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+
+run-daemon() {
+    if [[ `docker ps|grep ghdld|wc -l` = 0 ]]; then
+        echo running container daemon...
+        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld ghdl/ext sleep 1h >/dev/null
+        echo daemon is up
+    fi
+}
+
+main() {
+    run-daemon
+
+    mkdir -p out/waves
+    cd out
+
+    docker exec -w "$PWD" ghdld bash -c "
+        find ../src/ | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit 2>/dev/null
+        find ../test/non_vunit | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit 2>/dev/null
+
+        set -e
+
+        ghdl --gen-makefile --ieee=synopsys -fexplicit ${UNIT} >Makefile.${UNIT} 2>/dev/null
+        awk '/vhdl?/ {print \$2}' Makefile.${UNIT} | awk '/^..\/src/' | cut -d'/' -f2- | sort | uniq
+    "
+}
+
+
+if [[ "$#" -lt "1" ]]; then
+    echo "Usage: run unit-name"
+    echo "lists dependencies of given unit"
+    exit 1
+fi
+
+UNIT=$1
+main
