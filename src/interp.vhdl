@@ -190,6 +190,7 @@ begin
     U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
     port map(
         clk      => clk,
+        rst => rst,
         rd       => U_0_rd,
         wr       => U_0_wr,
         address  => U_0_address,
@@ -201,6 +202,7 @@ begin
             port map(
                 clk      => clk,
                 rd       => U_s_rd,
+                rst => rst,
                 wr       => U_s_wr,
                 address  => U_s_address,
                 data_in  => U_s_data_in,
@@ -211,6 +213,7 @@ begin
     U_out : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
             port map(
                 clk      => clk,
+                rst => rst,
                 rd       => U_out_rd,
                 wr       => U_out_wr,
                 address  => U_out_address,
