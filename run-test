@@ -2,25 +2,25 @@
 set -e
 
 run-daemon() {
-    if [[ `docker ps|grep ghdld|wc -l` = 0 ]]; then
+    if [[ `docker ps|grep ghdld_vlsi|wc -l` = 0 ]]; then
         echo running container daemon...
-        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld ghdl/ext sleep 1h >/dev/null
+        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld_vlsi ghdl/ext sleep 1h >/dev/null
         echo daemon is up
 
         echo -n 'vunit version: '
-        docker exec -w "$PWD" ghdld python3 scripts/vunit-main.py --version
+        docker exec -w "$PWD" ghdld_vlsi python3 scripts/vunit-main.py --version
 
         echo write out/project.json
         mkdir -p out
-        docker exec -w "$PWD" ghdld python3 scripts/vunit-main.py --export-json out/project.json -o out
+        docker exec -w "$PWD" ghdld_vlsi python3 scripts/vunit-main.py --export-json out/project.json -o out
     fi
 }
 
 main() {
     run-daemon
     
-    echo "run tests for odeSolver.$TEST"
-    docker exec -w "$PWD" ghdld python3 scripts/vunit-main.py odeSolver.$TEST -p 5 -x out/report.xml  --minimal --keep-compiling --gtkwave-fmt vcd -o out -q
+    echo "run tests for project.$TEST"
+    docker exec -w "$PWD" ghdld_vlsi python3 scripts/vunit-main.py project.$TEST -p 5 -x out/report.xml  --minimal --keep-compiling --gtkwave-fmt vcd -o out -q
 }
 
 if [[ "$1" = "" ]]; then

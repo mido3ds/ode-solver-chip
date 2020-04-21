@@ -75,7 +75,7 @@ Same as `auto-run` , but runs `vunit` tests instead of general ghdl files.
 
 ## clean
 
-Clean all outputs(waves, logs, compiled files) and removes the ghdld container daemon.
+Clean all outputs(waves, logs, compiled files) and removes the ghdld_vlsi container daemon.
 
 ## list-tests
 

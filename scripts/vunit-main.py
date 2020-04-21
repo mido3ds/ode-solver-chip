@@ -28,7 +28,7 @@ def get_files(p):
 
 vu = VUnit.from_argv()
 
-vu.add_library("odeSolver").add_source_files(
+vu.add_library("project").add_source_files(
     [*get_files(src_path), *get_files(test_path)]
 )
 
