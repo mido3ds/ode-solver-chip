@@ -93,6 +93,7 @@ signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
 signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
+signal out_from : std_logic := '0'; --determines which memory to out from in case of h_new = 0
 
 --Send Output Signals
 signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
@@ -494,80 +495,118 @@ begin
         if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
             if h_new = X"0000" then
                 is_stored <= '1';
-                t_low <= h_new;
-                t_high <= h_new;
-                u_high_adr <= (others => '0');
-                u_low_adr <= (others => '0');
-                u_0_adr <= (others => '0');
+                if t_low = X"0000" then
+                    t_low <= h_new;
+                    t_high <= h_new;
+                    u_low_adr <= (others => '0');
+                    u_high_adr <= (others => '0');
+                    u_0_adr <= (others => '0');
+                    out_from <= '0';
+                elsif t_low = out_time_1 then
+                    t_low <= out_time_1;
+                    t_high <= out_time_1;
+                    u_low_adr <= (others => '0');
+                    u_high_adr <= (others => '0');
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_2 then
+                    t_low <= out_time_2;
+                    t_high <= out_time_2;
+                    u_low_adr <= "001100100";
+                    u_high_adr <= "001100100";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_3 then
+                    t_low <= out_time_3;
+                    t_high <= out_time_3;
+                    u_low_adr <= "011001000";
+                    u_high_adr <= "011001000";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_4 then
+                    t_low <= out_time_4;
+                    t_high <= out_time_4;
+                    u_low_adr <= "100101100";
+                    u_high_adr <= "100101100";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_5 then
+                    t_low <= out_time_5;
+                    t_high <= out_time_5;
+                    u_low_adr <= "110010000";
+                    u_high_adr <= "110010000";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                end if;
             elsif h_new > X"0000" and h_new < out_time_1 then
                 is_stored <= '0';
                 t_low <= X"0000";
                 t_high <= out_time_1;
-                u_high_adr <= (others => '0');
                 u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_1 then
                 is_stored <= '1';
                 t_low <= out_time_1;
                 t_high <= out_time_1;
-                u_high_adr <= (others => '0');
                 u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_1 and h_new < out_time_2 then 
                 is_stored <= '0';
                 t_low <= out_time_1;
                 t_high <= out_time_2;
-                u_high_adr <= (others => '0');
-                u_low_adr <= "001100100";
+                u_low_adr <= (others => '0');
+                u_high_adr <= "001100100";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_2 then
                 is_stored <= '1';
                 t_low <= out_time_2;
                 t_high <= out_time_2;
-                u_high_adr <= "001100100";
                 u_low_adr <= "001100100";
+                u_high_adr <= "001100100";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_2 and h_new < out_time_3 then 
                 is_stored <= '0';
                 t_low <= out_time_2;
                 t_high <= out_time_3;
-                u_high_adr <= "001100100";
-                u_low_adr <= "011001000";
+                u_low_adr <= "001100100";
+                u_high_adr <= "011001000";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_3 then
                 is_stored <= '1';
                 t_low <= out_time_3;
                 t_high <= out_time_3;
-                u_high_adr <= "011001000";
                 u_low_adr <= "011001000";
+                u_high_adr <= "011001000";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_3 and h_new < out_time_4 then 
                 is_stored <= '0';
                 t_low <= out_time_3;
                 t_high <= out_time_4;
-                u_high_adr <= "011001000";
-                u_low_adr <= "100101100";
+                u_low_adr <= "011001000";
+                u_high_adr <= "100101100";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_4 then
                 is_stored <= '1';
                 t_low <= out_time_4;
                 t_high <= out_time_4;
-                u_high_adr <= "100101100";
                 u_low_adr <= "100101100";
+                u_high_adr <= "100101100";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_4 and h_new < out_time_5 then 
                 is_stored <= '0';
                 t_low <= out_time_4;
                 t_high <= out_time_5;
-                u_high_adr <= "100101100";
-                u_low_adr <= "110010000";
+                u_low_adr <= "100101100";
+                u_high_adr <= "110010000";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_5 then
                 is_stored <= '1';
                 t_low <= out_time_5;
                 t_high <= out_time_5;
-                u_high_adr <= "110010000";
                 u_low_adr <= "110010000";
+                u_high_adr <= "110010000";
                 u_0_adr <= (others => '0');
             end if;
             range_finder_enable <= '0';
@@ -686,9 +725,15 @@ begin
                             enable_sub_2 <= '1';
                             interp_state <= "0011";
                         elsif is_stored = '1' and h_new = X"0000" then
-                            interp_done_op <= "01";
-                            send_u_0_enable <= '1';
-                            interp_state <= "0000";
+                            if out_from = '0' then
+                                interp_done_op <= "01";
+                                send_u_0_enable <= '1';
+                                interp_state <= "0000";
+                            else
+                                interp_done_op <= "01";
+                                send_u_s_enable <= '1';
+                                interp_state <= "0000";
+                            end if;
                         elsif is_stored = '1' then
                             interp_done_op <= "01";
                             send_u_s_enable <= '1';
