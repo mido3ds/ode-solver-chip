@@ -15,7 +15,7 @@ architecture tb of ram_tb is
 
     signal clk                        : std_logic := '0';
 
-    signal rd, wr                     : std_logic;
+    signal rd, wr, rst                : std_logic;
     signal address, data_in, data_out : std_logic_vector(15 downto 0);
 begin
     clk <= not clk after CLK_PERD / 2;
@@ -23,7 +23,7 @@ begin
     ram : entity work.ram
         generic map(WORD_LENGTH => 16, ADR_LENGTH => 16, NUM_WORDS => 4 * 1024)
         port map(
-            rd => rd, wr => wr, address => address, clk => clk,
+            rd => rd, wr => wr, address => address, clk => clk, rst => rst,
             data_in => data_in, data_out => data_out
         );
 
@@ -37,6 +37,7 @@ begin
         info("reset");
         wr      <= '0';
         rd      <= '0';
+        rst     <= '0';
         address <= x"0000";
         data_in <= x"0000";
         wait for CLK_PERD;
@@ -88,6 +89,43 @@ begin
                 data_in <= x"0000";
                 wait for CLK_PERD;
             end loop;
+
+            info("testing all ram is zeroed");
+            for i in 0 to 4 * 1024 - 1 loop
+                wr      <= '0';
+                rd      <= '1';
+                address <= std_logic_vector(to_unsigned(i, 16));
+                wait for CLK_PERD;
+                check_equal(data_out, std_logic_vector(to_unsigned(0, 16)), "data_out is zero");
+            end loop;
+        end if;
+
+        if run("rst") then
+            wr      <= '1';
+            rd      <= '0';
+            address <= x"0000";
+            data_in <= input_case;
+            wait for CLK_PERD;
+            wr      <= '1';
+            rd      <= '0';
+            address <= x"0001";
+            data_in <= input_case2;
+            wait for CLK_PERD;
+
+            wr      <= '0';
+            rd      <= '1';
+            address <= x"0000";
+            wait for CLK_PERD;
+            check_equal(data_out, input_case, "data_out is input_case");
+            wr      <= '0';
+            rd      <= '1';
+            address <= x"0001";
+            wait for CLK_PERD;
+            check_equal(data_out, input_case2, "data_out is input_case2");
+
+            rst <= '1';
+            wait for 1 ps;
+            rst <= '0';
 
             info("testing all ram is zeroed");
             for i in 0 to 4 * 1024 - 1 loop

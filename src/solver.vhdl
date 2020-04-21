@@ -307,6 +307,7 @@ begin
     U_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
+            rst => rst,
             rd       => U_main_rd,
             wr       => U_main_wr,
             address  => U_main_address,
@@ -317,6 +318,7 @@ begin
     --U_sub : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
     --    port map(
     --        clk      => clk,
+    --        rst => rst,
     --        rd       => U_sub_rd,
     --        wr       => U_sub_wr,
     --        address  => U_sub_address,
@@ -327,6 +329,7 @@ begin
     X_ware : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
         port map(
             clk      => clk,
+            rst => rst,
             rd       => X_ware_rd,
             wr       => X_ware_wr,
             address  => X_ware_address,
@@ -337,6 +340,7 @@ begin
     X_i : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
+            rst => rst,
             rd       => X_intm_rd,
             wr       => X_intm_wr,
             address  => X_intm_address,
@@ -347,6 +351,7 @@ begin
     a_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000, ADR_LENGTH=>13)
         port map(
             clk      => clk,
+            rst => rst,
             rd       => a_coeff_rd,
             wr       => a_coeff_wr,
             address  => a_coeff_address,
@@ -357,6 +362,7 @@ begin
     b_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000,ADR_LENGTH=>13)
         port map(
             clk      => clk,
+            rst => rst,
             rd       => b_coeff_rd,
             wr       => b_coeff_wr,
             address  => b_coeff_address,
