@@ -57,7 +57,7 @@ begin
         set_stop_level(failure);
 
         rst <= '1';
-        wait for 1 ps;
+        wait for CLK_PERD/2;
         rst <= '0';
 
         if run("state_start") then

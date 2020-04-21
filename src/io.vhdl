@@ -56,24 +56,9 @@ begin
             done    => nau_done
         );
 
-    process (clk, rst, in_state)
+    process (clk, rst, in_state, nau_out_adr, dcm_out_data, dcm_error_success, nau_done, dcm_error_success, in_data)
     begin
-        if rst = '0' and rising_edge(clk) then
-            case in_state is
-                when STATE_LOAD | STATE_WAIT =>
-                    adr           <= nau_out_adr;
-                    in_data       <= dcm_out_data;
-                    error_success <= dcm_error_success;
-                    interrupt     <= nau_done or to_std_logic(dcm_error_success = '0');
-
-                when STATE_OUT =>
-                    cpu_data <= in_data;
-
-                when others => null;
-            end case;
-        end if;
-
-        -- change in state
+        -- reset or change in state
         if rst = '1' or in_state'event then
             interrupt     <= '0';
             error_success <= '1';
@@ -91,6 +76,23 @@ begin
                     cpu_data <= (others          => 'Z');
                     in_data  <= (others          => 'Z');
                     adr      <= (others          => 'Z');
+            end case;
+        end if;
+
+        if rst = '0' then
+            case in_state is
+                when STATE_LOAD | STATE_WAIT =>
+                    adr <= nau_out_adr;
+                    if falling_edge(clk) then
+                        in_data <= dcm_out_data;
+                    end if;
+                    error_success <= dcm_error_success;
+                    interrupt     <= nau_done or to_std_logic(dcm_error_success = '0');
+
+                when STATE_OUT =>
+                    cpu_data <= in_data;
+
+                when others => null;
             end case;
         end if;
     end process;

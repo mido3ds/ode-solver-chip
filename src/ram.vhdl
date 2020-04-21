@@ -23,7 +23,7 @@ architecture rtl of ram is
     -- for debugging, as ghdl doenst dump `DataType` signals
     signal dbg_data_in, dbg_data_out : std_logic_vector(data_in'range);
 begin
-    process (clk, data_in, rd, address)
+    process (clk, rd, address)
     begin
         if clk = '1' and rd = '1' then
             data_out     <= data(to_integer(unsigned(address)));

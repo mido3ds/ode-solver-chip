@@ -239,9 +239,16 @@ begin
 end architecture;
 
 architecture testing_cla of fpu_adder_tb is
-    signal A, B, F                                                                                                    : std_logic_vector(63 downto 0);
-    signal error_Signal, zero_signal, done_signal, posv_signal, clk_signal, rst_signal, enable_signal, add_sub_signal : std_logic;
-    signal mode_signal                                                                                                : std_logic_vector(1 downto 0);
+    signal A, B, F        : std_logic_vector(63 downto 0);
+    signal error_Signal   : std_logic;
+    signal zero_signal    : std_logic;
+    signal done_signal    : std_logic;
+    signal posv_signal    : std_logic;
+    signal clk_signal     : std_logic;
+    signal rst_signal     : std_logic;
+    signal enable_signal  : std_logic;
+    signal add_sub_signal : std_logic;
+    signal mode_signal    : std_logic_vector(1 downto 0);
 begin
     fpu_adder_cla : entity work.fpu_adder(first_algo)
         port map(
@@ -250,7 +257,7 @@ begin
             err => error_signal, zero => zero_signal, posv => posv_signal
         );
 
-        process
+    process
     begin
         -- Test addition
 
@@ -482,7 +489,7 @@ begin
             err => error_signal, zero => zero_signal, posv => posv_signal
         );
 
-        process
+    process
     begin
         -- Test addition
 
@@ -693,4 +700,4 @@ begin
 
         wait;
     end process;
-    end architecture;
+end architecture;

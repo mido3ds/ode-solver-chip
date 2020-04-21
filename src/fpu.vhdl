@@ -224,7 +224,7 @@ begin
     mul_enbl <= '1' when (operation = FPU_OP_MUL) else
         '0';
 
-    divider : entity work.fpu_divider(sec_algo)
+    divider : entity work.fpu_divider(first_algo)
         port map(
             clk   => clk,
             mode  => mode,
