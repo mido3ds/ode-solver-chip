@@ -185,7 +185,7 @@ begin
             state   <= STATE_START;
             done    <= '0';
             cur_adr <= (others => '1');
-        elsif rising_edge(clk) and enbl = '1' then
+        elsif falling_edge(clk) and enbl = '1' then
             case state is
                 when STATE_START =>
                     -- start: next hdr(MM_HDR_0) + calculate max_*
