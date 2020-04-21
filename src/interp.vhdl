@@ -411,7 +411,7 @@ begin
     --listens to address bus and update h_step (for variable step)
     step_update : process(clk, adr)
     begin
-        if rst = '0' and rising_edge(clk) and adr = X"0001" then
+        if rst = '0' and rising_edge(clk) and adr = MM_H_ADA_0 then
             null;
         end if;
     end process;

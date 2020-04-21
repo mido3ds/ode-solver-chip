@@ -63,6 +63,9 @@ package common is
     constant MM_H_NEW_0         : std_logic_vector(15 downto 0) := X"2C33";
     constant MM_H_NEW_1         : std_logic_vector(15 downto 0) := other_adr(MM_H_NEW_0, 2);
 
+    constant MM_H_ADA_0         : std_logic_vector(15 downto 0) := X"2C35";
+    constant MM_H_ADA_1         : std_logic_vector(15 downto 0) := other_adr(MM_H_ADA_0, 2);
+
     function to_vec(i : integer; size : integer                 := 16) return std_logic_vector;
     function to_vec(i : std_logic; size : integer               := 16) return std_logic_vector;
     function to_vec(i : std_logic_vector; size : integer        := 16) return std_logic_vector;
