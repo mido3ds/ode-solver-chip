@@ -49,7 +49,7 @@ begin
         wait for 1 ps;
         rst <= '0';
 
-        if run("todo") then
+        if run("name_this_test_case") then
             -- TODO
         end if;
 

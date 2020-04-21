@@ -44,7 +44,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        if run("todo") then
+        if run("name_this_test_case") then
             -- TODO
         end if;
 
