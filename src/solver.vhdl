@@ -1499,6 +1499,10 @@ begin
     end process ; -- proc_run_x_h
 
     --calculates X_i+X_c (for variable step)
+    --also checks whether:
+    -- X_i = X_i + X_w
+    --or
+    --X_w = X-w + X_i
     proc_run_x_i_c : process(clk, fsm_run_x_i_c )
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
     begin
@@ -1525,20 +1529,41 @@ begin
                 when "011" =>
                     --store hb at b
                     if done_add_1 = '1' then
-                        result_x_i_temp<= fpu_add_1_out;
-                        enable_add_1 <= '0';
-                        write_x_i <= '1';
-                        fsm_run_x_i_c <= "100";
+                        if from_i_to_c = '0' then
+                            --from c to i then
+                            result_x_i_temp<= fpu_add_1_out;
+                            enable_add_1 <= '0';
+                            write_x_i <= '1';
+                            fsm_run_x_i_c <= "100";
+                        else
+                            --from i to c then
+                            result_x_temp<= fpu_add_1_out;
+                            enable_add_1 <= '0';
+                            write_x <= '1';
+                            fsm_run_x_i_c <= "100";
+                        end if;
+                        
                     end if;
                 when "100" =>
                     -- check if we reached end of the loop!!
                     --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
                     -- if it's zero, we escape
-                    if write_x_i = '0' then
-                        address_dec_1_in <= N_X_A_B_TEMP;
-                        address_dec_1_enbl <= '1';
-                        fsm_run_x_i_c <= "101";
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        if write_x_i = '0' then
+                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_enbl <= '1';
+                            fsm_run_x_i_c <= "101";
+                        end if;
+                    else
+                        --from i to c then
+                        if write_x = '0' then
+                            address_dec_1_in <= N_X_A_B_TEMP;
+                            address_dec_1_enbl <= '1';
+                            fsm_run_x_i_c <= "101";
+                        end if;
                     end if;
+
                 when "101" =>
                     address_dec_1_enbl <= '0';
                     N_X_A_B_TEMP := address_dec_1_out;
