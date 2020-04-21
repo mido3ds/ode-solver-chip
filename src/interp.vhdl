@@ -93,9 +93,10 @@ signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
 signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
+signal out_from : std_logic := '0'; --determines which memory to out from in case of h_new = 0
 
 --Send Output Signals
-signal send_output_enable : std_logic := '0';
+signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
 
 --U0 IO Signals
 signal read_u_0, u_0_high : std_logic := '0';
@@ -223,7 +224,71 @@ begin
     reset : process (clk, rst)
     begin
         if rst = '1' then
-            null;
+            --port signals
+            interrupt <= '0';
+            error_success <= '1';
+            in_data <= (others => 'Z');
+            interp_done_op <= (others => 'Z');
+            --time signals
+            h_new <= (others => '0');
+            --fpu signals
+            fpu_mul_1_in_1 <= (others => '0');
+            fpu_mul_1_in_2 <= (others => '0');
+            enable_mul_1 <= '0';
+            fpu_div_1_in_1 <= (others => '0');
+            fpu_div_1_in_2 <= (others => '0');
+            enable_div_1 <= '0';
+            fpu_add_1_in_1 <= (others => '0');
+            fpu_add_1_in_2 <= (others => '0');
+            enable_add_1 <= '0';
+            fpu_sub_1_in_1 <= (others => '0');
+            fpu_sub_1_in_2 <= (others => '0');
+            enable_sub_1 <= '0';
+            fpu_sub_2_in_1 <= (others => '0');
+            fpu_sub_2_in_2 <= (others => '0');
+            enable_sub_2 <= '0';
+            --memory signals
+            U_0_rd <= '0';
+            U_0_wr <= '0';
+            U_0_address <= (others => '0');
+            U_0_data_in <= (others => '0');
+            U_s_rd <= '0';
+            U_s_wr <= '0';
+            U_s_address <= (others => '0');
+            U_s_data_in <= (others => '0');
+            U_out_rd <= '0';
+            U_out_wr <= '0';
+            U_out_address <= (others => '0');
+            U_out_data_in <= (others => '0');
+            --main fsm signals
+            interp_state <= "1111";
+            t_low <= (others => '0');
+            t_high <= (others => '0');
+            t_const <= (others => '0');
+            u_low_adr <= (others => '0');
+            u_high_adr <= (others => '0');
+            u_0_adr <= (others => '0'); 
+            u_out_adr <= (others => '0'); 
+            u_0_temp <= (others => '0'); 
+            u_low_temp <= (others => '0'); 
+            u_high_temp <= (others => '0');
+            u_out_temp <= (others => '0');
+            u_out_result <= (others => '0'); 
+            --other processes signals
+            range_finder_enable <= '0';
+            is_stored <= '0';
+            send_output_enable <= '0';
+            send_u_0_enable <= '0';
+            send_u_s_enable <= '0';
+            read_u_0 <= '0';
+            u_0_high <= '0';
+            read_u_s_low <= '0';
+            u_s_low_high <= '0';
+            read_u_s_high <= '0';
+            u_s_high_high <= '0';
+            read_u_out <= '0';
+            write_u_out <= '0';
+            u_out_high <= '0';
         end if;
     end process;
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
@@ -232,6 +297,12 @@ begin
     init_data : process (clk, in_state, in_data, adr)
     begin
         if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+            --switch main FSM to ready state
+            if interp_state = "1111" then
+                interp_state <= "0000";
+                interrupt <= '0';
+                error_success <= '0';
+            end if;
             --read header data
             if adr = MM_HDR_0 then
                 N_vec(5 downto 0) <= in_data(31 downto 26);
@@ -255,27 +326,27 @@ begin
                 if adr = MM_T_0 then
                     t_count <= 0;
                 end if;
-                t_count <= T_count + 1;
+                t_count <= t_count + 1;
                 if t_count = 1 then
-                    out_time_1(31 downto 0) <= in_data;
+                    out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 2 then
-                    out_time_1(63 downto 32) <= in_data;
+                    out_time_1(31 downto 0) <= in_data;
                 elsif t_count = 3 then
-                    out_time_2(31 downto 0) <= in_data;
+                    out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 4 then
-                    out_time_2(63 downto 32) <= in_data;
+                    out_time_2(31 downto 0) <= in_data;
                 elsif t_count = 5 then
-                    out_time_3(31 downto 0) <= in_data;
+                    out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 6 then
-                    out_time_3(63 downto 32) <= in_data;
+                    out_time_3(31 downto 0) <= in_data;
                 elsif t_count = 7 then
-                    out_time_4(31 downto 0) <= in_data;
+                    out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 8 then
-                    out_time_4(63 downto 32) <= in_data;
+                    out_time_4(31 downto 0) <= in_data;
                 elsif t_count = 9 then
-                    out_time_5(31 downto 0) <= in_data;
+                    out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 10 then
-                    out_time_5(63 downto 32) <= in_data;
+                    out_time_5(31 downto 0) <= in_data;
                 end if;    
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
@@ -289,9 +360,15 @@ begin
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
     --Error Handling
     --outputs error interrupt in case of fp errors
+    --performs error interrupt upon errors in fp operations or reset
     error_handler : process(clk, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
     begin
-        null;
+        if rising_edge(clk) then
+            if err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1' then
+                interrupt <= '1';
+                error_success <= '0';
+            end if;
+        end if;
     end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
     --U_0
@@ -303,14 +380,14 @@ begin
                 U_0_address <= u_0_adr;
                 U_0_wr <= '0';
                 U_0_rd <= '1';
-                u_0_temp(31 downto 0) <= U_0_data_out;
+                u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
                 u_0_high <= '1';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1); 
             else
                 U_0_address <= u_0_adr;
                 U_0_wr <= '0';
                 U_0_rd <= '1';
-                u_0_temp(63 downto 32) <= U_0_data_out;
+                u_0_temp(31 downto 0) <= U_0_data_out;
                 u_0_high <= '0';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
                 read_u_0 <= '0';
@@ -327,14 +404,14 @@ begin
                 U_s_address <= u_low_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_low_temp(31 downto 0) <= U_s_data_out;
+                u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
                 u_s_low_high <= '1';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1); 
             else
                 U_s_address <= u_low_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_low_temp(63 downto 32) <= U_s_data_out;
+                u_low_temp(31 downto 0) <= U_s_data_out;
                 u_s_low_high <= '0';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
                 read_u_s_low <= '0';
@@ -350,14 +427,14 @@ begin
                 U_s_address <= u_high_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_high_temp(31 downto 0) <= U_s_data_out;
+                u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
                 u_s_high_high <= '1';
                 u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1); 
             else
                 U_s_address <= u_high_adr;
                 U_s_wr <= '0';
                 U_s_rd <= '1';
-                u_high_temp(63 downto 32) <= U_s_data_out;
+                u_high_temp(31 downto 0) <= U_s_data_out;
                 u_s_high_high <= '0';
                 u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
                 read_u_s_high <= '0';
@@ -374,14 +451,14 @@ begin
                 U_out_address <= u_out_adr;
                 U_out_wr <= '0';
                 U_out_rd <= '1';
-                u_out_temp(31 downto 0) <= U_out_data_out;
+                u_out_temp(MAX_LENGTH-1 downto 32) <= U_out_data_out;
                 u_out_high <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             else
                 U_out_address <= u_out_adr;
                 U_out_wr <= '0';
                 U_out_rd <= '1';
-                u_out_temp(63 downto 32) <= U_out_data_out;
+                u_out_temp(31 downto 0) <= U_out_data_out;
                 u_out_high <= '0';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
                 read_u_out <= '0';
@@ -395,14 +472,14 @@ begin
         if rst = '0' and rising_edge(clk) and read_u_out = '0' and write_u_out = '1' then       
             if u_out_high = '0' then
                 U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(31 downto 0);
+                U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
                 U_out_rd <= '0';
                 U_out_wr <= '1';
                 u_out_high <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             else
                 U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(63 downto 32);
+                U_out_data_in <= u_out_result(31 downto 0);
                 U_out_rd <= '0';
                 U_out_wr <= '1';
                 u_out_high <= '0';
@@ -418,80 +495,118 @@ begin
         if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
             if h_new = X"0000" then
                 is_stored <= '1';
-                t_low <= h_new;
-                t_high <= h_new;
-                u_high_adr <= (others => '0');
-                u_low_adr <= (others => '0');
-                u_0_adr <= (others => '0');
+                if t_low = X"0000" then
+                    t_low <= h_new;
+                    t_high <= h_new;
+                    u_low_adr <= (others => '0');
+                    u_high_adr <= (others => '0');
+                    u_0_adr <= (others => '0');
+                    out_from <= '0';
+                elsif t_low = out_time_1 then
+                    t_low <= out_time_1;
+                    t_high <= out_time_1;
+                    u_low_adr <= (others => '0');
+                    u_high_adr <= (others => '0');
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_2 then
+                    t_low <= out_time_2;
+                    t_high <= out_time_2;
+                    u_low_adr <= "001100100";
+                    u_high_adr <= "001100100";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_3 then
+                    t_low <= out_time_3;
+                    t_high <= out_time_3;
+                    u_low_adr <= "011001000";
+                    u_high_adr <= "011001000";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_4 then
+                    t_low <= out_time_4;
+                    t_high <= out_time_4;
+                    u_low_adr <= "100101100";
+                    u_high_adr <= "100101100";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                elsif t_low = out_time_5 then
+                    t_low <= out_time_5;
+                    t_high <= out_time_5;
+                    u_low_adr <= "110010000";
+                    u_high_adr <= "110010000";
+                    u_0_adr <= (others => '0');
+                    out_from <= '1';
+                end if;
             elsif h_new > X"0000" and h_new < out_time_1 then
                 is_stored <= '0';
                 t_low <= X"0000";
                 t_high <= out_time_1;
-                u_high_adr <= (others => '0');
                 u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_1 then
                 is_stored <= '1';
                 t_low <= out_time_1;
                 t_high <= out_time_1;
-                u_high_adr <= (others => '0');
                 u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_1 and h_new < out_time_2 then 
                 is_stored <= '0';
                 t_low <= out_time_1;
                 t_high <= out_time_2;
-                u_high_adr <= (others => '0');
-                u_low_adr <= "001100100";
+                u_low_adr <= (others => '0');
+                u_high_adr <= "001100100";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_2 then
                 is_stored <= '1';
                 t_low <= out_time_2;
                 t_high <= out_time_2;
-                u_high_adr <= "001100100";
                 u_low_adr <= "001100100";
+                u_high_adr <= "001100100";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_2 and h_new < out_time_3 then 
                 is_stored <= '0';
                 t_low <= out_time_2;
                 t_high <= out_time_3;
-                u_high_adr <= "001100100";
-                u_low_adr <= "011001000";
+                u_low_adr <= "001100100";
+                u_high_adr <= "011001000";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_3 then
                 is_stored <= '1';
                 t_low <= out_time_3;
                 t_high <= out_time_3;
-                u_high_adr <= "011001000";
                 u_low_adr <= "011001000";
+                u_high_adr <= "011001000";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_3 and h_new < out_time_4 then 
                 is_stored <= '0';
                 t_low <= out_time_3;
                 t_high <= out_time_4;
-                u_high_adr <= "011001000";
-                u_low_adr <= "100101100";
+                u_low_adr <= "011001000";
+                u_high_adr <= "100101100";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_4 then
                 is_stored <= '1';
                 t_low <= out_time_4;
                 t_high <= out_time_4;
-                u_high_adr <= "100101100";
                 u_low_adr <= "100101100";
+                u_high_adr <= "100101100";
                 u_0_adr <= (others => '0');
             elsif h_new > out_time_4 and h_new < out_time_5 then 
                 is_stored <= '0';
                 t_low <= out_time_4;
                 t_high <= out_time_5;
-                u_high_adr <= "100101100";
-                u_low_adr <= "110010000";
+                u_low_adr <= "100101100";
+                u_high_adr <= "110010000";
                 u_0_adr <= (others => '0');
             elsif h_new = out_time_5 then
                 is_stored <= '1';
                 t_low <= out_time_5;
                 t_high <= out_time_5;
-                u_high_adr <= "110010000";
                 u_low_adr <= "110010000";
+                u_high_adr <= "110010000";
                 u_0_adr <= (others => '0');
             end if;
             range_finder_enable <= '0';
@@ -504,16 +619,60 @@ begin
         if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
             if u_out_adr = X"0000" then
                 U_out_address <= u_out_adr;
-                U_out_wr <= '1';
+                U_out_wr <= '0';
+                U_out_rd <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
-            elsif u_out_adr = "001100100" then
+            elsif u_out_adr = std_logic_vector(unsigned(M_vec) * 2) then
                 in_data <= U_out_data_out;
                 send_output_enable <= '0';
             else
                 in_data <= U_out_data_out;
                 U_out_address <= u_out_adr;
-                U_out_wr <= '1';
+                U_out_wr <= '0';
+                U_out_rd <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if;
+        end if;
+    end process;
+
+    --sends U_0 on output bus cycle by cycle
+    send_u_0 : process(clk, send_u_0_enable)
+    begin
+        if rst = '0' and rising_edge(clk) and send_u_0_enable = '1' then
+            if u_0_adr = X"0000" then
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            elsif u_0_adr = std_logic_vector(unsigned(M_vec) * 2) then
+                in_data <= U_0_data_out;
+                send_u_0_enable <= '0';
+            else
+                in_data <= U_0_data_out;
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            end if;
+        end if;
+    end process;
+
+    --sends U_s on output bus cycle by cycle
+    send_u_s : process(clk, send_u_s_enable)
+    begin
+        if rst = '0' and rising_edge(clk) and send_u_s_enable = '1' then
+            if u_low_adr = X"0000" then
+                U_s_address <= u_low_adr;
+                U_s_wr <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+            elsif u_low_adr = std_logic_vector(unsigned(M_vec) * 2) then
+                in_data <= U_s_data_out;
+                send_u_s_enable <= '0';
+            else
+                in_data <= U_s_data_out;
+                U_s_address <= u_low_adr;
+                U_s_wr <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
             end if;
         end if;
     end process;
@@ -521,8 +680,12 @@ begin
     --listens to address bus and update h_step (for variable step)
     step_update : process(clk, adr)
     begin
-        if rst = '0' and rising_edge(clk) and adr = MM_H_ADA_0 then
-            null;
+        if rst = '0' and rising_edge(clk) then
+            if adr = MM_H_ADA_0 then
+                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_ADA_1 then
+                h_step(31 downto 0) <= in_data;
+            end if;
         end if;
     end process;
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
@@ -534,28 +697,48 @@ begin
                 when "0000" => 
                     --check input address
                     --read lower part of h_new
-                    if adr = MM_H_NEW_0 then
+                    if adr = MM_H_NEW_0 and send_output_enable = '0' and send_u_0_enable = '0' and send_u_s_enable = '0' then
                         M <= to_int(M_vec);
-                        h_new(31 downto 0) <= in_data;
+                        u_out_adr <= (others => '0');
+                        h_new(MAX_LENGTH-1 downto 32) <= in_data;
                         interp_state <= "0001";
                     end if;
                 when "0001" =>
+                    --check input address
                     --read higher part of h_new
                     --start range finder process
-                    h_new(63 downto 32) <= in_data;
-                    range_finder_enable <= '1';
-                    interp_state <= "0010";
+                    if adr = MM_H_NEW_1 then
+                        h_new(31 downto 0) <= in_data;
+                        range_finder_enable <= '1';
+                        interp_state <= "0010";
+                    end if;
                 when "0010" =>
                     --check range finder completion
                     --subtract Tz-Tn and Tk-Tn
                     if range_finder_enable = '0' then
-                        fpu_sub_1_in_1 <= t_high;
-                        fpu_sub_1_in_2 <= t_low;
-                        enable_sub_1 <= '1';
-                        fpu_sub_2_in_1 <= h_new;
-                        fpu_sub_2_in_2 <= t_low;
-                        enable_sub_2 <= '1';
-                        interp_state <= "0011";
+                        if is_stored = '0' then
+                            fpu_sub_1_in_1 <= t_high;
+                            fpu_sub_1_in_2 <= t_low;
+                            enable_sub_1 <= '1';
+                            fpu_sub_2_in_1 <= h_new;
+                            fpu_sub_2_in_2 <= t_low;
+                            enable_sub_2 <= '1';
+                            interp_state <= "0011";
+                        elsif is_stored = '1' and h_new = X"0000" then
+                            if out_from = '0' then
+                                interp_done_op <= "01";
+                                send_u_0_enable <= '1';
+                                interp_state <= "0000";
+                            else
+                                interp_done_op <= "01";
+                                send_u_s_enable <= '1';
+                                interp_state <= "0000";
+                            end if;
+                        elsif is_stored = '1' then
+                            interp_done_op <= "01";
+                            send_u_s_enable <= '1';
+                            interp_state <= "0000";
+                        end if;
                     end if;
                 when "0011" =>
                     --check subtraction completion
@@ -624,6 +807,7 @@ begin
                     --add time step to received time to check outut points
                     if write_u_out = '0' then
                         if M = 0 then
+                            u_out_adr <= (others => '0');
                             fpu_add_1_in_1 <= h_step;
                             fpu_add_1_in_2 <= h_new;
                             enable_add_1 <= '1';
