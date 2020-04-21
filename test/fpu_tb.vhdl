@@ -98,7 +98,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        if run("test_case_name") then
+        if run("todo") then
             -- TODO
         end if;
 
