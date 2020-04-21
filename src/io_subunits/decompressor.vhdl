@@ -5,16 +5,18 @@ use work.common.all;
 
 entity decompressor is
     port (
-        in_data   : in std_logic_vector(31 downto 0);
-        rst       : in std_logic;
-        enbl_in   : in std_logic;
-        clk       : in std_logic;
+        in_data       : in std_logic_vector(31 downto 0);
+        rst           : in std_logic;
+        enbl_in       : in std_logic;
+        clk           : in std_logic;
+        state_wait    : in std_logic;
 
-        out_ready : out std_logic;
-        out_data  : out std_logic_vector(31 downto 0);
+        out_ready     : out std_logic;
+        out_data      : out std_logic_vector(31 downto 0);
+        error_success : out std_logic;
 
         -- for testing
-        buf_test   : out std_logic_vector(128 - 1 downto 0)
+        buf_test      : out std_logic_vector(128 - 1 downto 0)
     );
 end entity;
 
@@ -160,15 +162,19 @@ begin
 
                 out_ready   <= '1';
             else
+                if state_wait = '1' and to_int(out_as(0)) /= to_int(buf_flush_i) then
+                    error_success <= '0';
+                end if;
                 out_ready <= '0';
             end if;
         end procedure;
     begin
         if rst = '1' then
-            buf_fill_i   <= (others => '1');
-            buf_flush_i  <= (others => '0');
-            buf_is_empty <= '1';
-            out_ready    <= '0';
+            buf_fill_i    <= (others => '1');
+            buf_flush_i   <= (others => '0');
+            buf_is_empty  <= '1';
+            out_ready     <= '0';
+            error_success <= '1';
         elsif rising_edge(clk) then
             if enbl_in = '1' then
                 fill_buffer;

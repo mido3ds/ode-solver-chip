@@ -262,10 +262,13 @@ begin
                         state   <= STATE_DONE;
                     end if;
 
-                when others =>
+                when STATE_DONE =>
                     -- done: out Z
                     done    <= '1';
                     cur_adr <= (others => 'Z');
+
+                when others        =>
+                    assert false report "invalid state" severity failure;
             end case;
         end if;
     end process;

@@ -20,24 +20,30 @@ end entity;
 
 architecture rtl of io is
     -- decompressor
-    signal dcm_out_data  : std_logic_vector(in_data'range);
-    signal dcm_out_ready : std_logic;
-    signal dcm_enbl_in   : std_logic;
+    signal dcm_out_data      : std_logic_vector(in_data'range);
+    signal dcm_out_ready     : std_logic;
+    signal dcm_enbl_in       : std_logic;
+    signal dcm_interrupt     : std_logic;
+    signal dcm_state_wait    : std_logic;
+    signal dcm_error_success : std_logic;
 
     -- next adr
-    signal nau_out_adr   : std_logic_vector(adr'range);
-    signal nau_done      : std_logic;
+    signal nau_out_adr       : std_logic_vector(adr'range);
+    signal nau_done          : std_logic;
 begin
-    dcm_enbl_in <= to_std_logic(in_state = STATE_LOAD);
+    dcm_enbl_in    <= to_std_logic(in_state = STATE_LOAD);
+    dcm_state_wait <= to_std_logic(in_state = STATE_WAIT);
 
     decompressor : entity work.decompressor
         port map(
-            in_data   => cpu_data,
-            rst       => rst,
-            enbl_in   => dcm_enbl_in,
-            clk       => clk,
-            out_data  => dcm_out_data,
-            out_ready => dcm_out_ready
+            in_data       => cpu_data,
+            rst           => rst,
+            enbl_in       => dcm_enbl_in,
+            clk           => clk,
+            out_data      => dcm_out_data,
+            out_ready     => dcm_out_ready,
+            error_success => dcm_error_success,
+            state_wait    => dcm_state_wait
         );
 
     nau : entity work.next_adr
@@ -52,19 +58,13 @@ begin
 
     process (clk, rst, in_state)
     begin
-        if rst = '1' then
-            interrupt     <= '0';
-            error_success <= '0';
-        elsif rising_edge(clk) then
+        if rst = '0' and rising_edge(clk) then
             case in_state is
                 when STATE_LOAD | STATE_WAIT =>
-                    adr     <= nau_out_adr;
-                    in_data <= dcm_out_data;
-
-                    if nau_done = '1' then
-                        interrupt <= '1';
-                        error_success <= '1';
-                    end if;
+                    adr           <= nau_out_adr;
+                    in_data       <= dcm_out_data;
+                    error_success <= dcm_error_success;
+                    interrupt     <= nau_done or to_std_logic(dcm_error_success = '0');
 
                 when STATE_OUT =>
                     cpu_data <= in_data;
@@ -74,9 +74,9 @@ begin
         end if;
 
         -- change in state
-        if in_state'event then
-            interrupt <= '0';
-            error_success <= '0';
+        if rst = '1' or in_state'event then
+            interrupt     <= '0';
+            error_success <= '1';
 
             -- put Z on read-only busses to avoid conflicts with writers
             case in_state is

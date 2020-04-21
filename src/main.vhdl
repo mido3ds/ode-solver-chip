@@ -30,7 +30,8 @@ begin
             in_data       => in_data,
             cpu_data      => cpu_data,
             interrupt     => io_interr,
-            error_success => io_err_sucs
+            error_success => io_err_sucs,
+            adr           => adr
         );
 
     solver : entity work.solver
