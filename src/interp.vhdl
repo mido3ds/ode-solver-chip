@@ -66,14 +66,6 @@ signal this_is_sub : std_logic := '1';
 signal fpu_sub_2_in_1, fpu_sub_2_in_2, fpu_sub_2_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
 signal done_sub_2, err_sub_2, zero_sub_2, posv_sub_2, enable_sub_2 : std_logic := '0'; 
 
---ALUs Signals
---INT ADD 1
-signal int_adder_1_in_1,int_adder_1_in_2,int_adder_1_out: std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-signal int_adder_1_enbl, int_adder_1_cin, int_adder_1_cout: std_logic := '0';
---INT MUL 1
-signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-signal int_mul_1_enbl : std_logic := '0';
-
 --Memory Signals
 --U0 Memory
 signal U_0_rd, U_0_wr : std_logic := '0';
@@ -192,24 +184,6 @@ begin
             add_sub   => this_is_sub
         );
 
-    --ALUs (Integer Operations):
-    int_add_1 : entity work.int_adder(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_adder_1_in_1,
-            b       =>  int_adder_1_in_2,
-            enbl    =>  int_adder_1_enbl,
-            cin     =>  int_adder_1_cin,
-            c       =>  int_adder_1_out,
-            cout    =>  int_adder_1_cout
-        );
-    int_mul_1 : entity work.int_multiplier(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_mul_1_in_1,
-            b       =>  int_mul_1_in_2,
-            enbl    =>  int_mul_1_enbl,
-            c       =>  int_mul_1_out
-        );
-    
     --Memories:
     --Holding initial U
     U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
