@@ -2147,10 +2147,10 @@ begin
                     
                         when "00" =>
                             fpu_mul_1_in_2 <= (others => '0');
-                            fpu_mul_1_in_2(7 downto 0) := "01110011";
+                            fpu_mul_1_in_2(7 downto 0) <= "01110011";
                         when "01" =>
                             fpu_mul_1_in_2 <= (others => '0');
-                            fpu_mul_1_in_2(31 downto 0) := "00111111011001100110011001100110";
+                            fpu_mul_1_in_2(31 downto 0) <= "00111111011001100110011001100110";
                         when "10" =>
                             fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
                         when others =>
@@ -2383,7 +2383,7 @@ begin
                         --ERROR HERE YA SHAWKY
                         --if interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11" then
                         if interp_done_op = "01" or interp_done_op = "10" then
-                            interp_done_op := interp_done_op;
+                            interp_done_op <= interp_done_op;
                             result_u_main_temp(31 downto 0) <= in_data;
                             fixed_point_state <= "0011";
                         end if;
