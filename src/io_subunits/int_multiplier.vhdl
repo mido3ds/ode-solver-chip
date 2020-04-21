@@ -23,11 +23,6 @@ end entity;
 
 architecture rtl of int_multiplier is
 begin
-    -- TODO
-    process (a, b, enbl)
-    begin
-        if enbl = '1' then
-            c <= to_vec(to_int(a) * to_int(b), c'length);
-        end if;
-    end process;
+    -- We only use this unit for address calculation, so we went with (*) operator.
+    c <= to_vec(to_int(a) * to_int(b), c'length) when enbl = '1';
 end architecture;
