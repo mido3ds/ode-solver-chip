@@ -404,8 +404,9 @@ begin
 
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
     process (clk, rst, adr, in_state)
+    variable beenThere_1, beenThere_2, beenThere_3 : std_logic := '0';
     begin
-        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
             if adr = MM_HDR_0 then
                 N_X_A_B_vec <= in_data(31 downto 26);
                 M_U_B_vec <= in_data(25 downto 20);
@@ -420,7 +421,10 @@ begin
                 h_main(31 downto 0) <= in_data;
                 
                 --this signal will initiate both: N*M and N*N
-                fsm_run_mul_n_m <= "11"; 
+                if beenThere_3 = '0' then
+                    fsm_run_mul_n_m <= "11"; 
+                    beenThere_3 := '1';
+                end if;
             elsif adr = MM_ERR_0 then
                 L_tol (MAX_LENGTH-1 downto 32) <= in_data;
             elsif adr = MM_ERR_1 then
@@ -429,38 +433,50 @@ begin
                 a_coeff_data_in <= in_data;
                 a_coeff_wr <= '1';
                 -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
-                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));
-
-                --L_tol is read, so:
-                fsm_run_L_nine <= "11";
+                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
             elsif adr >= MM_B_0 and adr <= MM_B_1 then
                 --b coefficient
+                a_coeff_wr <= '0';
+                a_coeff_address <= (others => '0');
                 b_coeff_data_in <= in_data;
                 b_coeff_wr <= '1';
                 -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
                 b_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_B_0));
 
                 --since we got here, then A and H are ready
-                if fixed_or_var = '0' then 
-                    fsm_run_h_a <= "1111";
+                if beenThere_1 = '0' then
+                    if fixed_or_var = '0' then 
+                        fsm_run_h_a <= "1111";
+                    else
+                        --L_tol is read, so:
+                        fsm_run_L_nine <= "11";
+                    end if;
+                    beenThere_1 := '1';
                 end if;
             elsif adr >= MM_X_0 and adr <= MM_X_1 then
                 --X_ware[0] = X0
+                b_coeff_wr <= '0';
+                b_coeff_address <= (others => '0');
                 X_ware_data_in <= in_data;
                 X_ware_wr <= '1';
                 -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
                 X_ware_address <= std_logic_vector(unsigned(adr) - unsigned(MM_X_0));
 
                  -- Since we got here, then B and H are ready
-                if fixed_or_var = '0' then 
+                if fixed_or_var = '0' and beenThere_2 = '0' then 
                     fsm_run_h_b <= "111";
-                    -- at the begining of Fixed algorithm, you need to check that fsm_run_h_b = "000" or wait..
+                    beenThere_2 := '1';
                 end if;
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                X_ware_wr <= '0';
+                x_ware_address <= (others => '0');
                 U_main_data_in <= in_data;
                 U_main_wr <= '1';
                 -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
                 U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
+            elsif adr > MM_U0_1 then
+                U_main_wr <= '0';
+                U_main_address <= (others => '0');
             end if;
         end if;
     end process;
