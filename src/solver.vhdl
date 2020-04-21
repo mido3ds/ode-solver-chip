@@ -2647,7 +2647,7 @@ begin
                         --it is not an output point
                         --just place X_i at X_c
                         fsm_var_step_main <= "10011";
-                    elseif interp_done_op = "10" then
+                    elsif interp_done_op = "10" then
                         --it is an output point
                         --increment c, then go to 10011
                         address_inc_1 <= (others => '0');
@@ -2673,7 +2673,7 @@ begin
                             --it is not an output point
                             --start all over again
                             fsm_var_step_main <= "10101";
-                        elseif interp_done_op = "10" then
+                        elsif interp_done_op = "10" then
                             --it is an output point
                             fsm_var_step_main <= "11111";
                         end if;
