@@ -1418,7 +1418,7 @@ begin
                         end if;
                     else
                         --from i to c then
-                        if read_x = '0' then
+                        if read_x_i = '0' then
                             --b_temp holds current b element..
                             if div_or_adapt = '0' then
                                 --div
@@ -1778,7 +1778,6 @@ begin
     --variable read_high_low:  std_logic  := '0'; 
     variable write_high_low:  std_logic  := '0'; 
     variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
-    
     begin
         if rising_edge (clk) then
             case( fsm_h_sent_U_recv ) is
@@ -1884,7 +1883,83 @@ begin
         end if;
     end process ; -- proc_send_h_init
 
+    --Used at variable step only
+    proc_place_x_i_at_x_c_or_vv : process(clk, fsm_place_x_i_at_x_c_or_vv )
+    variable N_X_A_B_TEMP : std_logic_vector(15 downto 0) := (others => '0'); 
+    begin
+        if rst = '0' and rising_edge(clk) then
+            case( fsm_place_x_i_at_x_c_or_vv ) is
+                when "000" =>
+                    --NOP for now
+                    null;
+                when "001" =>
+                    --read X coeff
+                    --operated only once
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        read_x <='1';
+                    else
+                        --from i to c then
+                        read_x_i <= '1';
+                    end if;
+                    fsm_place_x_i_at_x_c_or_vv <= "010";
+                when "010" =>
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        if read_x = '0' then
+                            result_x_i_temp <= x_temp;
+                            write_x_i <= '1';
+                            fsm_place_x_i_at_x_c_or_vv <= "011";
+                        end if;
+                    else
+                        if read_x_i = '0' then
+                            result_x_temp <= x_i_temp;
+                            write_x <= '1';
+                            fsm_place_x_i_at_x_c_or_vv <= "011";
+                        end if;
+                    end if;
 
+                    
+                when "011" =>
+                    if from_i_to_c = '0' then
+                        --from c to i then
+                        if write_x_i = '0' then
+                            fsm_place_x_i_at_x_c_or_vv <= "100";
+                        end if;
+                    else
+                        if write_x = '0' then
+                           fsm_place_x_i_at_x_c_or_vv <= "100";
+                        end if;
+                    end if;
+                when "100" =>
+                    -- check if we reached end of the loop!!
+                    --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
+                    -- if it's zero, we escape
+                    address_dec_1_in <= N_X_A_B_TEMP;
+                    address_dec_1_enbl <= '1';
+                    fsm_place_x_i_at_x_c_or_vv <= "101";
+                    
+                when "101" =>
+                    address_dec_1_enbl <= '0';
+                    N_X_A_B_TEMP := address_dec_1_out;
+                    if N_X_A_B_TEMP = X"0000" then
+                        --end loop
+                        X_intm_address <= (others => '0');
+                        fsm_place_x_i_at_x_c_or_vv <= "000";
+                    else
+                        --LOOP AGAIN
+                        fsm_place_x_i_at_x_c_or_vv <= "001";
+                    end if;
+                when "110" =>
+                        null;
+                when others =>
+                    --START working, init w kda
+                    X_intm_address <= (others => '0');
+                    N_X_A_B_TEMP := N_X_A_B_vec;
+                    fsm_place_x_i_at_x_c_or_vv <= "001";
+            end case ;
+        end if;
+    end process ; -- proc_place_x_i_at_x_c_or_vv
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --multiples N*N or N*M
     proc_run_mul_n_m_and_n_n : process( clk, fsm_run_mul_n_m )
