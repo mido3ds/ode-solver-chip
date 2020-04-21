@@ -66,14 +66,6 @@ signal this_is_sub : std_logic := '1';
 signal fpu_sub_2_in_1, fpu_sub_2_in_2, fpu_sub_2_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
 signal done_sub_2, err_sub_2, zero_sub_2, posv_sub_2, enable_sub_2 : std_logic := '0'; 
 
---ALUs Signals
---INT ADD 1
-signal int_adder_1_in_1,int_adder_1_in_2,int_adder_1_out: std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-signal int_adder_1_enbl, int_adder_1_cin, int_adder_1_cout: std_logic := '0';
---INT MUL 1
-signal int_mul_1_in_1, int_mul_1_in_2, int_mul_1_out : std_logic_vector(ADDR_LENGTH - 1 downto 0) := (others => '0');
-signal int_mul_1_enbl : std_logic := '0';
-
 --Memory Signals
 --U0 Memory
 signal U_0_rd, U_0_wr : std_logic := '0';
@@ -81,7 +73,7 @@ signal U_0_address : std_logic_vector(6 downto 0) := (others => '0');
 signal U_0_data_in, U_0_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --Us Memory
 signal U_s_rd, U_s_wr : std_logic := '0';
-signal U_s_address : std_logic_vector(9 downto 0) := (others => '0');
+signal U_s_address : std_logic_vector(8 downto 0) := (others => '0');
 signal U_s_data_in, U_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
 --U_out Memory
 signal U_out_rd, U_out_wr : std_logic := '0';
@@ -93,22 +85,27 @@ signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0
 signal interp_state : std_logic_vector(3 downto 0) := "1111";
 signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
 signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
-signal u_low_adr, u_high_adr : std_logic_vector(9 downto 0) := (others => '0'); --boundary Us addresses
-signal u_low_temp, u_high_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
+signal u_low_adr, u_high_adr : std_logic_vector(8 downto 0) := (others => '0'); --boundary Us addresses
+signal u_0_adr, u_out_adr : std_logic_vector(6 downto 0) := (others => '0'); --initial and output U addresses
+signal u_0_temp, u_low_temp, u_high_temp, u_out_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
 signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --result of Uout
 
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
+signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
 
 --Send Output Signals
 signal send_output_enable : std_logic := '0';
 
+--U0 IO Signals
+signal read_u_0, u_0_high : std_logic := '0';
+
 --Us IO Signals
-signal read_u_s_low, write_u_s_low, increment_u_s_low, decrement_u_s_low : std_logic := '0';
-signal read_u_s_high, write_u_s_high, increment_u_s_high, decrement_u_s_high : std_logic := '0';
+signal read_u_s_low, u_s_low_high : std_logic := '0';
+signal read_u_s_high, u_s_high_high : std_logic := '0';
 
 --Uout IO Signals
-signal read_u_out, write_u_out, increment_u_out, decrement_u_out : std_logic := '0';
+signal read_u_out, write_u_out, u_out_high : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -187,24 +184,6 @@ begin
             add_sub   => this_is_sub
         );
 
-    --ALUs (Integer Operations):
-    int_add_1 : entity work.int_adder(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_adder_1_in_1,
-            b       =>  int_adder_1_in_2,
-            enbl    =>  int_adder_1_enbl,
-            cin     =>  int_adder_1_cin,
-            c       =>  int_adder_1_out,
-            cout    =>  int_adder_1_cout
-        );
-    int_mul_1 : entity work.int_multiplier(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_mul_1_in_1,
-            b       =>  int_mul_1_in_2,
-            enbl    =>  int_mul_1_enbl,
-            c       =>  int_mul_1_out
-        );
-    
     --Memories:
     --Holding initial U
     U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
@@ -217,7 +196,7 @@ begin
         data_out => U_0_data_out
     );
     --Holding all given Us
-    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
+    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 500, ADR_LENGTH=>9)
             port map(
                 clk      => clk,
                 rd       => U_s_rd,
@@ -267,8 +246,6 @@ begin
                 h_step(31 downto 0) <= in_data;
             --read U_0
             elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
-                U_0_wr <= '0';
-                U_0_address <= (others => '0');
                 U_0_data_in <= in_data;
                 U_0_wr <= '1';
                 -- shift adr from [MM_U0_0:MM_U0_1] to [0:MM_U0_1-MM_U0_0]
@@ -302,8 +279,6 @@ begin
                 end if;    
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
-                U_s_wr <= '0';
-                U_s_address <= (others => '0');
                 U_s_data_in <= in_data;
                 U_s_wr <= '1';
                 -- shift adr from [MM_U_S_0:MM_U_S_1] to [0:MM_U_S_1-MM_U_S_0]
@@ -319,109 +294,207 @@ begin
         null;
     end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
+    --U_0
+    --reads U0
+    read_u0 : process(clk, read_u_0)
+    begin
+        if rst = '0' and rising_edge(clk) and read_u_0 = '1' then
+            if u_0_high = '0' then
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_temp(31 downto 0) <= U_0_data_out;
+                u_0_high <= '1';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1); 
+            else
+                U_0_address <= u_0_adr;
+                U_0_wr <= '0';
+                U_0_rd <= '1';
+                u_0_temp(63 downto 32) <= U_0_data_out;
+                u_0_high <= '0';
+                u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+                read_u_0 <= '0';
+            end if;
+        end if;
+    end process;
+
     --U_s
     --reads low Us
-    read_low_us : process(clk, read_u_s_low, write_u_s_low)
+    read_low_us : process(clk, read_u_s_low)
     begin
-        if rst = '0' and rising_edge(clk) and read_u_s_low = '1' and write_u_s_low = '0' then
-            null;            
-    end if;
-    end process; 
-
-    --writes low Us
-    write_low_us : process(clk, read_u_s_low, write_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_low = '0' and write_u_s_low = '1' then       
-            null;
+        if rst = '0' and rising_edge(clk) and read_u_s_low = '1' then
+            if u_s_low_high = '0' then
+                U_s_address <= u_low_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_low_temp(31 downto 0) <= U_s_data_out;
+                u_s_low_high <= '1';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1); 
+            else
+                U_s_address <= u_low_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_low_temp(63 downto 32) <= U_s_data_out;
+                u_s_low_high <= '0';
+                u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+                read_u_s_low <= '0';
+            end if;           
         end if;
-    end process;
-
-    --increments low Us address
-    inc_low_us : process(clk, increment_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_s_low = '1' then
-            null;
-        end if;    
-    end process;
-
-    --decrements low Us address
-    dec_low_us : process(clk, decrement_u_s_low)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_s_low = '1' then
-            null;
-        end if;    
-    end process;
+    end process; 
 
     --reads high Us
-    read_high_us : process(clk, read_u_s_high, write_u_s_high)
+    read_high_us : process(clk, read_u_s_high)
     begin
-        if rst = '0' and rising_edge(clk) and read_u_s_high = '1' and write_u_s_high = '0' then
-            null;            
-    end if;
-    end process; 
-
-    --writes high Us
-    write_high_us : process(clk, read_u_s_high, write_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_high = '0' and write_u_s_high = '1' then       
-            null;
+        if rst = '0' and rising_edge(clk) and read_u_s_high = '1' then
+            if u_s_high_high = '0' then
+                U_s_address <= u_high_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_high_temp(31 downto 0) <= U_s_data_out;
+                u_s_high_high <= '1';
+                u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1); 
+            else
+                U_s_address <= u_high_adr;
+                U_s_wr <= '0';
+                U_s_rd <= '1';
+                u_high_temp(63 downto 32) <= U_s_data_out;
+                u_s_high_high <= '0';
+                u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+                read_u_s_high <= '0';
+            end if;           
         end if;
-    end process ;
-
-    --increments high Us address
-    inc_high_us : process(clk, increment_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_s_high = '1' then
-            null;
-        end if;    
-    end process ;
-
-    --decrements high Us address
-    dec_high_us : process(clk, decrement_u_s_high)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_s_high = '1' then
-            null;
-        end if;    
-    end process ;
+    end process; 
 
     --U_out
     --reads Uout
     read_uout : process(clk, read_u_out, write_u_out)
     begin
         if rst = '0' and rising_edge(clk) and read_u_out = '1' and write_u_out = '0' then
-            null;            
-    end if;
+            if u_out_high = '0' then
+                U_out_address <= u_out_adr;
+                U_out_wr <= '0';
+                U_out_rd <= '1';
+                u_out_temp(31 downto 0) <= U_out_data_out;
+                u_out_high <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
+            else
+                U_out_address <= u_out_adr;
+                U_out_wr <= '0';
+                U_out_rd <= '1';
+                u_out_temp(63 downto 32) <= U_out_data_out;
+                u_out_high <= '0';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+                read_u_out <= '0';
+            end if;    
+        end if;
     end process ; 
 
     --writes Uout
     write_uout : process(clk, read_u_out, write_u_out)
     begin
         if rst = '0' and rising_edge(clk) and read_u_out = '0' and write_u_out = '1' then       
-            null;
+            if u_out_high = '0' then
+                U_out_address <= u_out_adr;
+                U_out_data_in <= u_out_result(31 downto 0);
+                U_out_rd <= '0';
+                U_out_wr <= '1';
+                u_out_high <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
+            else
+                U_out_address <= u_out_adr;
+                U_out_data_in <= u_out_result(63 downto 32);
+                U_out_rd <= '0';
+                U_out_wr <= '1';
+                u_out_high <= '0';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+                write_u_out <= '0';
+            end if; 
         end if;
-    end process ;
-
-    --increments Uout address
-    inc_uout : process(clk, increment_u_out)
-    begin
-        if rst = '0' and rising_edge(clk) and increment_u_out = '1' then
-            null;
-        end if;    
-    end process ;
-
-    --decrements Uout address
-    dec_uout : process(clk, decrement_u_out)
-    begin
-        if rst = '0' and rising_edge(clk) and decrement_u_out = '1' then
-            null;
-        end if;    
     end process ;
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
     --finds the range in which the received T lies
     range_finder : process(clk, range_finder_enable)
     begin
         if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
-            null;
+            if h_new = X"0000" then
+                is_stored <= '1';
+                t_low <= h_new;
+                t_high <= h_new;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new > X"0000" and h_new < out_time_1 then
+                is_stored <= '0';
+                t_low <= X"0000";
+                t_high <= out_time_1;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_1 then
+                is_stored <= '1';
+                t_low <= out_time_1;
+                t_high <= out_time_1;
+                u_high_adr <= (others => '0');
+                u_low_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_1 and h_new < out_time_2 then 
+                is_stored <= '0';
+                t_low <= out_time_1;
+                t_high <= out_time_2;
+                u_high_adr <= (others => '0');
+                u_low_adr <= "001100100";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_2 then
+                is_stored <= '1';
+                t_low <= out_time_2;
+                t_high <= out_time_2;
+                u_high_adr <= "001100100";
+                u_low_adr <= "001100100";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_2 and h_new < out_time_3 then 
+                is_stored <= '0';
+                t_low <= out_time_2;
+                t_high <= out_time_3;
+                u_high_adr <= "001100100";
+                u_low_adr <= "011001000";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_3 then
+                is_stored <= '1';
+                t_low <= out_time_3;
+                t_high <= out_time_3;
+                u_high_adr <= "011001000";
+                u_low_adr <= "011001000";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_3 and h_new < out_time_4 then 
+                is_stored <= '0';
+                t_low <= out_time_3;
+                t_high <= out_time_4;
+                u_high_adr <= "011001000";
+                u_low_adr <= "100101100";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_4 then
+                is_stored <= '1';
+                t_low <= out_time_4;
+                t_high <= out_time_4;
+                u_high_adr <= "100101100";
+                u_low_adr <= "100101100";
+                u_0_adr <= (others => '0');
+            elsif h_new > out_time_4 and h_new < out_time_5 then 
+                is_stored <= '0';
+                t_low <= out_time_4;
+                t_high <= out_time_5;
+                u_high_adr <= "100101100";
+                u_low_adr <= "110010000";
+                u_0_adr <= (others => '0');
+            elsif h_new = out_time_5 then
+                is_stored <= '1';
+                t_low <= out_time_5;
+                t_high <= out_time_5;
+                u_high_adr <= "110010000";
+                u_low_adr <= "110010000";
+                u_0_adr <= (others => '0');
+            end if;
+            range_finder_enable <= '0';
         end if;
     end process;
 
@@ -429,7 +502,19 @@ begin
     send_output : process(clk, send_output_enable)
     begin
         if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
-            null;
+            if u_out_adr = X"0000" then
+                U_out_address <= u_out_adr;
+                U_out_wr <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            elsif u_out_adr = "001100100" then
+                in_data <= U_out_data_out;
+                send_output_enable <= '0';
+            else
+                in_data <= U_out_data_out;
+                U_out_address <= u_out_adr;
+                U_out_wr <= '1';
+                u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
+            end if;
         end if;
     end process;
 
