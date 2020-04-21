@@ -223,6 +223,11 @@ begin
     reset : process (clk, rst)
     begin
         if rst = '1' then
+            --port signals
+            interrupt <= '0';
+            error_success <= '1';
+            in_data <= (others => 'Z');
+            interp_done_op <= (others => 'Z');
             --time signals
             h_new <= (others => '0');
             --fpu signals
@@ -294,6 +299,8 @@ begin
             --switch main FSM to ready state
             if interp_state = "1111" then
                 interp_state <= "0000";
+                interrupt <= '0';
+                error_success <= '0';
             end if;
             --read header data
             if adr = MM_HDR_0 then
@@ -353,10 +360,10 @@ begin
     --Error Handling
     --outputs error interrupt in case of fp errors
     --performs error interrupt upon errors in fp operations or reset
-    error_handler : process(clk, rst, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
+    error_handler : process(clk, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
     begin
         if rising_edge(clk) then
-            if rst = '1' or err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1' then
+            if err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1' then
                 interrupt <= '1';
                 error_success <= '0';
             end if;
@@ -678,6 +685,14 @@ begin
                             fpu_sub_2_in_2 <= t_low;
                             enable_sub_2 <= '1';
                             interp_state <= "0011";
+                        elsif is_stored = '1' and h_new = X"0000" then
+                            interp_done_op <= "01";
+                            send_u_0_enable <= '1';
+                            interp_state <= "0000";
+                        elsif is_stored = '1' then
+                            interp_done_op <= "01";
+                            send_u_s_enable <= '1';
+                            interp_state <= "0000";
                         end if;
                     end if;
                 when "0011" =>
