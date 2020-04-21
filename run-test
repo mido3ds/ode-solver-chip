@@ -20,7 +20,7 @@ main() {
     run-daemon
     
     echo "run tests for odeSolver.$TEST"
-    docker exec -w "$PWD" ghdld python3 scripts/vunit-main.py odeSolver.$TEST -x out/report.xml  --minimal --keep-compiling --gtkwave-fmt vcd -o out -q
+    docker exec -w "$PWD" ghdld python3 scripts/vunit-main.py odeSolver.$TEST -p 5 -x out/report.xml  --minimal --keep-compiling --gtkwave-fmt vcd -o out -q
 }
 
 if [[ "$1" = "" ]]; then
