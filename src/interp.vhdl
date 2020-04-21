@@ -223,7 +223,64 @@ begin
     reset : process (clk, rst)
     begin
         if rst = '1' then
-            null;
+            --time signals
+            h_new <= (others => '0');
+            --fpu signals
+            fpu_mul_1_in_1 <= (others => '0');
+            fpu_mul_1_in_2 <= (others => '0');
+            enable_mul_1 <= '0';
+            fpu_div_1_in_1 <= (others => '0');
+            fpu_div_1_in_2 <= (others => '0');
+            enable_div_1 <= '0';
+            fpu_add_1_in_1 <= (others => '0');
+            fpu_add_1_in_2 <= (others => '0');
+            enable_add_1 <= '0';
+            fpu_sub_1_in_1 <= (others => '0');
+            fpu_sub_1_in_2 <= (others => '0');
+            enable_sub_1 <= '0';
+            fpu_sub_2_in_1 <= (others => '0');
+            fpu_sub_2_in_2 <= (others => '0');
+            enable_sub_2 <= '0';
+            --memory signals
+            U_0_rd <= '0';
+            U_0_wr <= '0';
+            U_0_address <= (others => '0');
+            U_0_data_in <= (others => '0');
+            U_s_rd <= '0';
+            U_s_wr <= '0';
+            U_s_address <= (others => '0');
+            U_s_data_in <= (others => '0');
+            U_out_rd <= '0';
+            U_out_wr <= '0';
+            U_out_address <= (others => '0');
+            U_out_data_in <= (others => '0');
+            --main fsm signals
+            interp_state <= "1111";
+            t_low <= (others => '0');
+            t_high <= (others => '0');
+            t_const <= (others => '0');
+            u_low_adr <= (others => '0');
+            u_high_adr <= (others => '0');
+            u_0_adr <= (others => '0'); 
+            u_out_adr <= (others => '0'); 
+            u_0_temp <= (others => '0'); 
+            u_low_temp <= (others => '0'); 
+            u_high_temp <= (others => '0');
+            u_out_temp <= (others => '0');
+            u_out_result <= (others => '0'); 
+            --other processes signals
+            range_finder_enable <= '0';
+            is_stored <= '0';
+            send_output_enable <= '0';
+            read_u_0 <= '0';
+            u_0_high <= '0';
+            read_u_s_low <= '0';
+            u_s_low_high <= '0';
+            read_u_s_high <= '0';
+            u_s_high_high <= '0';
+            read_u_out <= '0';
+            write_u_out <= '0';
+            u_out_high <= '0';
         end if;
     end process;
 -----------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
@@ -232,6 +289,10 @@ begin
     init_data : process (clk, in_state, in_data, adr)
     begin
         if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+            --switch main FSM to ready state
+            if interp_state = "1111" then
+                interp_state <= "0000";
+            end if;
             --read header data
             if adr = MM_HDR_0 then
                 N_vec(5 downto 0) <= in_data(31 downto 26);
@@ -255,7 +316,7 @@ begin
                 if adr = MM_T_0 then
                     t_count <= 0;
                 end if;
-                t_count <= T_count + 1;
+                t_count <= t_count + 1;
                 if t_count = 1 then
                     out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
                 elsif t_count = 2 then
@@ -289,9 +350,15 @@ begin
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
     --Error Handling
     --outputs error interrupt in case of fp errors
-    error_handler : process(clk, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
+    --performs error interrupt upon errors in fp operations or reset
+    error_handler : process(clk, rst, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
     begin
-        null;
+        if rising_edge(clk) then
+            if rst = '1' or err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1' then
+                interrupt <= '1';
+                error_success <= '0';
+            end if;
+        end if;
     end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
     --U_0
@@ -506,7 +573,7 @@ begin
                 U_out_address <= u_out_adr;
                 U_out_wr <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
-            elsif u_out_adr = "001100100" then
+            elsif u_out_adr = std_logic_vector(unsigned(M_vec) * 2) then
                 in_data <= U_out_data_out;
                 send_output_enable <= '0';
             else
