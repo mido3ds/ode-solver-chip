@@ -197,7 +197,7 @@ architecture rtl of solver is
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
     --FPUs:
-    fpu_mul_1 : entity work.fpu_multiplier(rtl)
+    fpu_mul_1 : entity work.fpu_multiplier
         port map(
             clk       => clk,
             rst       => rst,
@@ -211,7 +211,7 @@ begin
             zero      => zero_mul_1,
             posv      => posv_mul_1
         );
-    fpu_add_1 : entity work.fpu_adder(rtl)
+    fpu_add_1 : entity work.fpu_adder
         port map(
             clk       => clk,
             rst       => rst,
@@ -226,7 +226,7 @@ begin
             posv      => posv_add_1,
             add_sub   => thisIsAdder_1
         );
-    fpu_add_2 : entity work.fpu_adder(rtl)
+    fpu_add_2 : entity work.fpu_adder
         port map(
             clk       => clk,
             rst       => rst,
@@ -241,7 +241,7 @@ begin
             posv      => posv_add_2,
             add_sub   => thisIsAdder_2
         );
-    fpu_div_1 : entity work.fpu_divider(rtl)
+    fpu_div_1 : entity work.fpu_divider
         port map(
             clk       => clk,
             rst       => rst,
@@ -257,35 +257,35 @@ begin
         );
     
     --Integer operators:
-    address_inc_1 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_inc_1 : entity work.incrementor generic map (N => ADDR_LENGTH)
         port map(
             a      => address_inc_1_in,
             c      => address_inc_1_out,
             enbl   => address_inc_1_enbl
         );
 
-    address_dec_1 : entity work.decrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_dec_1 : entity work.decrementor generic map (N => ADDR_LENGTH)
         port map(
             a      => address_dec_1_in,
             c      => address_dec_1_out,
             enbl   => address_dec_1_enbl
         );
 
-    address_inc_2 : entity work.incrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_inc_2 : entity work.incrementor generic map (N => ADDR_LENGTH)
         port map(
             a      => address_inc_2_in,
             c      => address_inc_2_out,
             enbl   => address_inc_2_enbl
         );
 
-    address_dec_2 : entity work.decrementor(rtl) generic map (N => ADDR_LENGTH)
+    address_dec_2 : entity work.decrementor generic map (N => ADDR_LENGTH)
         port map(
             a      => address_dec_2_in,
             c      => address_dec_2_out,
             enbl   => address_dec_2_enbl
         );
 
-    int_adder_1 : entity work.int_adder(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
+    int_adder_1 : entity work.int_adder generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
         port map(
             a       =>  int_adder_1_in_1,
             b       =>  int_adder_1_in_2,
@@ -294,7 +294,7 @@ begin
             c       =>  int_adder_1_out,
             cout    =>  int_adder_1_cout
         );
-    int_mul_1 : entity work.int_multiplier(rtl) generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
+    int_mul_1 : entity work.int_multiplier generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
         port map(
             a       =>  int_mul_1_in_1,
             b       =>  int_mul_1_in_2,
@@ -304,7 +304,7 @@ begin
 
     --MEMORIES:
     -- U_main
-    U_main : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    U_main : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rst => rst,
@@ -315,7 +315,7 @@ begin
             data_out => U_main_data_out
         );
     -- U_sub
-    --U_sub : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    --U_sub : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
     --    port map(
     --        clk      => clk,
     --        rst => rst,
@@ -326,7 +326,7 @@ begin
     --        data_out => U_sub_data_out
     --    );
     -- X_warehouse, holds X0 and X_1:5 for outputs
-    X_ware : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
+    X_ware : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
         port map(
             clk      => clk,
             rst => rst,
@@ -337,7 +337,7 @@ begin
             data_out => X_ware_data_out
         );
     -- X_intermediate, holds Xi
-    X_i : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    X_i : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rst => rst,
@@ -348,7 +348,7 @@ begin
             data_out => X_intm_data_out
         );
     -- A
-    a_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000, ADR_LENGTH=>13)
+    a_coeff : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000, ADR_LENGTH=>13)
         port map(
             clk      => clk,
             rst => rst,
@@ -359,7 +359,7 @@ begin
             data_out => a_coeff_data_out
         );
     -- B
-    b_coeff : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000,ADR_LENGTH=>13)
+    b_coeff : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000,ADR_LENGTH=>13)
         port map(
             clk      => clk,
             rst => rst,

@@ -44,8 +44,16 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
+        rst <= '1';
+        wait for 1 ps;
+        rst <= '0';
+
         if run("name_this_test_case") then
             -- TODO
+            in_state <= "00";
+            in_data  <= (others => '0');
+            adr      <= (others => '0');
+            wait for 10 * CLK_PERD;
         end if;
 
         wait for CLK_PERD/2;
