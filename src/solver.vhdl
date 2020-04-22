@@ -418,7 +418,16 @@ begin
             fixed_point_state   <= (others => '0');
             fsm_terminate   <= (others => '0');
             fsm_outing   <= (others => '0');
-
+            --RESET variables
+            N_X_A_B_vec <= (others => '0');
+            M_U_B_vec <= (others => '0');
+            --N_X_A_B <= (others => '0');
+            --M_U_B <= (others => '0');
+            fixed_or_var <= '0';
+            mode_sig <= (others => '0');
+            t_size <= (others => '0');
+            h_main <= (others => '0');
+            L_tol <= (others => '0');
 
 
             --Signals
