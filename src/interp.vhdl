@@ -621,12 +621,12 @@ begin
     send_output : process(clk, send_output_enable)
     begin
         if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
-            if u_out_adr = X"0000" then
+            if u_out_adr = "0000000" then
                 U_out_address <= u_out_adr;
                 U_out_wr <= '0';
                 U_out_rd <= '1';
                 u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
-            elsif u_out_adr = std_logic_vector(unsigned(M_vec) * 2) then
+            elsif u_out_adr = multiply2(M_vec) then
                 in_data <= U_out_data_out;
                 send_output_enable <= '0';
             else
@@ -643,12 +643,12 @@ begin
     send_u_0 : process(clk, send_u_0_enable)
     begin
         if rst = '0' and rising_edge(clk) and send_u_0_enable = '1' then
-            if u_0_adr = X"0000" then
+            if u_0_adr = "0000000" then
                 U_0_address <= u_0_adr;
                 U_0_wr <= '0';
                 U_0_rd <= '1';
                 u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
-            elsif u_0_adr = std_logic_vector(unsigned(M_vec) * 2) then
+            elsif u_0_adr = multiply2(M_vec) then
                 in_data <= U_0_data_out;
                 send_u_0_enable <= '0';
             else
@@ -665,11 +665,11 @@ begin
     send_u_s : process(clk, send_u_s_enable)
     begin
         if rst = '0' and rising_edge(clk) and send_u_s_enable = '1' then
-            if u_low_adr = X"0000" then
+            if u_low_adr = "0000000" then
                 U_s_address <= u_low_adr;
                 U_s_wr <= '1';
                 u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
-            elsif u_low_adr = std_logic_vector(unsigned(M_vec) * 2) then
+            elsif u_low_adr = multiply2(M_vec) then
                 in_data <= U_s_data_out;
                 send_u_s_enable <= '0';
             else
