@@ -220,163 +220,6 @@ begin
                 data_in  => U_out_data_in,
                 data_out => U_out_data_out
             );
------------------------------------------------------------------PROCESSES-----------------------------------------------------------------------------------
------------------------------------------------------------------RESET-----------------------------------------------------------------------------------
-    --Reset
-    --handles reset signal for interpolator
-    reset : process (clk, rst)
-    begin
-        if rst = '1' then
-            --port signals
-            interrupt <= '0';
-            error_success <= '1';
-            in_data <= (others => 'Z');
-            interp_done_op <= (others => 'Z');
-            --time signals
-            h_new <= (others => '0');
-            --fpu signals
-            fpu_mul_1_in_1 <= (others => '0');
-            fpu_mul_1_in_2 <= (others => '0');
-            enable_mul_1 <= '0';
-            fpu_div_1_in_1 <= (others => '0');
-            fpu_div_1_in_2 <= (others => '0');
-            enable_div_1 <= '0';
-            fpu_add_1_in_1 <= (others => '0');
-            fpu_add_1_in_2 <= (others => '0');
-            enable_add_1 <= '0';
-            fpu_sub_1_in_1 <= (others => '0');
-            fpu_sub_1_in_2 <= (others => '0');
-            enable_sub_1 <= '0';
-            fpu_sub_2_in_1 <= (others => '0');
-            fpu_sub_2_in_2 <= (others => '0');
-            enable_sub_2 <= '0';
-            --memory signals
-            U_0_rd <= '0';
-            U_0_wr <= '0';
-            U_0_address <= (others => '0');
-            U_0_data_in <= (others => '0');
-            U_s_rd <= '0';
-            U_s_wr <= '0';
-            U_s_address <= (others => '0');
-            U_s_data_in <= (others => '0');
-            U_out_rd <= '0';
-            U_out_wr <= '0';
-            U_out_address <= (others => '0');
-            U_out_data_in <= (others => '0');
-            --main fsm signals
-            interp_state <= "1111";
-            t_low <= (others => '0');
-            t_high <= (others => '0');
-            t_const <= (others => '0');
-            u_low_adr <= (others => '0');
-            u_high_adr <= (others => '0');
-            u_0_adr <= (others => '0'); 
-            u_out_adr <= (others => '0'); 
-            u_0_temp <= (others => '0'); 
-            u_low_temp <= (others => '0'); 
-            u_high_temp <= (others => '0');
-            u_out_temp <= (others => '0');
-            u_out_result <= (others => '0'); 
-            --other processes signals
-            range_finder_enable <= '0';
-            is_stored <= '0';
-            send_output_enable <= '0';
-            send_u_0_enable <= '0';
-            send_u_s_enable <= '0';
-            read_u_0 <= '0';
-            u_0_high <= '0';
-            read_u_s_low <= '0';
-            u_s_low_high <= '0';
-            read_u_s_high <= '0';
-            u_s_high_high <= '0';
-            read_u_out <= '0';
-            write_u_out <= '0';
-            u_out_high <= '0';
-        end if;
-    end process;
------------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
-    --Initialization
-    --initializes memories and signals with IO values
-    init_data : process (clk, in_state, in_data, adr)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
-            --switch main FSM to ready state
-            if interp_state = "1111" then
-                interp_state <= "0000";
-                interrupt <= '0';
-                error_success <= '0';
-                interp_done_op <= "00";
-            end if;
-            --read header data
-            if adr = MM_HDR_0 then
-                N_vec(5 downto 0) <= in_data(31 downto 26);
-                M_vec(5 downto 0) <= in_data(25 downto 20);
-                fixed_or_var <= in_data(19);
-                mode_sig <= in_data(18 downto 17);
-                t_size <= in_data(16 downto 14);
-            --read time step (h)
-            elsif adr = MM_H_0 then
-                h_step(MAX_LENGTH-1 downto 32) <= in_data;
-            elsif adr = MM_H_1 then
-                h_step(31 downto 0) <= in_data;
-            --read U_0
-            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
-                U_0_data_in <= in_data;
-                U_0_wr <= '1';
-                -- shift adr from [MM_U0_0:MM_U0_1] to [0:MM_U0_1-MM_U0_0]
-                adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
-                U_0_address <= adr_temp(6 downto 0);     
-            --read output times           
-            elsif adr >= MM_T_0 and adr <= MM_T_1 then
-                if adr = MM_T_0 then
-                    t_count <= 0;
-                end if;
-                t_count <= t_count + 1;
-                if t_count = 1 then
-                    out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 2 then
-                    out_time_1(31 downto 0) <= in_data;
-                elsif t_count = 3 then
-                    out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 4 then
-                    out_time_2(31 downto 0) <= in_data;
-                elsif t_count = 5 then
-                    out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 6 then
-                    out_time_3(31 downto 0) <= in_data;
-                elsif t_count = 7 then
-                    out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 8 then
-                    out_time_4(31 downto 0) <= in_data;
-                elsif t_count = 9 then
-                    out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 10 then
-                    out_time_5(31 downto 0) <= in_data;
-                end if;    
-            --read U_s
-            elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
-                U_s_data_in <= in_data;
-                U_s_wr <= '1';
-                -- shift adr from [MM_U_S_0:MM_U_S_1] to [0:MM_U_S_1-MM_U_S_0]
-                adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U_S_0));
-                U_s_address <= adr_temp(8 downto 0);
-            end if;
-        end if;
-    end process;
------------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
-    --Error Handling
-    --outputs error interrupt in case of fp errors
-    --performs error interrupt upon errors in fp operations or reset
-    error_handler : process(clk, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2)
-    begin
-        if rising_edge(clk) then
-            if err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1' then
-                interrupt <= '1';
-                error_success <= '0';
-            end if;
-        end if;
-    end process;
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
     --U_0
     --reads U0
@@ -721,11 +564,145 @@ begin
             end if;
         end if;
     end process;
------------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
-    --main interpolator driver FSM
-    interpolate : process(clk, interp_state, adr, in_state) 
+-----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
+    process(clk, rst, in_state, in_data, adr, interp_state, adr, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2) 
     begin
-        if rst = '0' and rising_edge(clk) and in_state = STATE_PROC then
+        --SYSTEM RESET
+        if rst = '1' then
+            --port signals
+            interrupt <= '0';
+            error_success <= '1';
+            in_data <= (others => 'Z');
+            interp_done_op <= (others => 'Z');
+            --time signals
+            h_new <= (others => '0');
+            --fpu signals
+            fpu_mul_1_in_1 <= (others => '0');
+            fpu_mul_1_in_2 <= (others => '0');
+            enable_mul_1 <= '0';
+            fpu_div_1_in_1 <= (others => '0');
+            fpu_div_1_in_2 <= (others => '0');
+            enable_div_1 <= '0';
+            fpu_add_1_in_1 <= (others => '0');
+            fpu_add_1_in_2 <= (others => '0');
+            enable_add_1 <= '0';
+            fpu_sub_1_in_1 <= (others => '0');
+            fpu_sub_1_in_2 <= (others => '0');
+            enable_sub_1 <= '0';
+            fpu_sub_2_in_1 <= (others => '0');
+            fpu_sub_2_in_2 <= (others => '0');
+            enable_sub_2 <= '0';
+            --memory signals
+            U_0_rd <= '0';
+            U_0_wr <= '0';
+            U_0_address <= (others => '0');
+            U_0_data_in <= (others => '0');
+            U_s_rd <= '0';
+            U_s_wr <= '0';
+            U_s_address <= (others => '0');
+            U_s_data_in <= (others => '0');
+            U_out_rd <= '0';
+            U_out_wr <= '0';
+            U_out_address <= (others => '0');
+            U_out_data_in <= (others => '0');
+            --main fsm signals
+            interp_state <= "1111";
+            t_low <= (others => '0');
+            t_high <= (others => '0');
+            t_const <= (others => '0');
+            u_low_adr <= (others => '0');
+            u_high_adr <= (others => '0');
+            u_0_adr <= (others => '0'); 
+            u_out_adr <= (others => '0'); 
+            u_0_temp <= (others => '0'); 
+            u_low_temp <= (others => '0'); 
+            u_high_temp <= (others => '0');
+            u_out_temp <= (others => '0');
+            u_out_result <= (others => '0'); 
+            --other processes signals
+            range_finder_enable <= '0';
+            is_stored <= '0';
+            send_output_enable <= '0';
+            send_u_0_enable <= '0';
+            send_u_s_enable <= '0';
+            read_u_0 <= '0';
+            u_0_high <= '0';
+            read_u_s_low <= '0';
+            u_s_low_high <= '0';
+            read_u_s_high <= '0';
+            u_s_high_high <= '0';
+            read_u_out <= '0';
+            write_u_out <= '0';
+            u_out_high <= '0';
+        --ERROR HANDLING    
+        elsif rising_edge(clk) and (err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1') then
+            interrupt <= '1';
+            error_success <= '0';
+        --DATALOADER
+        elsif rising_edge(clk) and rst = '0' and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+            --switch main FSM to ready state
+            if interp_state = "1111" then
+                interp_state <= "0000";
+                interrupt <= '0';
+                error_success <= '0';
+                interp_done_op <= "00";
+            end if;
+            --read header data
+            if adr = MM_HDR_0 then
+                N_vec(5 downto 0) <= in_data(31 downto 26);
+                M_vec(5 downto 0) <= in_data(25 downto 20);
+                fixed_or_var <= in_data(19);
+                mode_sig <= in_data(18 downto 17);
+                t_size <= in_data(16 downto 14);
+            --read time step (h)
+            elsif adr = MM_H_0 then
+                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_1 then
+                h_step(31 downto 0) <= in_data;
+            --read U_0
+            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                U_0_data_in <= in_data;
+                U_0_wr <= '1';
+                -- shift adr from [MM_U0_0:MM_U0_1] to [0:MM_U0_1-MM_U0_0]
+                adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
+                U_0_address <= adr_temp(6 downto 0);     
+            --read output times           
+            elsif adr >= MM_T_0 and adr <= MM_T_1 then
+                if adr = MM_T_0 then
+                    t_count <= 0;
+                end if;
+                t_count <= t_count + 1;
+                if t_count = 1 then
+                    out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
+                elsif t_count = 2 then
+                    out_time_1(31 downto 0) <= in_data;
+                elsif t_count = 3 then
+                    out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
+                elsif t_count = 4 then
+                    out_time_2(31 downto 0) <= in_data;
+                elsif t_count = 5 then
+                    out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
+                elsif t_count = 6 then
+                    out_time_3(31 downto 0) <= in_data;
+                elsif t_count = 7 then
+                    out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
+                elsif t_count = 8 then
+                    out_time_4(31 downto 0) <= in_data;
+                elsif t_count = 9 then
+                    out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
+                elsif t_count = 10 then
+                    out_time_5(31 downto 0) <= in_data;
+                end if;    
+            --read U_s
+            elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
+                U_s_data_in <= in_data;
+                U_s_wr <= '1';
+                -- shift adr from [MM_U_S_0:MM_U_S_1] to [0:MM_U_S_1-MM_U_S_0]
+                adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U_S_0));
+                U_s_address <= adr_temp(8 downto 0);
+            end if;
+        --MAIN FSM DRIVER
+        elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC then
             case interp_state is
                 when "0000" => 
                     --check input address
