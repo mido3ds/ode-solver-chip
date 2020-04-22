@@ -22,3 +22,6 @@ force -freeze sim:/io/cpu_data 00100001000100100111001000110100 0
 run
 force -freeze sim:/io/cpu_data 00010000000100001001010000110110 0
 run
+
+force -freeze sim:/io/in_state 00 0
+run
