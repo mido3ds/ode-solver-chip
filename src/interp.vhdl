@@ -82,7 +82,7 @@ signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0
 
 --Processes Signals
 --Main FSM Signals
-signal interp_state : std_logic_vector(3 downto 0) := "1111";
+signal interp_state : std_logic_vector(4 downto 0) := "11111";
 signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
 signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
 signal u_low_adr, u_high_adr : std_logic_vector(8 downto 0) := (others => '0'); --boundary Us addresses
@@ -569,7 +569,7 @@ begin
             U_out_address <= (others => '0');
             U_out_data_in <= (others => '0');
             --main fsm signals
-            interp_state <= "1111";
+            interp_state <= "11111";
             t_low <= (others => '0');
             t_high <= (others => '0');
             t_const <= (others => '0');
@@ -606,8 +606,8 @@ begin
         --DATALOADER
         elsif rising_edge(clk) and rst = '0' and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
             --switch main FSM to ready state
-            if interp_state = "1111" then
-                interp_state <= "0000";
+            if interp_state = "11111" then
+                interp_state <= "00000";
                 interrupt <= '0';
                 error_success <= '0';
                 interp_done_op <= "00";
@@ -677,16 +677,16 @@ begin
         --MAIN FSM DRIVER
         elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC then
             case interp_state is
-                when "0000" => 
+                when "00000" => 
                     --check input address
                     --read lower part of h_new
                     if adr = MM_H_NEW_0 and send_output_enable = '0' and send_u_0_enable = '0' and send_u_s_enable = '0' then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
                         h_new(MAX_LENGTH-1 downto 32) <= in_data;
-                        interp_state <= "0001";
+                        interp_state <= "00001";
                     end if;
-                when "0001" =>
+                when "00001" =>
                     --check input address
                     --read higher part of h_new
                     --start range finder process
@@ -694,9 +694,9 @@ begin
                         h_new(31 downto 0) <= in_data;
                         range_finder_enable <= '1';
                         range_finder;
-                        interp_state <= "0010";
+                        interp_state <= "00010";
                     end if;
-                when "0010" =>
+                when "00010" =>
                     --check range finder completion
                     --subtract Tz-Tn and Tk-Tn
                     if range_finder_enable = '0' then
@@ -707,75 +707,71 @@ begin
                             fpu_sub_2_in_1 <= h_new;
                             fpu_sub_2_in_2 <= t_low;
                             enable_sub_2 <= '1';
-                            interp_state <= "0011";
-                        elsif is_stored = '1' and h_new = X"0000" then
-                            if out_from = '0' then
-                                interp_done_op <= "01";
-                                send_u_0_enable <= '1';
-                                interp_state <= "0000";
-                            else
-                                interp_done_op <= "01";
-                                send_u_s_enable <= '1';
-                                interp_state <= "0000";
-                            end if;
+                            interp_state <= "00011";
+                        elsif is_stored = '1' and h_new = X"0000" and out_from = '0' then
+                            interp_done_op <= "01";
+                            send_u_0_enable <= '1';
+                            send_u_0;
+                            interp_state <= "01100";
                         elsif is_stored = '1' then
                             interp_done_op <= "01";
                             send_u_s_enable <= '1';
-                            interp_state <= "0000";
+                            send_u_s;
+                            interp_state <= "01101";
                         end if;
                     end if;
-                when "0011" =>
+                when "00011" =>
                     --check subtraction completion
                     --divide the resultant Ts
                     if done_sub_1 = '1' and done_sub_2 = '1' then
                         fpu_div_1_in_1 <= fpu_sub_2_out;
                         fpu_div_1_in_2 <= fpu_sub_1_out;
                         enable_div_1 <= '1';
-                        interp_state <= "0100";
+                        interp_state <= "00100";
                     end if;
-                when "0100" =>
+                when "00100" =>
                     --check division completion
                     --read lower U
                     if done_div_1 = '1' then
                         t_const <= fpu_div_1_out;
-                        read_u_s_low <= '1';
-                        interp_state <= "0101";
+                        read_u_s_low <= '1'; --------
+                        interp_state <= "00101";
                     end if;
-                when "0101" =>
+                when "00101" =>
                     --check read completion
                     --read higher U
                     if read_u_s_low = '0' then
                         read_u_s_high <= '1';
-                        interp_state <= "0110";
+                        interp_state <= "00110";
                     end if;
-                when "0110" =>
+                when "00110" =>
                     --check read completion
                     --subtract two Us
                     if read_u_s_high = '0' then
                         fpu_sub_1_in_1 <= u_high_temp;
                         fpu_sub_1_in_2 <= u_low_temp;
                         enable_sub_1 <= '1';
-                        interp_state <= "0111";
+                        interp_state <= "00111";
                     end if;
-                when "0111" =>
+                when "00111" =>
                     --check subtraction completion
                     --multiply resultant T with subtraction result
                     if done_sub_1 = '1' then
                         fpu_mul_1_in_1 <= fpu_sub_1_out;
                         fpu_mul_1_in_2 <= t_const;
                         enable_mul_1 <= '1';
-                        interp_state <= "1000";
+                        interp_state <= "01000";
                     end if;
-                when "1000" =>
+                when "01000" =>
                     --check multiplication completion
                     --add multiplication result to U low
                     if done_mul_1 = '1' then
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= u_low_temp;
                         enable_add_1 <= '1';
-                        interp_state <= "1001";
+                        interp_state <= "01001";
                     end if;
-                when "1001" =>
+                when "01001" =>
                     --check addition completion
                     --write current U out
                     --decrement M counter
@@ -783,9 +779,9 @@ begin
                         u_out_result <= fpu_add_1_out;
                         write_u_out <= '1';
                         M <= M - 1;
-                        interp_state <= "1010";
+                        interp_state <= "01010";
                     end if;
-                when "1010" =>
+                when "01010" =>
                     --check Uout write completion
                     --check end of loop
                     --add time step to received time to check outut points
@@ -795,12 +791,12 @@ begin
                             fpu_add_1_in_1 <= h_step;
                             fpu_add_1_in_2 <= h_new;
                             enable_add_1 <= '1';
-                            interp_state <= "1011";
+                            interp_state <= "01011";
                         else
-                            interp_state <= "0100";
+                            interp_state <= "00100";
                         end if;
                     end if;
-                when "1011" =>
+                when "01011" =>
                     --check addition comletion
                     --generate corresponding output signal
                     if done_add_1 = '1' then
@@ -809,16 +805,30 @@ begin
                             interrupt <= '0';
                             error_success <= '1';
                             send_output_enable <= '1';
-                            interp_state <= "1111";
+                            interp_state <= "11111";
                         elsif fpu_add_1_out = t_high then
                             interp_done_op <= "10";
                             send_output_enable <= '1';
-                            interp_state <= "0000";
+                            interp_state <= "00000";
                         else 
                             interp_done_op <= "01";
                             send_output_enable <= '1';
-                            interp_state <= "0000";
+                            interp_state <= "00000";
                         end if;
+                    end if;
+                when "01100" =>
+                    --loop over until U0 is fully sent
+                    if send_u_0_enable = '1' then
+                        send_u_0;
+                    else
+                        interp_state <= "00000";
+                    end if;
+                when "01101" =>
+                    --loop over until Us is fully sent
+                    if send_u_s_enable = '1' then
+                        send_u_s;
+                    else
+                        interp_state <= "00000";
                     end if;
                 when others =>
                     --NOP
