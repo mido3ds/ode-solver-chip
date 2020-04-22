@@ -105,6 +105,7 @@ begin
             variable i         : integer := 1;
         begin
             in_state <= STATE_OUT;
+            cpu_data <= (others => 'Z');
             wait until rising_edge(clk);
 
             info("writing output to file: " & file_path);

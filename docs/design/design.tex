@@ -58,14 +58,16 @@ Ports and their actions are summarized below and detailed in the rest of the doc
 
 \subsubsection{RESET: ASYNC IN}
 \begin{itemize}
-    \item clears all internal states of all modules:
+    \item Called at each time cpu wants to start/restart hardware.
+    \item After enough time for reset, CPU is expected to turn the {LOAD / WAIT / PROC / OUT} into {LOAD} state and we start loading input.
+    \item Clears all internal states of all modules:
     \begin{itemize}
         \item IO internal buffer.
         \item ERROR/SUCCESS of all modules resets to SUCCESS.
         \item INTERRUPT resets to zero.
+        \item SOLVER and INTERPOLATORE clear all internal state and parallel-load their memories and latches with 0.
     \end{itemize}
-    \item Memory at solver and interpolator are NOT cleared.
-    \item At next clock, CPU is expected to turn the {LOAD / WAIT / PROC / OUT} into {LOAD} state and we will start loading input again.
+    \item Signal is async: not related to clock edges, could be called at any time and perform its action immediately with only the propagation delay.
 \end{itemize}
 
 \subsubsection{LOAD / WAIT / PROC / OUT (2bit): IN}
@@ -75,13 +77,13 @@ Set the current major state of the machine.
     \begin{itemize}
         \item IO receives \textbf{compressed} data from the CPU.
         \item IO decompresses data into buffer.
-        \item buffer is flushed into data bus with appropriate address.
-        \item ends when cpu finishes its data loading and switches to {WAIT} state.
+        \item Buffer is flushed into data bus with apropriate address.
+        \item Ends when cpu finishes its data loading and switches to {WAIT} state.
     \end{itemize}
     \item WAIT(1):
     \begin{itemize}
-        \item Same state as {LOAD}, but IO doesn't receive anymore data from CPU.
-        \item ends when IO flushes all its buffer and raises {INTERRUP} with either {ERROR} or {SUCCESS}.
+        \item Same state as {LOAD}, but IO doesn't receive data anymore from CPU.
+        \item Ends when IO flushes all its buffer and raises {INTERRUP} with either {ERROR} or {SUCCESS}.
     \end{itemize}
     \item PROC(2):
     \begin{itemize}
@@ -90,12 +92,13 @@ Set the current major state of the machine.
         \item INTERPOLATOR sends {DONE} signal to SOLVER when it finishes the interpolated U.
         \item SOLVER can request to copy the interpolated {U}.
         \item INTERPOLATOR waits for SOLVER to send next time step.
-        \item ends when either SOLVER or INTERP raises INTERRUPT with either {SUCCESS} or {ERROR}.
+        \item Ends when either SOLVER or INTERP raises INTERRUPT with either {SUCCESS} or {ERROR}.
     \end{itemize}
     \item OUT(3):
     \begin{itemize}
-        \item IO just copies final outputs to cpu from SOLVER memory.
-        \item ends when IO raises INTERRUPT with either {SUCCESS} or {ERROR}.
+        \item IO connects internal bus with external bus.
+        \item SOLVER starts copying it's Xout, word each cycle.
+        \item Ends when SOLVER raises INTERRUPT with either {SUCCESS} or {ERROR}.
     \end{itemize}
 \end{itemize}
 
@@ -106,8 +109,8 @@ Set the current major state of the machine.
 
 \subsubsection{INTERRUPT: OUT}
 \begin{itemize}
-    \item Raised from 0 to 1 when some internal module (IO / SOLVER / INTERPOLATOR) finishes its task.
-    \item If task finished with success the {ERROR / SUCCESS} is set to {SUCCESS}, otherwise it's {ERROR}.
+    \item IO or SOLVER or INTERPOLATOR set this signal when one/more finish their task.
+    \item If task finished with success, the {ERROR / SUCCESS} should be set to {SUCCESS}, otherwise {ERROR}.
 \end{itemize}
 
 \subsubsection{ERROR(0) / SUCCESS(1): OUT}
@@ -145,24 +148,24 @@ Based on the previous definition, this design doesn't implement parallelism. As 
 
 \subsection{IO and CPU}
 \begin{itemize}
-    \item CPU orders to Load, IO reads 32bits of data.
-    \item When CPU finishes, raises WAIT, when IO finishes that last package of data int the cpu with success.
-    \item CPU raises PROC, so that all of other components starts acting.
-    \item When output data is ready, CPU is interrupted with error or success, then CPU raises OUT signal which implies that it's ready to take out the resulting output from IO.
-    \item If there's an error, CPU should know which component sent it.
+    \item CPU puts main module in LOAD state, IO reads 32bits of compressed data.
+    \item When CPU finishes, it raises WAIT.
+    \item IO flushes its buffer, and if succeeded, sets INTERRUPT with ERROR/SUCCESS.
+    \item CPU switches to PROC state, so that all of other components starts calculating.
+    \item When output data is ready, CPU is interrupted with error or success. 
+    In case of success, CPU switches to OUT state which implies that it's ready to take out the resulting output from IO.
 \end{itemize}
 
 \subsection{IO and Solver/Interpolator}
 \begin{itemize}
-    \item IO puts the data and address on their busses, each component of them two reads that address and check if this address is within its range, if so this component reads the data and stores it.
-    \item When Solver is ready to flush the result it raises int and success or even error.
+    \item LOAD/WAIT state: IO puts the data and address on their busses, each component of them two reads that address and check if this address is within its range, if so this component reads the data and stores it.
+    \item OUT state: IO connects internal and external busses. for each cycle: SOLVER puts the next X$_{out}$ value.
 \end{itemize}
 
 \subsection{Solver and Interpolator}
 \begin{itemize}
-    \item See Section \ref{sec:pipeline}.
     \item Solver is working on $X_h$ so it needs U, solver checks on DONE signal, if raised, reads the U from the data bus, Interpolator has already placed it there.
-    \item Then Solver places h$_new$ at the data bus, interpolator reads it and they both work...
+    \item Then Solver places h$_{new}$ at the data bus, interpolator reads it and they both work...
     \item and repeat.
 \end{itemize}
 
@@ -171,7 +174,7 @@ Module $X$ sends data and address on \textbf{only positive edge} of the clock, a
 
 \part{Simulation Workflow}
 \section{Input Preprocessing}
-This stage is the responsibility of a script that runs before the simulation:
+This stage is the responsibility of preprocessor.py that runs before the simulation:
 \subsubsection{Stage Input}
 JSON file that follows the format stated in the main project document \cite{mainDoc}.
 
@@ -200,8 +203,9 @@ This stage and all the next ones are the responsibility of the CPU simulation co
 CPU is a non-synthesisable HDL test-bench that:
 \begin{itemize}
     \item Instantiates the HW main module.
-    \item Attaches the appropriate signals to the HW main module.
+    \item Attaches the apropriate signals to the HW main module.
     \item Generates CLK with fixed frequency.
+    \item Resets HW for 1 ps.
     \item Loads data into HW.
     \item Puts HW into PROCESS state.
     \item Load output out from the HW and into a file.
@@ -210,8 +214,8 @@ CPU is a non-synthesisable HDL test-bench that:
 \section{Input Loading}
 \begin{itemize}
     \item Load the output of the former script into array of vectors each is 32bit wide that will hold one line in the file.
+    \item RESET for 1 ps.
     \item Put HW at LOAD state.
-    \item RESET for one cycle.
     \item For each 32bit vector in the former array:
     \begin{itemize}
         \item At the positive edge of CLK:
@@ -241,7 +245,7 @@ CPU is a non-synthesisable HDL test-bench that:
 
 Simulation is done! 
 
-You can turn the output into human-readable json using output-formatting script.
+You can turn the output into human-readable json using output\_formatting.py script.
 
 \part{Specifications}
 
@@ -355,20 +359,6 @@ Table \ref{tab:input_format} shows the IO input structure. IO reads the header a
         0x29D1 & f64[5] & 10 & T\\
         \hline
         0x29DB & f64[50][5] & 500 & U$_s$\\
-        \hline
-       \end{tabular}
-\end{center}
-
-\section{Output Format}
-Table \ref{tab:output_format} shows the solver-to-IO output structure. Solver at state(OUT) starts from the start of the output address and increments address by either 1(f64) or 2(f16/f32) words.
-
-\begin{center}
-    \captionof{table}{Inputs Specifications\label{tab:output_format}}
-    \begin{tabular}{||l| c| c| c||} 
-        \hline
-        Address & Type & Max Words & Name  \\ [0.5ex] 
-        \hline\hline
-        0x2779  & f64[50][5] & 500 & X$_{out}$\\
         \hline
        \end{tabular}
 \end{center}
@@ -507,7 +497,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
     \item Each $U_s$ is at most of size [64*50] = 3200 bits = 200 registers
     \item Each $T_s$ is at most of size [64] bits = 4 regs.
     \item $T_s$ keeps hold of the time where each $U_s$ represents, for example, $T_s$ = [1, 2, 3], there fore the first 200 regs. In $U_s$ are the value of U at time 1, and so on... 
-    \item You will need an iterator to target the appropriate $U_s$ from the array of memory, that's the \textbf{Address pointer Unit}.
+    \item You will need an iterator to target the apropriate $U_s$ from the array of memory, that's the \textbf{Address pointer Unit}.
     \item {Time Pointer Unit}: Identifies which $T$ of the $T_s$ array the unit is currently handling.
     \item Note: at the beginning of the program $T_{init} = 0$, $T_{final} = T_s[0]$, after a successful output, $T_{init} = T_{final}$, and $T_{final} = T_s[1]$, and so on...
 \end{itemize}
@@ -519,7 +509,7 @@ At the beginning it receives its data from I/O such as $N$, $M$, $err$, $h$ \dot
 
 \subsubsection{Ports}
 \begin{itemize}
-    \item OUT: Done signal to Solver.
+    \item OUT: Done signal to Solver with one more bit to indicate whether the calculated U$_{int}$ is an output point.
     \item INOUT: 32bit data bus with other modules.
     \item IN: 16bit address bus.
     \item IN: CLOCK.
