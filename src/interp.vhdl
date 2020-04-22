@@ -354,130 +354,6 @@ begin
         end if;
     end process ;
 -----------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
-    --finds the range in which the received T lies
-    range_finder : process(clk, range_finder_enable)
-    begin
-        if rst = '0' and rising_edge(clk) and range_finder_enable = '1' then
-            if h_new = X"0000" then
-                is_stored <= '1';
-                if t_low = X"0000" then
-                    t_low <= h_new;
-                    t_high <= h_new;
-                    u_low_adr <= (others => '0');
-                    u_high_adr <= (others => '0');
-                    u_0_adr <= (others => '0');
-                    out_from <= '0';
-                elsif t_low = out_time_1 then
-                    t_low <= out_time_1;
-                    t_high <= out_time_1;
-                    u_low_adr <= (others => '0');
-                    u_high_adr <= (others => '0');
-                    u_0_adr <= (others => '0');
-                    out_from <= '1';
-                elsif t_low = out_time_2 then
-                    t_low <= out_time_2;
-                    t_high <= out_time_2;
-                    u_low_adr <= "001100100";
-                    u_high_adr <= "001100100";
-                    u_0_adr <= (others => '0');
-                    out_from <= '1';
-                elsif t_low = out_time_3 then
-                    t_low <= out_time_3;
-                    t_high <= out_time_3;
-                    u_low_adr <= "011001000";
-                    u_high_adr <= "011001000";
-                    u_0_adr <= (others => '0');
-                    out_from <= '1';
-                elsif t_low = out_time_4 then
-                    t_low <= out_time_4;
-                    t_high <= out_time_4;
-                    u_low_adr <= "100101100";
-                    u_high_adr <= "100101100";
-                    u_0_adr <= (others => '0');
-                    out_from <= '1';
-                elsif t_low = out_time_5 then
-                    t_low <= out_time_5;
-                    t_high <= out_time_5;
-                    u_low_adr <= "110010000";
-                    u_high_adr <= "110010000";
-                    u_0_adr <= (others => '0');
-                    out_from <= '1';
-                end if;
-            elsif h_new > X"0000" and h_new < out_time_1 then
-                is_stored <= '0';
-                t_low <= X"0000";
-                t_high <= out_time_1;
-                u_low_adr <= (others => '0');
-                u_high_adr <= (others => '0');
-                u_0_adr <= (others => '0');
-            elsif h_new = out_time_1 then
-                is_stored <= '1';
-                t_low <= out_time_1;
-                t_high <= out_time_1;
-                u_low_adr <= (others => '0');
-                u_high_adr <= (others => '0');
-                u_0_adr <= (others => '0');
-            elsif h_new > out_time_1 and h_new < out_time_2 then 
-                is_stored <= '0';
-                t_low <= out_time_1;
-                t_high <= out_time_2;
-                u_low_adr <= (others => '0');
-                u_high_adr <= "001100100";
-                u_0_adr <= (others => '0');
-            elsif h_new = out_time_2 then
-                is_stored <= '1';
-                t_low <= out_time_2;
-                t_high <= out_time_2;
-                u_low_adr <= "001100100";
-                u_high_adr <= "001100100";
-                u_0_adr <= (others => '0');
-            elsif h_new > out_time_2 and h_new < out_time_3 then 
-                is_stored <= '0';
-                t_low <= out_time_2;
-                t_high <= out_time_3;
-                u_low_adr <= "001100100";
-                u_high_adr <= "011001000";
-                u_0_adr <= (others => '0');
-            elsif h_new = out_time_3 then
-                is_stored <= '1';
-                t_low <= out_time_3;
-                t_high <= out_time_3;
-                u_low_adr <= "011001000";
-                u_high_adr <= "011001000";
-                u_0_adr <= (others => '0');
-            elsif h_new > out_time_3 and h_new < out_time_4 then 
-                is_stored <= '0';
-                t_low <= out_time_3;
-                t_high <= out_time_4;
-                u_low_adr <= "011001000";
-                u_high_adr <= "100101100";
-                u_0_adr <= (others => '0');
-            elsif h_new = out_time_4 then
-                is_stored <= '1';
-                t_low <= out_time_4;
-                t_high <= out_time_4;
-                u_low_adr <= "100101100";
-                u_high_adr <= "100101100";
-                u_0_adr <= (others => '0');
-            elsif h_new > out_time_4 and h_new < out_time_5 then 
-                is_stored <= '0';
-                t_low <= out_time_4;
-                t_high <= out_time_5;
-                u_low_adr <= "100101100";
-                u_high_adr <= "110010000";
-                u_0_adr <= (others => '0');
-            elsif h_new = out_time_5 then
-                is_stored <= '1';
-                t_low <= out_time_5;
-                t_high <= out_time_5;
-                u_low_adr <= "110010000";
-                u_high_adr <= "110010000";
-                u_0_adr <= (others => '0');
-            end if;
-            range_finder_enable <= '0';
-        end if;
-    end process;
-
     --sends U_out on output bus cycle by cycle
     send_output : process(clk, send_output_enable)
     variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
@@ -552,20 +428,135 @@ begin
             end if;
         end if;
     end process;
-
-    --listens to address bus and update h_step (for variable step)
-    step_update : process(clk, adr)
-    begin
-        if rst = '0' and rising_edge(clk) then
-            if adr = MM_H_ADA_0 then
-                h_step(MAX_LENGTH-1 downto 32) <= in_data;
-            elsif adr = MM_H_ADA_1 then
-                h_step(31 downto 0) <= in_data;
-            end if;
-        end if;
-    end process;
 -----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
     process(clk, rst, in_state, in_data, adr, interp_state, adr, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2) 
+    --variables
+    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
+
+    --range finder procedure implementation
+    --finds the range in which the received T lies
+    procedure range_finder is
+    begin
+        if h_new = X"0000" then
+            is_stored <= '1';
+            if t_low = X"0000" then
+                t_low <= h_new;
+                t_high <= h_new;
+                u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+                out_from <= '0';
+            elsif t_low = out_time_1 then
+                t_low <= out_time_1;
+                t_high <= out_time_1;
+                u_low_adr <= (others => '0');
+                u_high_adr <= (others => '0');
+                u_0_adr <= (others => '0');
+                out_from <= '1';
+            elsif t_low = out_time_2 then
+                t_low <= out_time_2;
+                t_high <= out_time_2;
+                u_low_adr <= "001100100";
+                u_high_adr <= "001100100";
+                u_0_adr <= (others => '0');
+                out_from <= '1';
+            elsif t_low = out_time_3 then
+                t_low <= out_time_3;
+                t_high <= out_time_3;
+                u_low_adr <= "011001000";
+                u_high_adr <= "011001000";
+                u_0_adr <= (others => '0');
+                out_from <= '1';
+            elsif t_low = out_time_4 then
+                t_low <= out_time_4;
+                t_high <= out_time_4;
+                u_low_adr <= "100101100";
+                u_high_adr <= "100101100";
+                u_0_adr <= (others => '0');
+                out_from <= '1';
+            elsif t_low = out_time_5 then
+                t_low <= out_time_5;
+                t_high <= out_time_5;
+                u_low_adr <= "110010000";
+                u_high_adr <= "110010000";
+                u_0_adr <= (others => '0');
+                out_from <= '1';
+            end if;
+        elsif h_new > X"0000" and h_new < out_time_1 then
+            is_stored <= '0';
+            t_low <= X"0000";
+            t_high <= out_time_1;
+            u_low_adr <= (others => '0');
+            u_high_adr <= (others => '0');
+            u_0_adr <= (others => '0');
+        elsif h_new = out_time_1 then
+            is_stored <= '1';
+            t_low <= out_time_1;
+            t_high <= out_time_1;
+            u_low_adr <= (others => '0');
+            u_high_adr <= (others => '0');
+            u_0_adr <= (others => '0');
+        elsif h_new > out_time_1 and h_new < out_time_2 then 
+            is_stored <= '0';
+            t_low <= out_time_1;
+            t_high <= out_time_2;
+            u_low_adr <= (others => '0');
+            u_high_adr <= "001100100";
+            u_0_adr <= (others => '0');
+        elsif h_new = out_time_2 then
+            is_stored <= '1';
+            t_low <= out_time_2;
+            t_high <= out_time_2;
+            u_low_adr <= "001100100";
+            u_high_adr <= "001100100";
+            u_0_adr <= (others => '0');
+        elsif h_new > out_time_2 and h_new < out_time_3 then 
+            is_stored <= '0';
+            t_low <= out_time_2;
+            t_high <= out_time_3;
+            u_low_adr <= "001100100";
+            u_high_adr <= "011001000";
+            u_0_adr <= (others => '0');
+        elsif h_new = out_time_3 then
+            is_stored <= '1';
+            t_low <= out_time_3;
+            t_high <= out_time_3;
+            u_low_adr <= "011001000";
+            u_high_adr <= "011001000";
+            u_0_adr <= (others => '0');
+        elsif h_new > out_time_3 and h_new < out_time_4 then 
+            is_stored <= '0';
+            t_low <= out_time_3;
+            t_high <= out_time_4;
+            u_low_adr <= "011001000";
+            u_high_adr <= "100101100";
+            u_0_adr <= (others => '0');
+        elsif h_new = out_time_4 then
+            is_stored <= '1';
+            t_low <= out_time_4;
+            t_high <= out_time_4;
+            u_low_adr <= "100101100";
+            u_high_adr <= "100101100";
+            u_0_adr <= (others => '0');
+        elsif h_new > out_time_4 and h_new < out_time_5 then 
+            is_stored <= '0';
+            t_low <= out_time_4;
+            t_high <= out_time_5;
+            u_low_adr <= "100101100";
+            u_high_adr <= "110010000";
+            u_0_adr <= (others => '0');
+        elsif h_new = out_time_5 then
+            is_stored <= '1';
+            t_low <= out_time_5;
+            t_high <= out_time_5;
+            u_low_adr <= "110010000";
+            u_high_adr <= "110010000";
+            u_0_adr <= (others => '0');
+        end if;
+        range_finder_enable <= '0';
+    end procedure;
+
+    --main process implementation
     begin
         --SYSTEM RESET
         if rst = '1' then
@@ -634,10 +625,12 @@ begin
             read_u_out <= '0';
             write_u_out <= '0';
             u_out_high <= '0';
+        
         --ERROR HANDLING    
         elsif rising_edge(clk) and (err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1') then
             interrupt <= '1';
             error_success <= '0';
+        
         --DATALOADER
         elsif rising_edge(clk) and rst = '0' and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
             --switch main FSM to ready state
@@ -701,6 +694,14 @@ begin
                 adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U_S_0));
                 U_s_address <= adr_temp(8 downto 0);
             end if;
+        
+        --TIMESTEP HIGHER PART UPDATE
+        elsif rising_edge(clk) and rst = '0' and adr = MM_H_ADA_0 then
+                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+        --TIMESTEP LOWER PART UPDATE
+        elsif adr = MM_H_ADA_1 then
+                h_step(31 downto 0) <= in_data;
+        
         --MAIN FSM DRIVER
         elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC then
             case interp_state is
