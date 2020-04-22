@@ -40,7 +40,7 @@ begin
         rst     <= '0';
         address <= x"0000";
         data_in <= x"0000";
-        wait for CLK_PERD;
+        wait for CLK_PERD/2;
 
         if run("one_word") then
             wr      <= '1';
@@ -135,6 +135,15 @@ begin
                 wait for CLK_PERD;
                 check_equal(data_out, std_logic_vector(to_unsigned(0, 16)), "data_out is zero");
             end loop;
+        end if;
+
+        if run("rd_and_wr") then
+            wr      <= '1';
+            rd      <= '1';
+            address <= x"0000";
+            data_in <= input_case;
+            wait for 2 * CLK_PERD;
+            check_equal(data_out, input_case, "data_out is input_case");
         end if;
 
         wait for CLK_PERD/2;
