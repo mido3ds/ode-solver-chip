@@ -220,220 +220,11 @@ begin
                 data_in  => U_out_data_in,
                 data_out => U_out_data_out
             );
------------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
-    --U_0
-    --reads U0
-    read_u0 : process(clk, read_u_0)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_0 = '1' then
-            if u_0_high = '0' then
-                U_0_address <= u_0_adr;
-                U_0_wr <= '0';
-                U_0_rd <= '1';
-                u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
-                u_0_high <= '1';
-                adr_temp := std_logic_vector(unsigned(u_0_adr) + 1);
-                u_0_adr <= adr_temp(6 downto 0); 
-            else
-                U_0_address <= u_0_adr;
-                U_0_wr <= '0';
-                U_0_rd <= '1';
-                u_0_temp(31 downto 0) <= U_0_data_out;
-                u_0_high <= '0';
-                adr_temp := std_logic_vector(unsigned(u_0_adr) + 1);
-                u_0_adr <= adr_temp(6 downto 0);
-                read_u_0 <= '0';
-            end if;
-        end if;
-    end process;
-
-    --U_s
-    --reads low Us
-    read_low_us : process(clk, read_u_s_low)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_low = '1' then
-            if u_s_low_high = '0' then
-                U_s_address <= u_low_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-                u_s_low_high <= '1';
-                adr_temp := std_logic_vector(unsigned(u_low_adr) + 1);
-                u_low_adr <= adr_temp(8 downto 0); 
-            else
-                U_s_address <= u_low_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                u_low_temp(31 downto 0) <= U_s_data_out;
-                u_s_low_high <= '0';
-                adr_temp := std_logic_vector(unsigned(u_low_adr) + 1);
-                u_low_adr <= adr_temp(8 downto 0); 
-                read_u_s_low <= '0';
-            end if;           
-        end if;
-    end process; 
-
-    --reads high Us
-    read_high_us : process(clk, read_u_s_high)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_s_high = '1' then
-            if u_s_high_high = '0' then
-                U_s_address <= u_high_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-                u_s_high_high <= '1';
-                adr_temp := std_logic_vector(unsigned(u_high_adr) + 1);
-                u_high_adr <= adr_temp(8 downto 0);
-            else
-                U_s_address <= u_high_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                u_high_temp(31 downto 0) <= U_s_data_out;
-                u_s_high_high <= '0';
-                adr_temp := std_logic_vector(unsigned(u_high_adr) + 1);
-                u_high_adr <= adr_temp(8 downto 0);
-                read_u_s_high <= '0';
-            end if;           
-        end if;
-    end process; 
-
-    --U_out
-    --reads Uout
-    read_uout : process(clk, read_u_out, write_u_out)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_out = '1' and write_u_out = '0' then
-            if u_out_high = '0' then
-                U_out_address <= u_out_adr;
-                U_out_wr <= '0';
-                U_out_rd <= '1';
-                u_out_temp(MAX_LENGTH-1 downto 32) <= U_out_data_out;
-                u_out_high <= '1';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0); 
-            else
-                U_out_address <= u_out_adr;
-                U_out_wr <= '0';
-                U_out_rd <= '1';
-                u_out_temp(31 downto 0) <= U_out_data_out;
-                u_out_high <= '0';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0); 
-                read_u_out <= '0';
-            end if;    
-        end if;
-    end process ; 
-
-    --writes Uout
-    write_uout : process(clk, read_u_out, write_u_out)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and read_u_out = '0' and write_u_out = '1' then       
-            if u_out_high = '0' then
-                U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
-                U_out_rd <= '0';
-                U_out_wr <= '1';
-                u_out_high <= '1';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0);  
-            else
-                U_out_address <= u_out_adr;
-                U_out_data_in <= u_out_result(31 downto 0);
-                U_out_rd <= '0';
-                U_out_wr <= '1';
-                u_out_high <= '0';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0); 
-                write_u_out <= '0';
-            end if; 
-        end if;
-    end process ;
------------------------------------------------------------------UTILITIES-----------------------------------------------------------------------------------
-    --sends U_out on output bus cycle by cycle
-    send_output : process(clk, send_output_enable)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and send_output_enable = '1' then
-            if u_out_adr = "0000000" then
-                U_out_address <= u_out_adr;
-                U_out_wr <= '0';
-                U_out_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0); 
-            elsif u_out_adr = multiply2(M_vec) then
-                in_data <= U_out_data_out;
-                send_output_enable <= '0';
-            else
-                in_data <= U_out_data_out;
-                U_out_address <= u_out_adr;
-                U_out_wr <= '0';
-                U_out_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-                u_out_adr <= adr_temp(6 downto 0); 
-            end if;
-        end if;
-    end process;
-
-    --sends U_0 on output bus cycle by cycle
-    send_u_0 : process(clk, send_u_0_enable)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and send_u_0_enable = '1' then
-            if u_0_adr = "0000000" then
-                U_0_address <= u_0_adr;
-                U_0_wr <= '0';
-                U_0_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_0_adr) + 1); 
-                u_0_adr <= adr_temp(6 downto 0); 
-            elsif u_0_adr = multiply2(M_vec) then
-                in_data <= U_0_data_out;
-                send_u_0_enable <= '0';
-            else
-                in_data <= U_0_data_out;
-                U_0_address <= u_0_adr;
-                U_0_wr <= '0';
-                U_0_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_0_adr) + 1); 
-                u_0_adr <= adr_temp(6 downto 0); 
-            end if;
-        end if;
-    end process;
-
-    --sends U_s on output bus cycle by cycle
-    send_u_s : process(clk, send_u_s_enable)
-    variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
-    begin
-        if rst = '0' and rising_edge(clk) and send_u_s_enable = '1' then
-            if u_low_adr = "0000000" then
-                U_s_address <= u_low_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_low_adr) + 1); 
-                u_low_adr <= adr_temp(6 downto 0);
-            elsif u_low_adr = multiply2(M_vec) then
-                in_data <= U_s_data_out;
-                send_u_s_enable <= '0';
-            else
-                in_data <= U_s_data_out;
-                U_s_address <= u_low_adr;
-                U_s_wr <= '0';
-                U_s_rd <= '1';
-                adr_temp := std_logic_vector(unsigned(u_low_adr) + 1); 
-                u_low_adr <= adr_temp(6 downto 0);
-            end if;
-        end if;
-    end process;
 -----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
     process(clk, rst, in_state, in_data, adr, interp_state, adr, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2) 
     --variables
     variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
 
-    --range finder procedure implementation
     --finds the range in which the received T lies
     procedure range_finder is
     begin
@@ -554,6 +345,187 @@ begin
             u_0_adr <= (others => '0');
         end if;
         range_finder_enable <= '0';
+    end procedure;
+    
+    --sends U_out on output bus cycle by cycle
+    procedure send_output is
+    begin
+        if u_out_adr = "0000000" then
+            U_out_address <= u_out_adr;
+            U_out_wr <= '0';
+            U_out_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0); 
+        elsif u_out_adr = multiply2(M_vec) then
+            in_data <= U_out_data_out;
+            send_output_enable <= '0';
+        else
+            in_data <= U_out_data_out;
+            U_out_address <= u_out_adr;
+            U_out_wr <= '0';
+            U_out_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0); 
+        end if;
+    end procedure;
+
+    --sends U_0 on output bus cycle by cycle
+    procedure send_u_0 is
+    begin
+        if u_0_adr = "0000000" then
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_0_adr) + 1); 
+            u_0_adr <= adr_temp(6 downto 0); 
+        elsif u_0_adr = multiply2(M_vec) then
+            in_data <= U_0_data_out;
+            send_u_0_enable <= '0';
+        else
+            in_data <= U_0_data_out;
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_0_adr) + 1); 
+            u_0_adr <= adr_temp(6 downto 0); 
+        end if;
+    end procedure;
+
+    --sends U_s on output bus cycle by cycle
+    procedure send_u_s is
+    begin
+        if u_low_adr = "0000000" then
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_low_adr) + 1); 
+            u_low_adr <= adr_temp(6 downto 0);
+        elsif u_low_adr = multiply2(M_vec) then
+            in_data <= U_s_data_out;
+            send_u_s_enable <= '0';
+        else
+            in_data <= U_s_data_out;
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            adr_temp := std_logic_vector(unsigned(u_low_adr) + 1); 
+            u_low_adr <= adr_temp(6 downto 0);
+        end if;
+    end procedure;
+
+    --reads U0 entry
+    procedure read_u0 is
+    begin
+        if u_0_high = '0' then
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
+            u_0_high <= '1';
+            adr_temp := std_logic_vector(unsigned(u_0_adr) + 1);
+            u_0_adr <= adr_temp(6 downto 0); 
+        else
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            u_0_temp(31 downto 0) <= U_0_data_out;
+            u_0_high <= '0';
+            adr_temp := std_logic_vector(unsigned(u_0_adr) + 1);
+            u_0_adr <= adr_temp(6 downto 0);
+            read_u_0 <= '0';
+        end if;
+    end procedure; 
+
+    --reads low Us entry
+    procedure read_low_us is
+    begin
+        if u_s_low_high = '0' then
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
+            u_s_low_high <= '1';
+            adr_temp := std_logic_vector(unsigned(u_low_adr) + 1);
+            u_low_adr <= adr_temp(8 downto 0); 
+        else
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_low_temp(31 downto 0) <= U_s_data_out;
+            u_s_low_high <= '0';
+            adr_temp := std_logic_vector(unsigned(u_low_adr) + 1);
+            u_low_adr <= adr_temp(8 downto 0); 
+            read_u_s_low <= '0';
+        end if;
+    end procedure; 
+
+    --reads high Us entry
+    procedure read_high_us is
+    begin
+        if u_s_high_high = '0' then
+            U_s_address <= u_high_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
+            u_s_high_high <= '1';
+            adr_temp := std_logic_vector(unsigned(u_high_adr) + 1);
+            u_high_adr <= adr_temp(8 downto 0);
+        else
+            U_s_address <= u_high_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_high_temp(31 downto 0) <= U_s_data_out;
+            u_s_high_high <= '0';
+            adr_temp := std_logic_vector(unsigned(u_high_adr) + 1);
+            u_high_adr <= adr_temp(8 downto 0);
+            read_u_s_high <= '0';
+        end if;
+    end procedure; 
+
+    --reads Uout entry
+    procedure read_uout is
+    begin
+        if u_out_high = '0' then
+            U_out_address <= u_out_adr;
+            U_out_wr <= '0';
+            U_out_rd <= '1';
+            u_out_temp(MAX_LENGTH-1 downto 32) <= U_out_data_out;
+            u_out_high <= '1';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0); 
+        else
+            U_out_address <= u_out_adr;
+            U_out_wr <= '0';
+            U_out_rd <= '1';
+            u_out_temp(31 downto 0) <= U_out_data_out;
+            u_out_high <= '0';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0); 
+            read_u_out <= '0';
+        end if;    
+    end procedure; 
+
+    --writes Uout entry
+    procedure write_uout is
+    begin
+        if u_out_high = '0' then
+            U_out_address <= u_out_adr;
+            U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
+            U_out_rd <= '0';
+            U_out_wr <= '1';
+            u_out_high <= '1';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0);  
+        else
+            U_out_address <= u_out_adr;
+            U_out_data_in <= u_out_result(31 downto 0);
+            U_out_rd <= '0';
+            U_out_wr <= '1';
+            u_out_high <= '0';
+            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
+            u_out_adr <= adr_temp(6 downto 0); 
+            write_u_out <= '0';
+        end if;
     end procedure;
 
     --main process implementation
@@ -721,6 +693,7 @@ begin
                     if adr = MM_H_NEW_1 then
                         h_new(31 downto 0) <= in_data;
                         range_finder_enable <= '1';
+                        range_finder;
                         interp_state <= "0010";
                     end if;
                 when "0010" =>
