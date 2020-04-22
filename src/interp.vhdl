@@ -305,6 +305,7 @@ begin
                 interp_state <= "0000";
                 interrupt <= '0';
                 error_success <= '0';
+                interp_done_op <= "00";
             end if;
             --read header data
             if adr = MM_HDR_0 then
@@ -825,6 +826,8 @@ begin
                     if done_add_1 = '1' then
                         if fpu_add_1_out = t_high and t_high = out_time_5 then
                             interp_done_op <= "11";
+                            interrupt <= '0';
+                            error_success <= '1';
                             send_output_enable <= '1';
                             interp_state <= "1111";
                         elsif fpu_add_1_out = t_high then
