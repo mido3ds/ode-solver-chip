@@ -307,12 +307,12 @@ begin
     U_main : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
-            rst => rst,
             rd       => U_main_rd,
             wr       => U_main_wr,
             address  => U_main_address,
             data_in  => U_main_data_in,
-            data_out => U_main_data_out
+            data_out => U_main_data_out,
+            rst      => rst
         );
     -- U_sub
     --U_sub : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
@@ -329,45 +329,45 @@ begin
     X_ware : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 600, ADR_LENGTH=>10)
         port map(
             clk      => clk,
-            rst => rst,
             rd       => X_ware_rd,
             wr       => X_ware_wr,
             address  => X_ware_address,
             data_in  => X_ware_data_in,
-            data_out => X_ware_data_out
+            data_out => X_ware_data_out,
+            rst      => rst
         );
     -- X_intermediate, holds Xi
     X_i : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
-            rst => rst,
             rd       => X_intm_rd,
             wr       => X_intm_wr,
             address  => X_intm_address,
             data_in  => X_intm_data_in,
-            data_out => X_intm_data_out
+            data_out => X_intm_data_out,
+            rst      => rst
         );
     -- A
     a_coeff : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000, ADR_LENGTH=>13)
         port map(
             clk      => clk,
-            rst => rst,
             rd       => a_coeff_rd,
             wr       => a_coeff_wr,
             address  => a_coeff_address,
             data_in  => a_coeff_data_in,
-            data_out => a_coeff_data_out
+            data_out => a_coeff_data_out,
+            rst      => rst
         );
     -- B
     b_coeff : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 5000,ADR_LENGTH=>13)
         port map(
             clk      => clk,
-            rst => rst,
             rd       => b_coeff_rd,
             wr       => b_coeff_wr,
             address  => b_coeff_address,
             data_in  => b_coeff_data_in,
-            data_out => b_coeff_data_out
+            data_out => b_coeff_data_out,
+            rst      => rst
         );
 -----------------------------------------------------------------PROCESSES-----------------------------------------------------------------------------------
     --PROCESSES:
@@ -518,7 +518,7 @@ begin
 -----------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
     --Error process:
     --add here any other error_out signal that might occur
-    error_occured : process(clk, err_mul_1, err_add_1,err_add_2)
+    error_occured : process(clk, err_mul_1, err_add_1,err_add_2,err_div_1)
     begin
         if rst = '0' and rising_edge(clk) then
             if (err_mul_1 = '1'
@@ -2567,6 +2567,7 @@ begin
 
                     --h_adapt always starts with the initial fixed value of h, h_main
                     h_adapt <= h_main;
+                    fsm_var_step_main <= "00001";
                 when "00001" => 
                     div_or_zero <= '1'; --h_sent: zerp
                     div_or_adapt <= '0'; --h_mul: h_div
@@ -2688,18 +2689,6 @@ begin
                 when "10000" =>
                     --Replace X_w[c+] -> X_w[c]
                     fsm_var_step_main <= "10011";
-                    --if interp_done_op = "01" then
-                    --    --it is not an output point
-                    --    --just place X_i at X_c
-                    --    fsm_var_step_main <= "10011";
-                    --elsif interp_done_op = "10" then
-                    --    --it is an output point
-                    --    --increment c, then go to 10011
-                    --    address_inc_1_in <= (others => '0');
-                    --    address_inc_1_in(2 downto 0) <= c_ware;
-                    --    address_inc_1_enbl <= '1';
-                    --    fsm_var_step_main <= "10110";
-                    --end if;
                 when "10001" =>
                     fsm_send_h_init <= "11";
                     fsm_var_step_main <= "10010";
