@@ -188,40 +188,40 @@ begin
     --Memories:
     --Holding initial U
     U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
-    port map(
-        clk      => clk,
-        rst => rst,
-        rd       => U_0_rd,
-        wr       => U_0_wr,
-        address  => U_0_address,
-        data_in  => U_0_data_in,
-        data_out => U_0_data_out
-    );
+        port map(
+            clk      => clk,
+            rst      => rst,
+            rd       => U_0_rd,
+            wr       => U_0_wr,
+            address  => U_0_address,
+            data_in  => U_0_data_in,
+            data_out => U_0_data_out
+        );
     --Holding all given Us
     U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 500, ADR_LENGTH=>9)
-            port map(
-                clk      => clk,
-                rd       => U_s_rd,
-                rst => rst,
-                wr       => U_s_wr,
-                address  => U_s_address,
-                data_in  => U_s_data_in,
-                data_out => U_s_data_out
-            );
+        port map(
+            clk      => clk,
+            rd       => U_s_rd,
+            rst      => rst,
+            wr       => U_s_wr,
+            address  => U_s_address,
+            data_in  => U_s_data_in,
+            data_out => U_s_data_out
+        );
     
     --Holding result output U
     U_out : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
-            port map(
-                clk      => clk,
-                rst => rst,
-                rd       => U_out_rd,
-                wr       => U_out_wr,
-                address  => U_out_address,
-                data_in  => U_out_data_in,
-                data_out => U_out_data_out
-            );
+        port map(
+            clk      => clk,
+            rst      => rst,
+            rd       => U_out_rd,
+            wr       => U_out_wr,
+            address  => U_out_address,
+            data_in  => U_out_data_in,
+            data_out => U_out_data_out
+        );
 -----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
-    process(clk, rst, in_state, in_data, adr, interp_state, adr, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2) 
+    process(clk, rst, in_state, in_data, adr, interp_state, err_mul_1, err_div_1, err_add_1, err_sub_1, err_sub_2) 
     --variables
     variable adr_temp : std_logic_vector(15 downto 0) := (others => '0');
 
@@ -404,7 +404,7 @@ begin
     --sends U_s on output bus cycle by cycle
     procedure send_u_s is
     begin
-        if u_low_adr = "0000000" then
+        if u_low_adr = "000000000" then
             U_s_address <= u_low_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
