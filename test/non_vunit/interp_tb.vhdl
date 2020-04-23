@@ -475,5 +475,7 @@ begin
 		rst <= '1';
 		wait for CLKPERIOD;
 		-----------------------------------------------------------------check and assert here-------------------------------------------------
+
+		wait;
 	end process;
 end arch;
