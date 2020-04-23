@@ -93,7 +93,7 @@ signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
 signal is_stored : std_logic := '0'; --whether the received h_new is a stored point
-signal out_from : std_logic := '0'; --determines which memory to out from in case of h_new = 0
+signal out_low_from : std_logic := '0'; --determines which memory to out from in case of h_new = 0
 
 --Send Output Signals
 signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
@@ -236,42 +236,42 @@ begin
                 u_low_adr <= (others => '0');
                 u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
-                out_from <= '0';
+                out_low_from <= '0';
             elsif t_low = out_time_1 then
                 t_low <= out_time_1;
                 t_high <= out_time_1;
                 u_low_adr <= (others => '0');
                 u_high_adr <= (others => '0');
                 u_0_adr <= (others => '0');
-                out_from <= '1';
+                out_low_from <= '1';
             elsif t_low = out_time_2 then
                 t_low <= out_time_2;
                 t_high <= out_time_2;
                 u_low_adr <= "001100100";
                 u_high_adr <= "001100100";
                 u_0_adr <= (others => '0');
-                out_from <= '1';
+                out_low_from <= '1';
             elsif t_low = out_time_3 then
                 t_low <= out_time_3;
                 t_high <= out_time_3;
                 u_low_adr <= "011001000";
                 u_high_adr <= "011001000";
                 u_0_adr <= (others => '0');
-                out_from <= '1';
+                out_low_from <= '1';
             elsif t_low = out_time_4 then
                 t_low <= out_time_4;
                 t_high <= out_time_4;
                 u_low_adr <= "100101100";
                 u_high_adr <= "100101100";
                 u_0_adr <= (others => '0');
-                out_from <= '1';
+                out_low_from <= '1';
             elsif t_low = out_time_5 then
                 t_low <= out_time_5;
                 t_high <= out_time_5;
                 u_low_adr <= "110010000";
                 u_high_adr <= "110010000";
                 u_0_adr <= (others => '0');
-                out_from <= '1';
+                out_low_from <= '1';
             end if;
         elsif h_new > X"0000" and h_new < out_time_1 then
             is_stored <= '0';
@@ -280,6 +280,7 @@ begin
             u_low_adr <= (others => '0');
             u_high_adr <= (others => '0');
             u_0_adr <= (others => '0');
+            out_low_from <= '0';
         elsif h_new = out_time_1 then
             is_stored <= '1';
             t_low <= out_time_1;
@@ -287,6 +288,7 @@ begin
             u_low_adr <= (others => '0');
             u_high_adr <= (others => '0');
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new > out_time_1 and h_new < out_time_2 then 
             is_stored <= '0';
             t_low <= out_time_1;
@@ -294,6 +296,7 @@ begin
             u_low_adr <= (others => '0');
             u_high_adr <= "001100100";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new = out_time_2 then
             is_stored <= '1';
             t_low <= out_time_2;
@@ -301,6 +304,7 @@ begin
             u_low_adr <= "001100100";
             u_high_adr <= "001100100";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new > out_time_2 and h_new < out_time_3 then 
             is_stored <= '0';
             t_low <= out_time_2;
@@ -308,6 +312,7 @@ begin
             u_low_adr <= "001100100";
             u_high_adr <= "011001000";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new = out_time_3 then
             is_stored <= '1';
             t_low <= out_time_3;
@@ -315,6 +320,7 @@ begin
             u_low_adr <= "011001000";
             u_high_adr <= "011001000";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new > out_time_3 and h_new < out_time_4 then 
             is_stored <= '0';
             t_low <= out_time_3;
@@ -322,6 +328,7 @@ begin
             u_low_adr <= "011001000";
             u_high_adr <= "100101100";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new = out_time_4 then
             is_stored <= '1';
             t_low <= out_time_4;
@@ -329,6 +336,7 @@ begin
             u_low_adr <= "100101100";
             u_high_adr <= "100101100";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new > out_time_4 and h_new < out_time_5 then 
             is_stored <= '0';
             t_low <= out_time_4;
@@ -336,6 +344,7 @@ begin
             u_low_adr <= "100101100";
             u_high_adr <= "110010000";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         elsif h_new = out_time_5 then
             is_stored <= '1';
             t_low <= out_time_5;
@@ -343,6 +352,7 @@ begin
             u_low_adr <= "110010000";
             u_high_adr <= "110010000";
             u_0_adr <= (others => '0');
+            out_low_from <= '1';
         end if;
         range_finder_enable <= '0';
     end procedure;
@@ -684,7 +694,7 @@ begin
                             fpu_sub_2_in_2 <= t_low;
                             enable_sub_2 <= '1';
                             interp_state <= "00011";
-                        elsif is_stored = '1' and h_new = X"0000" and out_from = '0' then
+                        elsif is_stored = '1' and h_new = X"0000" and out_low_from = '0' then
                             interp_done_op <= "01";
                             send_u_0_enable <= '1';
                             send_u_0;
@@ -710,9 +720,15 @@ begin
                     --read lower U
                     if done_div_1 = '1' then
                         t_const <= fpu_div_1_out;
-                        read_u_s_low <= '1';
-                        read_low_us;
-                        interp_state <= "01110";
+                        if out_low_from = '0' then
+                            read_u_0 <= '1';
+                            read_u0;
+                            interp_state <= "10010";
+                        else
+                            read_u_s_low <= '1';
+                            read_low_us;
+                            interp_state <= "01110";
+                        end if;
                     end if;
                 when "00101" =>
                     --read higher U
@@ -722,7 +738,11 @@ begin
                 when "00110" =>
                     --subtract two Us
                     fpu_sub_1_in_1 <= u_high_temp;
-                    fpu_sub_1_in_2 <= u_low_temp;
+                    if out_low_from = '0' then
+                        fpu_sub_1_in_2 <= u_0_temp;
+                    else
+                        fpu_sub_1_in_2 <= u_low_temp;
+                    end if;
                     enable_sub_1 <= '1';
                     interp_state <= "00111";
                 when "00111" =>
@@ -739,7 +759,11 @@ begin
                     --add multiplication result to U low
                     if done_mul_1 = '1' then
                         fpu_add_1_in_1 <= fpu_mul_1_out;
-                        fpu_add_1_in_2 <= u_low_temp;
+                        if out_low_from = '0' then
+                            fpu_add_1_in_2 <= u_0_temp;
+                        else
+                            fpu_add_1_in_2 <= u_low_temp;
+                        end if;
                         enable_add_1 <= '1';
                         interp_state <= "01001";
                     end if;
@@ -832,6 +856,13 @@ begin
                         interp_state <= "11111";
                     else
                         interp_state <= "00000";
+                    end if;
+                when "10010" =>
+                    --loop over until U0 high is fully read
+                    if read_u_0 = '1' then
+                        read_u0;
+                    else
+                        interp_state <= "00101";
                     end if;
                 when others =>
                     --NOP
