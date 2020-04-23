@@ -369,170 +369,6 @@ begin
             data_out => b_coeff_data_out,
             rst      => rst
         );
------------------------------------------------------------------PROCESSES-----------------------------------------------------------------------------------
-    --PROCESSES:
-    --1- RESET --> Done
-    --2- initialize --> Done
-    --3- error occured --> Done
-    --4- fixed step size --> TBD
-    --5- variable step size --> TBD
-
------------------------------------------------------------------RESET-----------------------------------------------------------------------------------
-    -- RESET
-    -- handles reset signal for solver
-    reset : process (rst)
-    begin
-        --Dont forget to set interrupt = 0
-        --and raise error_success = 1
-        if rst = '1' then
-            ----RESET fpu's:
-            enable_mul_1            <= '1';
-            enable_add_1            <= '1';
-            enable_add_2            <= '1';
-            enable_div_1            <= '1';
-            --Reset memory
-            U_main_address          <= (others => '0');
-            X_ware_address          <= (others => '0');
-            a_coeff_address         <= (others => '0');
-            b_coeff_address         <= (others => '0');
-            X_intm_address          <= (others => '0');
-            --RESET FSM's
-            fsm_run_h_b   <= (others => '0');
-            fsm_run_h_a   <= (others => '0');
-            fsm_main_eq   <= (others => '0');
-            fsm_run_x_h   <= (others => '0');
-            fsm_run_x_i_c <= (others => '0');
-            fsm_var_step_main <= (others => '0');
-            fsm_run_L_nine <= (others => '0');
-            fsm_run_mul_n_m <= "00";
-            fsm_run_err_h_L <= "00";
-            fsm_run_h_2 <= "00";
-            fsm_run_sum_err <= "0000";
-            fsm_h_sent_U_recv <= "000";     
-            fsm_send_h_init <= "00";
-            fsm_run_a_x<= (others => '0');
-            fsm_run_x_b_u<= (others => '0');
-            fsm_run_a_x_2<= (others => '0');
-            fsm_run_x_b_u_2<= (others => '0');
-            fsm_place_x_i_at_x_c_or_vv<= (others => '0');
-            fixed_point_state   <= (others => '0');
-            fsm_terminate   <= (others => '0');
-            fsm_outing   <= (others => '0');
-            --RESET variables
-            N_X_A_B_vec <= (others => '0');
-            M_U_B_vec <= (others => '0');
-            --N_X_A_B <= (others => '0');
-            --M_U_B <= (others => '0');
-            fixed_or_var <= '0';
-            mode_sig <= (others => '0');
-            t_size <= (others => '0');
-            h_main <= (others => '0');
-            L_tol <= (others => '0');
-
-
-            --Signals
-            error_tolerance_is_good <= '0';
-
-
-        end if;
-    end process;
-
------------------------------------------------------------------INITIALIZATION-----------------------------------------------------------------------------------
-    process (clk, rst, adr, in_state)
-    begin
-        if rst = '0' and rising_edge(clk) and (in_state = "00" or in_state = "01") then
-            a_coeff_wr <= '0';
-            b_coeff_wr <= '0';
-            X_ware_wr <= '0';
-            U_main_wr <= '0';
-            U_main_address <= (others => '0');
-            a_coeff_address <= (others => '0');
-            b_coeff_address <= (others => '0');
-            x_ware_address <= (others => '0');
-            if adr = MM_HDR_0 then
-                N_X_A_B_vec(5 downto 0) <= in_data(31 downto 26);
-                M_U_B_vec(5 downto 0) <= in_data(25 downto 20);
-                --N_X_A_B <= to_int(in_data(31 downto 26));
-                --M_U_B <= to_int(in_data(25 downto 20));
-                fixed_or_var <= in_data(19);
-                mode_sig <= in_data(18 downto 17);
-                t_size <= in_data(16 downto 14);
-            elsif adr = MM_H_0 then
-                h_main(MAX_LENGTH-1 downto 32) <= in_data;
-            elsif adr = MM_H_1 then
-                h_main(31 downto 0) <= in_data;
-                
-                --this signal will initiate both: N*M and N*N
-                if beenThere_3 = '0' then
-                    fsm_run_mul_n_m <= "11"; 
-                    beenThere_3 <= '1';
-                end if;
-            elsif adr = MM_ERR_0 then
-                L_tol (MAX_LENGTH-1 downto 32) <= in_data;
-            elsif adr = MM_ERR_1 then
-                L_tol(31 downto 0) <= in_data;
-            elsif adr >= MM_A_0 and adr <= MM_A_1 then
-                a_coeff_data_in <= in_data;
-                a_coeff_wr <= '1';
-                -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
-                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
-            elsif adr >= MM_B_0 and adr <= MM_B_1 then
-                --b coefficient
-                b_coeff_data_in <= in_data;
-                b_coeff_wr <= '1';
-                -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
-                b_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_B_0));
-
-                --since we got here, then A and H are ready
-                if beenThere_1 = '0' then
-                    if fixed_or_var = '0' then 
-                        fsm_run_h_a <= "1111";
-                    else
-                        --L_tol is read, so:
-                        fsm_run_L_nine <= "11";
-                    end if;
-                    beenThere_1 <= '1';
-                end if;
-            elsif adr >= MM_X_0 and adr <= MM_X_1 then
-                --X_ware[0] = X0
-                X_ware_data_in <= in_data;
-                X_ware_wr <= '1';
-                -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
-                X_ware_address <= std_logic_vector(unsigned(adr) - unsigned(MM_X_0));
-
-                 -- Since we got here, then B and H are ready
-                if fixed_or_var = '0' and beenThere_2 = '0' then 
-                    fsm_run_h_b <= "111";
-                    beenThere_2 <= '1';
-                end if;
-            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
-                U_main_data_in <= in_data;
-                U_main_wr <= '1';
-                -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
-                U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
-                
-            end if;
-        end if;
-    end process;
-
------------------------------------------------------------------ERROR HANDLING-----------------------------------------------------------------------------------
-    --Error process:
-    --add here any other error_out signal that might occur
-    error_occured : process(clk, err_mul_1, err_add_1,err_add_2,err_div_1)
-    begin
-        if rst = '0' and rising_edge(clk) then
-            if (err_mul_1 = '1'
-            or  err_add_1 = '1'
-            or  err_add_2 = '1'
-            or  err_div_1 = '1'
-            )
-            then
-                error_success <= '0';
-                interrupt <= '1';
-            end if;
-        end if;
-    end process ;
-
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
     --reads A coefficient
     --This sub_process is responsible for reading a[address,address+1]
@@ -2366,18 +2202,221 @@ begin
 
         end if;
     end process ; -- proc_outing
------------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
+-----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
+    ----Code Flow and Comments
+
     --Fixed Step Size
     --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
     --Let A = 1+hA and B = hB (computed once)
-    --Divided into multiple processes
 
-    --main fixed step driver
-    fixed : process(clk, fixed_or_var, fixed_point_state, in_state) 
     --YA SHAWKY, replaced interp_done_sig with interp_done_op...
     --variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
+
+    --Variable Step Size
+    -- LOOP:
+    -- 0- START:
+    --      h_adapt = h_main
+    
+    -- 1- calc two steps equations:
+            --h_sent = 0 (n), U_recv = U0 (n)
+            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
+            --h_sent = h_adapt/2, U_recv is interpolated
+            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
+    -- 2- calc one step equation: (fsm_main_eq)
+    --        h_sent = h_adapt, U_recv is interpolated,
+    --          not every time actually.. 
+    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
+    -- 3- calc error
+    -- 4.1- error is bad (err > L_tol):
+    --      h_adapt = h_adapt * h_adapt * L_nine / err
+    --      jump back to 1
+    -- 4.2- error is good (err <= L_tol):
+    --      run fsm main eq
+    -- 5- check for termination
+
+    --NOTES:
+    -- You can use h_div as h_doubler...
+    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
+
+    --Useful tools:
+    --div_or_zero
+    --div_or_adapt
+    --from_i_to_c
+
+    --STATES:
+    -- 00000: nop or done
+    -- 11111: start at a new point
+    -- 00001: first equation
+    -- 00010: inc c_Ware
+    -- 00011: second equation
+    -- 00100: dec c_ware
+    -- 00101: when decremented go to 00110
+    -- 00110: third equation
+    -- 00111: run error calculator
+    -- 01000: if error is bad, repeat: 00001,
+    --                          with h_adapt updated
+    --                          with c_ware decremented (the same)
+    --                          with x_w[c] holds x0 (not updated)
+    --          if it is good, go to: 10001
+    --------break-----------------------------
+    -- 01001: inc c_ware
+    -- 01010: place x_w[c] at x_i
+    -- 01011: dec c_ware
+    -- 01100: place x_w[c] at x_i
+    -- 01101: h_div = h_adapt and start main equation at: 01110
+    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
+    -- 01111: when it is finished go to 10000
+    -- 10000: navigates you to 10011
+    ---------break-------------------------------
+    -- REMEMBER we are here cuz error is good!
+    -- 10001: send h_adapt to interpolator at the unique address for it to store it
+    -- 10010: when it is sent, proceed with the main equation at 01001
+    --------break-------------------------------
+    -- REMEMBER we are here cuz 10000 navigates us
+    -- 10011: place what's inside x_i at x_w
+    -- 10100: when done, if x_w[c] is an output point: go to: 10110
+    --                                                  if not: 10101
+    -- 10101: h_div = h_div + h_adapt then go to 11000
+    -- 11000: go to 01110 to start main equation
+
+    -- 10110: inc c_Ware
+    -- 10111: go to 11001 to check for termination..
+
+    -- 11001: terminate (00000) or move to next point (00001)
+
+    --main process implementation
+    process(clk, fixed_or_var, fixed_point_state, in_state) 
     begin
-        if rst = '0' and rising_edge(clk) and fixed_or_var = '0' and in_state="10" then
+
+        --RESET
+        if rst = '1' then
+            --port signals
+            interrupt <= '0';
+            error_success <= '1';
+            in_data <= (others => 'Z');
+            adr <= (others => 'Z');
+            ----RESET fpu's:
+            enable_mul_1 <= '1';
+            enable_add_1 <= '1';
+            enable_add_2 <= '1';
+            enable_div_1 <= '1';
+            --Reset memory
+            U_main_address <= (others => '0');
+            X_ware_address <= (others => '0');
+            a_coeff_address <= (others => '0');
+            b_coeff_address <= (others => '0');
+            X_intm_address <= (others => '0');
+            --RESET FSM's
+            fsm_run_h_b <= (others => '0');
+            fsm_run_h_a <= (others => '0');
+            fsm_main_eq <= (others => '0');
+            fsm_run_x_h <= (others => '0');
+            fsm_run_x_i_c <= (others => '0');
+            fsm_var_step_main <= (others => '0');
+            fsm_run_L_nine <= (others => '0');
+            fsm_run_mul_n_m <= "00";
+            fsm_run_err_h_L <= "00";
+            fsm_run_h_2 <= "00";
+            fsm_run_sum_err <= "0000";
+            fsm_h_sent_U_recv <= "000";     
+            fsm_send_h_init <= "00";
+            fsm_run_a_x <= (others => '0');
+            fsm_run_x_b_u <= (others => '0');
+            fsm_run_a_x_2 <= (others => '0');
+            fsm_run_x_b_u_2 <= (others => '0');
+            fsm_place_x_i_at_x_c_or_vv <= (others => '0');
+            fixed_point_state <= (others => '0');
+            fsm_terminate <= (others => '0');
+            fsm_outing <= (others => '0');
+            --RESET variables
+            N_X_A_B_vec <= (others => '0');
+            M_U_B_vec <= (others => '0');
+            --N_X_A_B <= (others => '0');
+            --M_U_B <= (others => '0');
+            fixed_or_var <= '0';
+            mode_sig <= (others => '0');
+            t_size <= (others => '0');
+            h_main <= (others => '0');
+            L_tol <= (others => '0');
+            error_tolerance_is_good <= '0';
+        
+        --ERROR HANDLING
+        elsif rising_edge(clk) and rst = '0' and (err_mul_1 = '1' or  err_add_1 = '1' or err_add_2 = '1' or err_div_1 = '1') then
+                error_success <= '0';
+                interrupt <= '1';
+        
+        --DATA LOADER
+        elsif rising_edge(clk) and rst = '0' and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+            a_coeff_wr <= '0';
+            b_coeff_wr <= '0';
+            X_ware_wr <= '0';
+            U_main_wr <= '0';
+            U_main_address <= (others => '0');
+            a_coeff_address <= (others => '0');
+            b_coeff_address <= (others => '0');
+            x_ware_address <= (others => '0');
+            if adr = MM_HDR_0 then
+                N_X_A_B_vec(5 downto 0) <= in_data(31 downto 26);
+                M_U_B_vec(5 downto 0) <= in_data(25 downto 20);
+                --N_X_A_B <= to_int(in_data(31 downto 26));
+                --M_U_B <= to_int(in_data(25 downto 20));
+                fixed_or_var <= in_data(19);
+                mode_sig <= in_data(18 downto 17);
+                t_size <= in_data(16 downto 14);
+            elsif adr = MM_H_0 then
+                h_main(MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_H_1 then
+                h_main(31 downto 0) <= in_data;
+                --this signal will initiate both: N*M and N*N
+                if beenThere_3 = '0' then
+                    fsm_run_mul_n_m <= "11"; 
+                    beenThere_3 <= '1';
+                end if;
+            elsif adr = MM_ERR_0 then
+                L_tol (MAX_LENGTH-1 downto 32) <= in_data;
+            elsif adr = MM_ERR_1 then
+                L_tol(31 downto 0) <= in_data;
+            elsif adr >= MM_A_0 and adr <= MM_A_1 then
+                a_coeff_data_in <= in_data;
+                a_coeff_wr <= '1';
+                -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
+                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
+            elsif adr >= MM_B_0 and adr <= MM_B_1 then
+                --b coefficient
+                b_coeff_data_in <= in_data;
+                b_coeff_wr <= '1';
+                -- shift adr from [MM_B_0:MM_B_1] to [0:MM_B_1-MM_B_0]
+                b_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_B_0));
+                --since we got here, then A and H are ready
+                if beenThere_1 = '0' then
+                    if fixed_or_var = '0' then 
+                        fsm_run_h_a <= "1111";
+                    else
+                        --L_tol is read, so:
+                        fsm_run_L_nine <= "11";
+                    end if;
+                    beenThere_1 <= '1';
+                end if;
+            elsif adr >= MM_X_0 and adr <= MM_X_1 then
+                --X_ware[0] = X0
+                X_ware_data_in <= in_data;
+                X_ware_wr <= '1';
+                -- shift adr from [MM_X_0:MM_X_1] to [0:MM_X_1-MM_X_0]
+                X_ware_address <= std_logic_vector(unsigned(adr) - unsigned(MM_X_0));
+                    -- Since we got here, then B and H are ready
+                if fixed_or_var = '0' and beenThere_2 = '0' then 
+                    fsm_run_h_b <= "111";
+                    beenThere_2 <= '1';
+                end if;
+            elsif adr >= MM_U0_0 and adr <= MM_U0_1 then
+                U_main_data_in <= in_data;
+                U_main_wr <= '1';
+                -- shift adr from [MM_U0_0:MM_X_1] to [0:MM_X_1-MM_U0_0]
+                U_main_address <= std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
+            end if;
+
+        --FIXED SETP FSM
+        elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '0' then
             case fixed_point_state is
                 when "0000" => 
                     --wait for loop a and loop b 
@@ -2480,91 +2519,13 @@ begin
                     --NOP
                     null;
             end case;
-        end if;
-    end process ;
 
-    
-    -- LOOP:
-    -- 0- START:
-    --      h_adapt = h_main
-    
-
-    -- 1- calc two steps equations:
-            --h_sent = 0 (n), U_recv = U0 (n)
-            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
-            --h_sent = h_adapt/2, U_recv is interpolated
-            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
-    -- 2- calc one step equation: (fsm_main_eq)
-    --        h_sent = h_adapt, U_recv is interpolated,
-    --          not every time actually.. 
-    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
-    -- 3- calc error
-    -- 4.1- error is bad (err > L_tol):
-    --      h_adapt = h_adapt * h_adapt * L_nine / err
-    --      jump back to 1
-    -- 4.2- error is good (err <= L_tol):
-    --      run fsm main eq
-    -- 5- check for termination
-
-    --NOTES:
-    -- You can use h_div as h_doubler...
-    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
-
-    --Useful tools:
-    --div_or_zero
-    --div_or_adapt
-    --from_i_to_c
-
-    --STATES:
-    -- 00000: nop or done
-    -- 11111: start at a new point
-    -- 00001: first equation
-    -- 00010: inc c_Ware
-    -- 00011: second equation
-    -- 00100: dec c_ware
-    -- 00101: when decremented go to 00110
-    -- 00110: third equation
-    -- 00111: run error calculator
-    -- 01000: if error is bad, repeat: 00001,
-    --                          with h_adapt updated
-    --                          with c_ware decremented (the same)
-    --                          with x_w[c] holds x0 (not updated)
-    --          if it is good, go to: 10001
-    --------break-----------------------------
-    -- 01001: inc c_ware
-    -- 01010: place x_w[c] at x_i
-    -- 01011: dec c_ware
-    -- 01100: place x_w[c] at x_i
-    -- 01101: h_div = h_adapt and start main equation at: 01110
-    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
-    -- 01111: when it is finished go to 10000
-    -- 10000: navigates you to 10011
-    ---------break-------------------------------
-    -- REMEMBER we are here cuz error is good!
-    -- 10001: send h_adapt to interpolator at the unique address for it to store it
-    -- 10010: when it is sent, proceed with the main equation at 01001
-    --------break-------------------------------
-    -- REMEMBER we are here cuz 10000 navigates us
-    -- 10011: place what's inside x_i at x_w
-    -- 10100: when done, if x_w[c] is an output point: go to: 10110
-    --                                                  if not: 10101
-    -- 10101: h_div = h_div + h_adapt then go to 11000
-    -- 11000: go to 01110 to start main equation
-
-    -- 10110: inc c_Ware
-    -- 10111: go to 11001 to check for termination..
-
-    -- 11001: terminate (00000) or move to next point (00001)
-    proc_fsm_var_step_main : process( clk,fsm_var_step_main, in_state )
-    begin
-        if rising_edge(clk) and fixed_or_var = '1' and in_state = "10" then
-
+        --VARIABLE STEP FSM
+        elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '1' then
             case( fsm_var_step_main ) is
-            
                 when "11111" =>
                     --START babyyy
                     -- we reach here when output is produced and c_ware is incremented
-
                     --h_adapt always starts with the initial fixed value of h, h_main
                     h_adapt <= h_main;
                     fsm_var_step_main <= "00001";
@@ -2642,7 +2603,6 @@ begin
                     address_inc_1_in(2 downto 0) <= c_ware;
                     address_inc_1_enbl <= '1';
                     fsm_var_step_main <= "01010";
-
                 when "01010" =>
                     c_ware <= address_inc_1_out;
                     listen_to_me <= not listen_to_me; --just to make sure :D
@@ -2675,7 +2635,6 @@ begin
                     --  and h_adapt as h_main
                     --h_adapt has the value that passed the tolerance test
                     --c_ware is lastly decremented, so it is ok
-
                     div_or_zero <= '0'; --h_sent: div:doubler
                     div_or_adapt <= '1'; --h_mul: h_adapt
                     from_i_to_c <= '0'; --no, from c to i
@@ -2757,6 +2716,5 @@ begin
                     null;
             end case ;
         end if;
-    end process ; -- proc_fsm_var_step_main
+    end process;
 end architecture;
-
