@@ -44,12 +44,49 @@ begin
         test_runner_setup(runner, runner_cfg);
         set_stop_level(failure);
 
-        rst <= '1';
-        wait for 1 ps;
-        rst <= '0';
-
-        if run("name_this_test_case") then
+        if run("all") then
+            -- reset at the beginning
+            rst <= '1';
+            in_data <= (others => 'Z');
+            cpu_data <= (others => 'Z');
             wait for CLK_PERD;
+            assert(interrupt = '0' and error_success = '1') report "error in resetting" severity error;
+            -- test loading
+            in_state <= "00";
+            rst      <= '0';
+
+            cpu_data <= x"63490101";
+            wait for CLK_PERD;
+            assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"FFFF") report "data has been written - test1 failed" severity error;
+            cpu_data <= x"43272112";
+            wait for CLK_PERD;
+            assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"FFFF") report "data has been written - test2 failed" severity error;
+            cpu_data <= x"72341010";
+            wait for CLK_PERD;
+            assert(in_data = x"0C7D4679" and interrupt = '0' and adr = x"0000") report "data hasn't been written - test3 failed" severity error;
+            cpu_data <= x"94366349";
+            wait for CLK_PERD;
+            assert(in_data /= x"9E62BE30" and interrupt = '0' and adr = x"0000") report "data has been written - test4 failed" severity error;
+            cpu_data <= x"01014327";
+            wait for CLK_PERD;
+            assert(in_data = x"9E62BE30" and interrupt = '0' and adr = x"0001") report "data hasn't been written - test5 failed" severity error;
+            cpu_data <= x"21127234";
+            wait for CLK_PERD;
+            assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"0001") report "data has been written - test6 failed" severity error;
+            cpu_data <= x"10109436";
+            wait for CLK_PERD;
+            assert(in_data = x"0C7D4679" and interrupt = '0' and adr = x"0003") report "data hasn't been written - test7 failed" severity error;
+
+            -- WAIT 
+            in_state <= "01";
+            wait for CLK_PERD;
+            assert(in_data = x"9E62BE30" and interrupt = '0' and adr = x"0005") report "data hasn't been written - test8 failed" severity error;
+
+            -- OUT 
+            in_state <= "11";
+            in_data  <= x"FFFFFFFF";
+            wait for CLK_PERD;
+            assert(cpu_data = x"FFFFFFFF" and interrupt = '0' and error_success = '1') report "didn't out the data - test9 failed" severity error;
         end if;
 
         wait for CLK_PERD/2;
