@@ -63,7 +63,7 @@ begin
 
         -- Initialzie h
         adr     <= std_logic_vector(to_unsigned(16#0001#, 16));
-        in_data <= std_logic_vector(to_unsigned(16#0001#, 16));
+        in_data <= std_logic_vector(to_unsigned(16#0001#, 32));
         wait for CLK_PERD;
 
         -- Initalize Matrix A
@@ -109,6 +109,7 @@ begin
             assert(in_data = std_logic_vector(to_unsigned(10#1352#, 16)));
             wait for CLK_PERD;
         end loop;
-
+        
+        wait;
     end process;
 end architecture;
