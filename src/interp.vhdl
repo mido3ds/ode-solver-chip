@@ -106,7 +106,7 @@ signal read_u_s_low, u_s_low_high : std_logic := '0';
 signal read_u_s_high, u_s_high_high : std_logic := '0';
 
 --Uout IO Signals
-signal read_u_out, write_u_out, u_out_high : std_logic := '0';
+signal write_u_out, u_out_high : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -482,29 +482,6 @@ begin
         end if;
     end procedure; 
 
-    --reads Uout entry
-    procedure read_uout is
-    begin
-        if u_out_high = '0' then
-            U_out_address <= u_out_adr;
-            U_out_wr <= '0';
-            U_out_rd <= '1';
-            u_out_temp(MAX_LENGTH-1 downto 32) <= U_out_data_out;
-            u_out_high <= '1';
-            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-            u_out_adr <= adr_temp(6 downto 0); 
-        else
-            U_out_address <= u_out_adr;
-            U_out_wr <= '0';
-            U_out_rd <= '1';
-            u_out_temp(31 downto 0) <= U_out_data_out;
-            u_out_high <= '0';
-            adr_temp := std_logic_vector(unsigned(u_out_adr) + 1); 
-            u_out_adr <= adr_temp(6 downto 0); 
-            read_u_out <= '0';
-        end if;    
-    end procedure; 
-
     --writes Uout entry
     procedure write_uout is
     begin
@@ -594,7 +571,6 @@ begin
             u_s_low_high <= '0';
             read_u_s_high <= '0';
             u_s_high_high <= '0';
-            read_u_out <= '0';
             write_u_out <= '0';
             u_out_high <= '0';
         
@@ -680,7 +656,7 @@ begin
                 when "00000" => 
                     --check input address
                     --read lower part of h_new
-                    if adr = MM_H_NEW_0 and send_output_enable = '0' and send_u_0_enable = '0' and send_u_s_enable = '0' then
+                    if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
                         h_new(MAX_LENGTH-1 downto 32) <= in_data;
@@ -734,25 +710,21 @@ begin
                     --read lower U
                     if done_div_1 = '1' then
                         t_const <= fpu_div_1_out;
-                        read_u_s_low <= '1'; --------
-                        interp_state <= "00101";
+                        read_u_s_low <= '1';
+                        read_low_us;
+                        interp_state <= "01110";
                     end if;
                 when "00101" =>
-                    --check read completion
                     --read higher U
-                    if read_u_s_low = '0' then
-                        read_u_s_high <= '1';
-                        interp_state <= "00110";
-                    end if;
+                    read_u_s_high <= '1';
+                    read_high_us;
+                    interp_state <= "01111";
                 when "00110" =>
-                    --check read completion
                     --subtract two Us
-                    if read_u_s_high = '0' then
-                        fpu_sub_1_in_1 <= u_high_temp;
-                        fpu_sub_1_in_2 <= u_low_temp;
-                        enable_sub_1 <= '1';
-                        interp_state <= "00111";
-                    end if;
+                    fpu_sub_1_in_1 <= u_high_temp;
+                    fpu_sub_1_in_2 <= u_low_temp;
+                    enable_sub_1 <= '1';
+                    interp_state <= "00111";
                 when "00111" =>
                     --check subtraction completion
                     --multiply resultant T with subtraction result
@@ -778,23 +750,21 @@ begin
                     if done_add_1 = '1' then
                         u_out_result <= fpu_add_1_out;
                         write_u_out <= '1';
+                        write_uout;
                         M <= M - 1;
-                        interp_state <= "01010";
+                        interp_state <= "10000";
                     end if;
                 when "01010" =>
-                    --check Uout write completion
                     --check end of loop
                     --add time step to received time to check outut points
-                    if write_u_out = '0' then
-                        if M = 0 then
-                            u_out_adr <= (others => '0');
-                            fpu_add_1_in_1 <= h_step;
-                            fpu_add_1_in_2 <= h_new;
-                            enable_add_1 <= '1';
-                            interp_state <= "01011";
-                        else
-                            interp_state <= "00100";
-                        end if;
+                    if M = 0 then
+                        u_out_adr <= (others => '0');
+                        fpu_add_1_in_1 <= h_step;
+                        fpu_add_1_in_2 <= h_new;
+                        enable_add_1 <= '1';
+                        interp_state <= "01011";
+                    else
+                        interp_state <= "00100";
                     end if;
                 when "01011" =>
                     --check addition comletion
@@ -805,15 +775,18 @@ begin
                             interrupt <= '0';
                             error_success <= '1';
                             send_output_enable <= '1';
-                            interp_state <= "11111";
+                            send_output;
+                            interp_state <= "10001";
                         elsif fpu_add_1_out = t_high then
                             interp_done_op <= "10";
                             send_output_enable <= '1';
-                            interp_state <= "00000";
+                            send_output;
+                            interp_state <= "10001";
                         else 
                             interp_done_op <= "01";
                             send_output_enable <= '1';
-                            interp_state <= "00000";
+                            send_output;
+                            interp_state <= "10001";
                         end if;
                     end if;
                 when "01100" =>
@@ -827,6 +800,36 @@ begin
                     --loop over until Us is fully sent
                     if send_u_s_enable = '1' then
                         send_u_s;
+                    else
+                        interp_state <= "00000";
+                    end if;
+                when "01110" =>
+                    --loop over until Us low is fully read
+                    if read_u_s_low = '1' then
+                        read_low_us;
+                    else
+                        interp_state <= "00101";
+                    end if;
+                when "01111" =>
+                    --loop over until Us high is fully read
+                    if read_u_s_high = '1' then
+                        read_high_us;
+                    else
+                        interp_state <= "00110";
+                    end if;
+                when "10000" =>
+                    --loop over until Uout high is fully written
+                    if write_u_out = '1' then
+                        write_uout;
+                    else
+                        interp_state <= "01010";
+                    end if;
+                when "10001" =>
+                    --loop over until Uout is fully sent
+                    if send_output_enable = '1' then
+                        send_output;
+                    elsif fpu_add_1_out = t_high and t_high = out_time_5 then
+                        interp_state <= "11111";
                     else
                         interp_state <= "00000";
                     end if;
