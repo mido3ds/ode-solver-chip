@@ -7,22 +7,6 @@ entity IO_tb is
 end entity;
 
 architecture arch of IO_tb is
-
-	component io is
-		port (
-			in_state      : in std_logic_vector(1 downto 0);
-			clk           : in std_logic;
-			rst           : in std_logic;
-
-			cpu_data      : inout std_logic_vector(31 downto 0);
-			in_data       : inout std_logic_vector(31 downto 0);
-
-			adr           : out std_logic_vector(15 downto 0);
-			interrupt     : out std_logic;
-			error_success : out std_logic
-		);
-	end component;
-
 	signal in_state                      : std_logic_vector(1 downto 0);
 	signal in_data, cpu_data             : std_logic_vector(31 downto 0);
 	signal adr                           : std_logic_vector(15 downto 0);
@@ -31,7 +15,7 @@ architecture arch of IO_tb is
 
 	constant CLKPERIOD                   : time      := 100 ps;
 begin
-	IO_TEST : io port map(
+	IO_TEST : entity work.io port map(
 		in_state      => in_state,
 		clk           => clk,
 		rst           => rst,
@@ -90,5 +74,7 @@ begin
 		in_data  <= x"FFFFFFFF";
 		wait for CLKPERIOD;
 		assert(cpu_data = x"FFFFFFFF" and interrupt = '0' and error_success = '1') report "didn't out the data - test9 failed" severity error;
+
+		wait;
 	end process;
 end arch;
