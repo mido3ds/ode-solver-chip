@@ -42,6 +42,7 @@
 
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
+[ ] script to run post synth tests
 
 [ ] IO 
 
