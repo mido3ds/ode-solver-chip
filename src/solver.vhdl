@@ -2196,78 +2196,78 @@ begin
     --you know the regs. err_sum
     --this process takes err_sum
     -- and produce : err_sum = (h*h*L*0.9)/err_sum
-    proc_run_err_h_L : process( clk, fsm_run_err_h_L)
-    begin
-        if rising_edge(clk) then
-            case( fsm_run_err_h_L ) is
+    --proc_run_err_h_L : process( clk, fsm_run_err_h_L)
+    --begin
+    --    if rising_edge(clk) then
+    --        case( fsm_run_err_h_L ) is
             
-                when "11" =>
-                    --start
-                    enable_mul_1<='1';
-                    fpu_mul_1_in_1 <= h_adapt;
-                    fpu_mul_1_in_2 <= h_adapt;
+    --            when "11" =>
+    --                --start
+    --                enable_mul_1<='1';
+    --                fpu_mul_1_in_1 <= h_adapt;
+    --                fpu_mul_1_in_2 <= h_adapt;
 
-                    enable_div_1 <= '1';
-                    fpu_div_1_in_1 <= L_nine;
-                    fpu_div_1_in_2 <= err_sum;
+    --                enable_div_1 <= '1';
+    --                fpu_div_1_in_1 <= L_nine;
+    --                fpu_div_1_in_2 <= err_sum;
 
-                    fsm_run_err_h_L <= "01";
-                when "01" =>
-                    if done_mul_1 = '1' and done_div_1 = '1' then
-                        fpu_mul_1_in_1 <= fpu_mul_1_out; --h*h
-                        enable_div_1 <= '0';
-                        fpu_mul_1_in_2 <= fpu_div_1_out; --L*0.9/err_sum
-                        enable_mul_1<='1'; --just to make sure y3ny..
-                        fsm_run_err_h_L <= "10";
-                    end if;
-                when "10" =>
-                    if done_mul_1 = '1' then
-                        h_adapt <= fpu_mul_1_out;
-                        enable_mul_1 <= '0';
-                        fsm_run_err_h_L <= "00";
-                    end if;
-                    when others =>
-                    --zeros and others
-                    null;
-            end case ;
-        end if;        
-    end process ; -- proc_run_err_h_L
+    --                fsm_run_err_h_L <= "01";
+    --            when "01" =>
+    --                if done_mul_1 = '1' and done_div_1 = '1' then
+    --                    fpu_mul_1_in_1 <= fpu_mul_1_out; --h*h
+    --                    enable_div_1 <= '0';
+    --                    fpu_mul_1_in_2 <= fpu_div_1_out; --L*0.9/err_sum
+    --                    enable_mul_1<='1'; --just to make sure y3ny..
+    --                    fsm_run_err_h_L <= "10";
+    --                end if;
+    --            when "10" =>
+    --                if done_mul_1 = '1' then
+    --                    h_adapt <= fpu_mul_1_out;
+    --                    enable_mul_1 <= '0';
+    --                    fsm_run_err_h_L <= "00";
+    --                end if;
+    --                when others =>
+    --                --zeros and others
+    --                null;
+    --        end case ;
+    --    end if;        
+    --end process ; -- proc_run_err_h_L
 
     --h_div = h_adapt/2
-    proc_run_h_2 : process( clk, fsm_run_h_2 )
-    begin
-        if rising_edge(clk) then
-            case( fsm_run_h_2 ) is
+    --proc_run_h_2 : process( clk, fsm_run_h_2 )
+    --begin
+    --    if rising_edge(clk) then
+    --        case( fsm_run_h_2 ) is
             
-                when "11" =>
-                    --start
-                    enable_div_1 <= '1';
-                    fpu_div_1_in_1 <= h_adapt;
-                    fsm_run_h_2 <= "01";
-                    case( mode_sig ) is
-                        when "00" => 
-                            fpu_div_1_in_2 <= (others =>'0');
-                            fpu_div_1_in_2(15 downto 0) <= "0000000100000000";
-                        when "01" =>
-                            fpu_div_1_in_2 <= (others =>'0');
-                            fpu_div_1_in_2(31 downto 0) <= "01000000000000000000000000000000";
-                        when "10" =>
-                            fpu_div_1_in_2(63 downto 0) <= "0100000000000000000000000000000000000000000000000000000000000000";
-                        when others =>
-                    end case ;
-                when "01" =>
-                    if done_div_1 = '1' then
-                        enable_div_1 <= '0';
-                        h_div <= fpu_div_1_out;
-                        fsm_run_h_2 <= "00";
-                    end if;
-                when others =>
-                    --zeros and unused: end
-                    null;
-            end case ;
+    --            when "11" =>
+    --                --start
+    --                enable_div_1 <= '1';
+    --                fpu_div_1_in_1 <= h_adapt;
+    --                fsm_run_h_2 <= "01";
+    --                case( mode_sig ) is
+    --                    when "00" => 
+    --                        fpu_div_1_in_2 <= (others =>'0');
+    --                        fpu_div_1_in_2(15 downto 0) <= "0000000100000000";
+    --                    when "01" =>
+    --                        fpu_div_1_in_2 <= (others =>'0');
+    --                        fpu_div_1_in_2(31 downto 0) <= "01000000000000000000000000000000";
+    --                    when "10" =>
+    --                        fpu_div_1_in_2(63 downto 0) <= "0100000000000000000000000000000000000000000000000000000000000000";
+    --                    when others =>
+    --                end case ;
+    --            when "01" =>
+    --                if done_div_1 = '1' then
+    --                    enable_div_1 <= '0';
+    --                    h_div <= fpu_div_1_out;
+    --                    fsm_run_h_2 <= "00";
+    --                end if;
+    --            when others =>
+    --                --zeros and unused: end
+    --                null;
+    --        end case ;
 
-        end if;
-    end process ; -- proc_run_h_2
+    --    end if;
+    --end process ; -- proc_run_h_2
 
     proc_termination : process( clk, fsm_terminate )
     begin

@@ -38,12 +38,15 @@ architecture rtl of solver_test is
     --signal N_counter_2: std_logic_vector(5 downto 0) := (others => '0');
     signal mode_sig : std_logic_vector(1 downto 0) := "10";
     --signal wares : std_logic_vector(2 downto 0) := "001";
-    signal procedure_dumm : std_logic_vector(10 downto 0) := (others => '0');
+    --signal procedure_dumm : std_logic_vector(10 downto 0) := (others => '0');
     signal fsm_mul : std_logic := '0';
     
     signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
     signal L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    --signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    --signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
+    --signal h_adapt, h_div : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     
    
     begin
@@ -58,7 +61,7 @@ architecture rtl of solver_test is
     --        rst      => rst
     --    );
     
-        fpu_mul_1 : entity work.fpu_multiplier
+        fpu_mul_1 : entity work.fpu_multiplier(first_algo)
         port map(
             clk       => clk,
             rst       => rst,
@@ -73,6 +76,21 @@ architecture rtl of solver_test is
             posv      => posv_mul_1
         );
 
+        --fpu_div_1 : entity work.fpu_divider(first_algo)
+        --port map(
+        --    clk       => clk,
+        --    rst       => rst,
+        --    mode      => mode_sig,
+        --    enbl      => enable_div_1,
+        --    in_a      => fpu_div_1_in_1,
+        --    in_b      => fpu_div_1_in_2,
+        --    out_c     => fpu_div_1_out,
+        --    done      => done_div_1,
+        --    err       => err_div_1,
+        --    zero      => zero_div_1,
+        --    posv      => posv_div_1
+        --);
+
     main_proc : process(clk, rst)
     begin
         if rst = '0' and rising_edge(clk) then
@@ -80,10 +98,22 @@ architecture rtl of solver_test is
             case( main_fsm ) is
             
                 when "00" => 
-                    L_tol <= to_vec(5,L_tol'length);
+                    --h_adapt <= to_vec(10,h_adapt'length);
+                    L_tol <= to_vec(10,L_tol'length);
+                    
                     main_fsm <= "01";
                     fsm_mul <= '1';
                 when "01" =>
+                    --div_h_2 (
+                    --    mode => mode_sig,
+                    --    h_adapt => h_adapt,
+                    --    h_div => h_div,
+                    --    fpu_div_1_in_1 => fpu_div_1_in_1,
+                    --    fpu_div_1_in_2 => fpu_div_1_in_2,
+                    --    fpu_div_1_out => fpu_div_1_out,
+                    --    enable_div_1 => enable_div_1,
+                    --    done_div_1 => done_div_1,
+                    --    fsm => fsm_mul);
                     mul_L_9 (
                         mode => mode_sig,
                         L_tol => L_tol,
@@ -94,10 +124,12 @@ architecture rtl of solver_test is
                         enable_mul_1 => enable_mul_1,
                         done_mul_1 => done_mul_1,
                         fsm => fsm_mul);
+
                     if fsm_mul = '0' then
                         main_fsm <= "11";
                     end if;
 		when "10" =>
+            --h_div <= to_vec(to_int(h_div) + 1,h_div'length);
             L_nine <= to_vec(to_int(L_nine) + 1,L_nine'length);
 		when others =>
 			null;

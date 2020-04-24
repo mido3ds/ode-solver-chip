@@ -101,6 +101,17 @@ package solver_pkg is
 		signal err_sum : inout  std_logic_vector(63 downto 0);
 		signal fsm : inout std_logic_vector(1 downto 0)
 		);
+
+	procedure div_h_2 (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal h_adapt: in  std_logic_vector(63 downto 0);
+		signal h_div: out  std_logic_vector(63 downto 0);
+		signal fpu_div_1_in_1, fpu_div_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_div_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_div_1 : out std_logic ;
+		signal done_div_1 : in std_logic ;
+		signal fsm : inout std_logic
+		);
 end package solver_pkg;
 
 package body solver_pkg is 
@@ -408,5 +419,43 @@ package body solver_pkg is
 			end case ;
 
 		end proc_run_err_h_L;
+
+	procedure div_h_2 (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal h_adapt: in  std_logic_vector(63 downto 0);
+		signal h_div: out  std_logic_vector(63 downto 0);
+		signal fpu_div_1_in_1, fpu_div_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_div_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_div_1 : out std_logic ;
+		signal done_div_1 : in std_logic ;
+		signal fsm : inout std_logic
+		)is
+
+		begin
+			case( fsm ) is
+			
+				when '1' =>
+					enable_div_1 <= '1';
+                    fpu_div_1_in_1 <= h_adapt;
+                    case( mode ) is
+                    	when "00" =>
+                    		fpu_div_1_in_2 <= (others => '0');
+                            fpu_div_1_in_2(15 downto 0) <= "0000000100000000";
+                    	when "01" =>
+                    		fpu_div_1_in_2 <= (others => '0');
+                            fpu_div_1_in_2(31 downto 0) <= "01000000000000000000000000000000";
+                    	when others =>
+                    		fpu_div_1_in_2(63 downto 0) <= "0100000000000000000000000000000000000000000000000000000000000000";
+                    end case ;
+                    if done_div_1 = '1' then
+                    	enable_div_1 <= '0';
+                    	h_div <= fpu_div_1_out;
+                    	fsm <= '0';
+                    end if;
+				when others =>
+					--00
+					null;
+			end case ;
+		end div_h_2;
 
 end package body solver_pkg;
