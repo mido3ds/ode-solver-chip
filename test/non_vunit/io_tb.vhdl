@@ -24,7 +24,7 @@ begin
 		adr           => adr,
 		interrupt     => interrupt,
 		error_success => error_success
-	);
+		);
 
 	process
 	begin
@@ -37,6 +37,7 @@ begin
 		-- reset at the beginning
 		rst <= '1';
 		wait for CLKPERIOD;
+		wait for 1 ps; -- shift checks 1 ps for combinational circuits to calculate their output
 		assert(interrupt = '0' and error_success = '1' and adr = x"FFFF") report "error in resetting" severity error;
 		-- test loading
 		rst      <= '0';
