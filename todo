@@ -47,7 +47,6 @@
 [ ] IO 
 
     [x] Design  
-    [ ] vunit tests are up-to-date with non_vunit of tests
     [x] Implementation
     [ ] Synthesize 
     [ ] post-synthesize simulation
@@ -57,7 +56,6 @@
 [ ] Interpolator
 
     [x] Design  
-    [ ] vunit tests are up-to-date with non_vunit of tests
     [ ] Implementation
     [ ] Synthesize 
     [ ] post-synthesize simulation
@@ -67,7 +65,6 @@
 [ ] Solver
 
     [x] Design  
-    [ ] vunit tests are up-to-date with non_vunit of tests
     [ ] Implementation
     [ ] Synthesize 
     [ ] post-synthesize simulation
@@ -75,6 +72,7 @@
     [ ] Software equivalent functionality
 
 [ ] all vunit tests pass
+[ ] vunit tests are up-to-date with non_vunit of tests
 
 [ ] Zipped Folder with your TeamNumber as its name that contains
 
