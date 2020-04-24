@@ -45,12 +45,12 @@ architecture rtl of solver_test is
     --signal procedure_dumm : std_logic_vector(10 downto 0) := (others => '0');
     signal fsm_mul : std_logic := '0';
     
-    signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
-    signal L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '1');
-    --signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
-    --signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
-    --signal h_adapt, h_div : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    --signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    --signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
+    --signal L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '1');
+    signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
+    signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
+    signal h_adapt, h_div : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
     
    
     begin
@@ -65,35 +65,35 @@ architecture rtl of solver_test is
     --        rst      => rst
     --    );
     
-        fpu_mul_1 : entity work.fpu_multiplier(first_algo)
-        port map(
-            clk       => clk,
-            rst       => rst,
-            mode      => mode_sig,
-            enbl      => enable_mul_1,
-            in_a      => fpu_mul_1_in_1,
-            in_b      => fpu_mul_1_in_2,
-            out_c     => fpu_mul_1_out,
-            done      => done_mul_1,
-            err       => err_mul_1,
-            zero      => zero_mul_1,
-            posv      => posv_mul_1
-        );
-
-        --fpu_div_1 : entity work.fpu_divider(first_algo)
+        --fpu_mul_1 : entity work.fpu_multiplier(first_algo)
         --port map(
         --    clk       => clk,
         --    rst       => rst,
         --    mode      => mode_sig,
-        --    enbl      => enable_div_1,
-        --    in_a      => fpu_div_1_in_1,
-        --    in_b      => fpu_div_1_in_2,
-        --    out_c     => fpu_div_1_out,
-        --    done      => done_div_1,
-        --    err       => err_div_1,
-        --    zero      => zero_div_1,
-        --    posv      => posv_div_1
+        --    enbl      => enable_mul_1,
+        --    in_a      => fpu_mul_1_in_1,
+        --    in_b      => fpu_mul_1_in_2,
+        --    out_c     => fpu_mul_1_out,
+        --    done      => done_mul_1,
+        --    err       => err_mul_1,
+        --    zero      => zero_mul_1,
+        --    posv      => posv_mul_1
         --);
+
+        fpu_div_1 : entity work.fpu_divider(first_algo)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_div_1,
+            in_a      => fpu_div_1_in_1,
+            in_b      => fpu_div_1_in_2,
+            out_c     => fpu_div_1_out,
+            done      => done_div_1,
+            err       => err_div_1,
+            zero      => zero_div_1,
+            posv      => posv_div_1
+        );
 
     main_proc : process(clk, rst)
     begin
@@ -101,45 +101,45 @@ architecture rtl of solver_test is
             --Fill X_i with data..
             case( main_fsm ) is
                 when "00" => 
-                    mul_N_N_and_M_N (
-                        N_vec => N_counter,
-                        M_vec => M_counter,
-                        N_N_vec => N_N_vec,
-                        N_M_vec => N_M_vec
-                        );
-                    --h_adapt <= to_vec(10,h_adapt'length);
-                    L_tol <= to_vec(10,L_tol'length);
+                    --mul_N_N_and_M_N (
+                    --    N_vec => N_counter,
+                    --    M_vec => M_counter,
+                    --    N_N_vec => N_N_vec,
+                    --    N_M_vec => N_M_vec
+                    --    );
+                    h_adapt <= to_vec(10,h_adapt'length);
+                    --L_tol <= to_vec(10,L_tol'length);
                     
                     main_fsm <= "01";
                     fsm_mul <= '1';
                 when "01" =>
-                    --div_h_2 (
-                    --    mode => mode_sig,
-                    --    h_adapt => h_adapt,
-                    --    h_div => h_div,
-                    --    fpu_div_1_in_1 => fpu_div_1_in_1,
-                    --    fpu_div_1_in_2 => fpu_div_1_in_2,
-                    --    fpu_div_1_out => fpu_div_1_out,
-                    --    enable_div_1 => enable_div_1,
-                    --    done_div_1 => done_div_1,
-                    --    fsm => fsm_mul);
-                    mul_L_9 (
+                    div_h_2 (
                         mode => mode_sig,
-                        L_tol => L_tol,
-                        L_nine => L_nine,
-                        fpu_mul_1_in_1 => fpu_mul_1_in_1,
-                        fpu_mul_1_in_2 => fpu_mul_1_in_2,
-                        fpu_mul_1_out => fpu_mul_1_out,
-                        enable_mul_1 => enable_mul_1,
-                        done_mul_1 => done_mul_1,
+                        h_adapt => h_adapt,
+                        h_div => h_div,
+                        fpu_div_1_in_1 => fpu_div_1_in_1,
+                        fpu_div_1_in_2 => fpu_div_1_in_2,
+                        fpu_div_1_out => fpu_div_1_out,
+                        enable_div_1 => enable_div_1,
+                        done_div_1 => done_div_1,
                         fsm => fsm_mul);
+                    --mul_L_9 (
+                    --    mode => mode_sig,
+                    --    L_tol => L_tol,
+                    --    L_nine => L_nine,
+                    --    fpu_mul_1_in_1 => fpu_mul_1_in_1,
+                    --    fpu_mul_1_in_2 => fpu_mul_1_in_2,
+                    --    fpu_mul_1_out => fpu_mul_1_out,
+                    --    enable_mul_1 => enable_mul_1,
+                    --    done_mul_1 => done_mul_1,
+                    --    fsm => fsm_mul);
 
                     if fsm_mul = '0' then
                         main_fsm <= "11";
                     end if;
 		when "10" =>
-            --h_div <= to_vec(to_int(h_div) + 1,h_div'length);
-            L_nine <= to_vec(to_int(L_nine) + 1,L_nine'length);
+            h_div <= to_vec(to_int(h_div) + 1,h_div'length);
+            --L_nine <= to_vec(to_int(L_nine) + 1,L_nine'length);
 		when others =>
 			null;
             end case ;

@@ -121,7 +121,7 @@ package solver_pkg is
 		);
 
 
-	
+
 end package solver_pkg;
 
 package body solver_pkg is 
@@ -338,7 +338,7 @@ package body solver_pkg is
 
 
 		end x_ware_find_address;
-
+----------------err---------------------
 	procedure mul_L_9 (
 		signal mode: in std_logic_vector(1 downto 0);
 		signal L_tol: in  std_logic_vector(63 downto 0);
@@ -380,6 +380,7 @@ package body solver_pkg is
 
 	--gets err_sum
 	--and returns err_sum = (h*h*L9)/err_sum
+	----------err------------
 	procedure proc_run_err_h_L (
 		signal mode: in std_logic_vector(1 downto 0);
 		signal h_adapt, L_nine: in  std_logic_vector(63 downto 0);
@@ -421,7 +422,6 @@ package body solver_pkg is
                     enable_mul_1<= '1';
                     if done_mul_1 = '1' then
                     	--enable_mul_1<= '0';
-                    	
                     	fsm <= "10";
                     end if;
                 when "10" =>
@@ -434,7 +434,7 @@ package body solver_pkg is
 			end case ;
 
 		end proc_run_err_h_L;
-
+---------------err------------
 	procedure div_h_2 (
 		signal mode: in std_logic_vector(1 downto 0);
 		signal h_adapt: in  std_logic_vector(63 downto 0);
@@ -462,6 +462,7 @@ package body solver_pkg is
                     	when others =>
                     		fpu_div_1_in_2(63 downto 0) <= "0100000000000000000000000000000000000000000000000000000000000000";
                     end case ;
+                    ----------------error---------------------
                     if done_div_1 = '1' then
                     	enable_div_1 <= '0';
                     	h_div <= fpu_div_1_out;
@@ -473,11 +474,10 @@ package body solver_pkg is
 			end case ;
 		end div_h_2;
 
-
 	procedure mul_N_N_and_M_N (
 		
 		signal N_vec,M_vec: in  std_logic_vector(5 downto 0);
-		signal N_N_vec,N_M_vec: out  std_logic_vector(11 downto 0)
+		signal N_N_vec,N_M_vec: out  std_logic_vector(15 downto 0)
 		)is
 
 		begin
@@ -485,4 +485,8 @@ package body solver_pkg is
 			N_M_vec <= to_vec ( to_int(N_vec)* to_int(M_vec) ,N_M_vec'length);
 			
 		end mul_N_N_and_M_N;
+
+
+
+	procedure 
 end package body solver_pkg;
