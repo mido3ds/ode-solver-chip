@@ -1,7 +1,6 @@
 [ ] Adder: 
 
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
-    [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement the 2 fixed point adder/subtractors using same interface (module/entity) so that it is easy to plug them into your code. 
     [x] ripple adder shouldn’t be one of the two adders. 
     [ ] SW equivalent
@@ -13,7 +12,6 @@
 [ ] Multiplier:
 
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
-    [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement the 2 fixed point multipliers using same interface  (module/entity) so that it is easy to plug them into your code. (use the adder interface inside it to easily switch etween different adders)
     [x] Wrap the multiplier you implemented last phase wrap it in an entity/module that shares the interface as the other 2 multipliers.
     [x] Adjust testbench to the updated interface and re-run your testing.
@@ -24,7 +22,6 @@
 [ ] Division:
 
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
-    [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement fixed-point division (use the adder interface inside it to easily switch between different adders).
     [ ] Implement software equivalent functionality.
     [x] Implement testbench to test the above circuit.
