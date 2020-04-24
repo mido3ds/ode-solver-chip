@@ -424,3 +424,5 @@ cython_debug/
 
 # ignore latex-formatter output
 __latexindent_temp*
+
+.vscode
