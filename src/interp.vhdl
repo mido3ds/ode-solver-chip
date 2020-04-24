@@ -139,7 +139,7 @@ begin
             zero      => zero_div_1,
             posv      => posv_div_1
         );
-    fpu_add_1 : entity work.fpu_adder(sec_algo)
+    fpu_add_1 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -154,7 +154,7 @@ begin
             posv      => posv_add_1,
             add_sub   => this_is_add
         );
-    fpu_sub_1 : entity work.fpu_adder(sec_algo)
+    fpu_sub_1 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -169,7 +169,7 @@ begin
             posv      => posv_sub_1,
             add_sub   => this_is_sub
         );
-    fpu_sub_2 : entity work.fpu_adder(sec_algo)
+    fpu_sub_2 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -649,6 +649,7 @@ begin
                     --check input address
                     --read lower part of h_new
                     in_data <= (others => 'Z');
+                    interp_done_op <= "00";
                     if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
