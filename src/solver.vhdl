@@ -1281,6 +1281,8 @@ begin
             end case;
         end procedure;
 
+
+
     --calculates err_sum = sum(abs(Xi[i] - X_w[i]))
     procedure proc_run_sum_err is
         begin
