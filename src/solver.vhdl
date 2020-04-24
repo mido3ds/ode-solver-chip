@@ -2126,30 +2126,30 @@ begin
     end process ; -- proc_run_n_m_and_n_n
 
     --updates X_ware address pointer                       
-    proc_update_X_ware_address : process( c_ware,listen_to_me )
-    begin
-        case(c_ware) is
-            when "000" =>
-                x_ware_address <= (others => '0');
-                x_address_out <= x"2779";
-            when "001" =>
-                x_ware_address <= "0001100100";
-                x_address_out <= x"27DD";
-            when "010" =>
-                x_ware_address <=  "0011001000";
-                x_address_out <= x"2841";
-            when "011" =>
-                x_ware_address <=  "0100101100";
-                x_address_out <= x"28A5";
-            when "100" =>
-                x_ware_address <=  "0110010000";
-                x_address_out <= x"2909";
-            when "101" =>
-                x_ware_address <=  "0111110100";
-            when others =>
-                null;
-        end case ;
-    end process ; -- proc_update_X_ware_address
+    --proc_update_X_ware_address : process( c_ware,listen_to_me )
+    --begin
+    --    case(c_ware) is
+    --        when "000" =>
+    --            x_ware_address <= (others => '0');
+    --            x_address_out <= x"2779";
+    --        when "001" =>
+    --            x_ware_address <= "0001100100";
+    --            x_address_out <= x"27DD";
+    --        when "010" =>
+    --            x_ware_address <=  "0011001000";
+    --            x_address_out <= x"2841";
+    --        when "011" =>
+    --            x_ware_address <=  "0100101100";
+    --            x_address_out <= x"28A5";
+    --        when "100" =>
+    --            x_ware_address <=  "0110010000";
+    --            x_address_out <= x"2909";
+    --        when "101" =>
+    --            x_ware_address <=  "0111110100";
+    --        when others =>
+    --            null;
+    --    end case ;
+    --end process ; -- proc_update_X_ware_address
 
 
     --f16: 0000000001110011
