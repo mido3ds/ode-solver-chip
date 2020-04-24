@@ -3,8 +3,8 @@
 # Mahmoud Adas, SEC: 2, B. N 21
 
 tasks: cpu, io, ram, ram tests
-time: TODO
-problems: TODO
+time: 1 week
+problems: conflicts in signals when filling and flushing the decompressor buffer at same cycle, slow communication with the team to clarify the design.
 
 # Mohamed Shawky, SEC:2, BN:16
 
