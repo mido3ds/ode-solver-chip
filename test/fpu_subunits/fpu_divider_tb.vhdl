@@ -49,68 +49,88 @@ begin
         set_stop_level(failure);
 
         if run("all") then
-            -- testing overflow error
+            -- testing overflow error 
+            rst   <= '1';
+            enbl  <= '0';
             testa <= "0000000000000000000000000000000000000000000000000111111110000000";
             testb <= "0000000000000000000000000000000000000000000000000000000000000001";
-            rst   <= '0';
-            enbl  <= '1';
-            wait for CLK_PERD;
-            assert(testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "Overflow test failed" severity error;
+            wait for CLK_PERD/2;
+            rst  <= '0';
+            enbl <= '1';
+            wait for CLK_PERD * 23;
+            wait for 1 ps;
+            enbl <= '0';
+            assert(testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "Overflow test failed" severity ERROR;
 
-            -- testing divide by zero error 
+            -- testing divide by zero error
+            wait for CLK_PERD;
             testa <= "0000000000000000000000000000000000000000000000000111111110000000";
             testb <= "0000000000000000000000000000000000000000000000000000000000000000";
-            rst   <= '0';
-            enbl  <= '1';
+            wait for CLK_PERD/2;
+            enbl <= '1';
             wait for CLK_PERD;
-            assert(testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "Divide by zero test failed" severity error;
+            enbl <= '0';
+            wait for CLK_PERD * 22;
+            wait for 1 ps;
+            assert(testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "Divide by zero test failed" severity ERROR;
 
-            -- testing operation while enable is 0 (it should reset all except error state)
-            testa <= "0000000000000000000000000000000000000000000000000000000000000101";
-            testb <= "0000000000000000000000000000000000000000000000000100100011100001";
-            rst   <= '0';
-            enbl  <= '0';
+            -- testing reset
             wait for CLK_PERD;
-            assert(testc = x"0000000000000000" and testDone = '0' and testErr = '1' and testZero = '0' and testPosv = '0') report "Enable 0 test failed" severity error;
-
-            -- resetting	while enable is 0 
             testa <= "0000000000000000000000000000000000000000000000000000000000000101";
             testb <= "0000000000000000000000000000000000000000000000000100100011100001";
             rst   <= '1';
             enbl  <= '0';
             wait for CLK_PERD;
-            assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "Reset test failed" severity error;
+            assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "Reset test failed" severity ERROR;
             -- testing valid positive / positive operation 
-            testa <= "0000000000000000000000000000000000000000000000000111111110000000";
-            testb <= "0000000000000000000000000000000000000000000000000000010100000000";
-            rst   <= '0';
-            enbl  <= '1';
             wait for CLK_PERD;
-            assert(testc = x"0000000000000CC0" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "positive / positive test failed" severity error;
+            --rst	 <= '1';
+            testa <= "0000000000000000000000000000000000000000000000000111111110000000"; -- a = 255
+            testb <= "0000000000000000000000000000000000000000000000000000010100000000"; -- b = 10
+            wait for CLK_PERD/2;
+            rst  <= '0';
+            enbl <= '1';
+            wait for CLK_PERD * 23;
+            wait for 1 ps;
+            -- result = 0000000000000000000000000000000000000000000000000000110011000000 (25.5)
+            assert(testc = x"0000000000000CC0" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "positive / positive test failed" severity ERROR;
 
             -- testing valid positive / negative operation 
-            testa <= "1111111111111111111111111111111111111111111111111000000010000000";
-            testb <= "0000000000000000000000000000000000000000000000000000010100000000";
-            rst   <= '0';
-            enbl  <= '1';
             wait for CLK_PERD;
-            assert(testc = x"FFFFFFFFFFFFF340" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "positive / negative test failed" severity error;
+            rst   <= '1';
+            testa <= "1111111111111111111111111111111111111111111111111000000010000000"; -- a = -255
+            testb <= "0000000000000000000000000000000000000000000000000000001010000000"; -- a = 5
+            wait for CLK_PERD/2;
+            rst  <= '0';
+            enbl <= '1';
+            wait for CLK_PERD * 23;
+            wait for 1 ps;
+            -- result = 1111111111111111111111111111111111111111111111111110011010000000 (-51.0)   
+            assert(testc = x"FFFFFFFFFFFFE680" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "positive / negative test failed" severity ERROR;
 
-            -- testing valid negative / negative operation 
+            -- testing valid negative / negative operation
+            wait for CLK_PERD;
+            rst   <= '1';
             testa <= "1111111111111111111111111111111111111111111111111000000010000000";
             testb <= "1111111111111111111111111111111111111111111111111111101100000000";
-            rst   <= '0';
-            enbl  <= '1';
-            wait for CLK_PERD;
-            assert(testc = x"0000000000000CC0" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "negative / negative test failed" severity error;
+            wait for CLK_PERD/2;
+            rst  <= '0';
+            enbl <= '1';
+            wait for CLK_PERD * 23;
+            wait for 1 ps;
+            assert(testc = x"0000000000000CC0" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "negative / negative test failed" severity ERROR;
 
             -- testing valid zero / number operation 
+            wait for CLK_PERD;
+            rst   <= '1';
             testa <= "0000000000000000000000000000000000000000000000000000000000000000";
             testb <= "1111111111111111111111111111111111111111111111111000000010000000";
-            rst   <= '0';
-            enbl  <= '1';
-            wait for CLK_PERD;
-            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '1' and testPosv = '0') report "zero / number test failed" severity error;
+            wait for CLK_PERD/2;
+            rst  <= '0';
+            enbl <= '1';
+            wait for CLK_PERD * 23;
+            wait for 1 ps;
+            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '1' and testPosv = '0') report "zero / number test failed" severity ERROR;
         end if;
 
         wait for CLK_PERD/2;

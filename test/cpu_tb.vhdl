@@ -75,9 +75,9 @@ begin
 
             info("waiting for io interrupt");
 
-            -- comment the following 2 lines if components are not complete
-            wait until interrupt = '1';
-            check_equal(error_success, '1', "io had error in reading", failure);
+            warning("ignoring waiting for interrupt, uncomment the following 2 lines if components are complete");
+            --wait until interrupt = '1';
+            --check_equal(error_success, '1', "io had error in reading", failure);
 
             info("done waiting");
         end procedure;
@@ -89,9 +89,9 @@ begin
 
             info("waiting for interrupt");
 
-            -- comment the following 2 lines if components are not complete
-            wait until interrupt = '1';
-            check_equal(error_success, '1', "solver/interpolator had error during processing", failure);
+            warning("ignoring waiting for interrupt, uncomment the following 2 lines if components are complete");
+            -- wait until interrupt = '1';
+            -- check_equal(error_success, '1', "solver/interpolator had error during processing", failure);
 
             info("done waiting");
         end procedure;
@@ -120,10 +120,10 @@ begin
                 info("wrote line " & integer'image(i));
                 i := i + 1;
 
-                -- uncomment the following if components are not complete
-                -- if i > 10 then
-                --     exit;
-                -- end if;
+                warning("ignoring waiting for interrupt, uncomment the following 2 lines if components are complete");
+                if i > 10 then
+                    exit;
+                end if;
             end loop;
 
             info("done writing " & file_path & " with " & integer'image(i) & " lines");

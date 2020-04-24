@@ -74,7 +74,7 @@ architecture first_algo of fpu_adder is --Carry look ahead adder
     signal in_a_signal               : std_logic_vector(63 downto 0);
     signal in_b_signal               : std_logic_vector(63 downto 0);
     signal sum_signal, out_c_signal  : std_logic_vector(63 downto 0);
-    signal carry_signal              : std_logic_vector(3 downto 1 );
+    signal carry_signal              : std_logic_vector(3 downto 1);
     signal zero_signal, error_signal : std_logic;
     signal dummy                     : std_logic;
     signal input_carry               : std_logic := '0';

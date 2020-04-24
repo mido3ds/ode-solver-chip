@@ -125,7 +125,7 @@ begin
             zero      => zero_mul_1,
             posv      => posv_mul_1
         );
-    fpu_div_1 : entity work.fpu_divider(first_algo)
+    fpu_div_1 : entity work.fpu_divider(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -228,9 +228,9 @@ begin
     --finds the range in which the received T lies
     procedure range_finder is
     begin
-        if h_new = X"0000" then
+        if h_new = X"0000000000000000" then
             is_stored <= '1';
-            if t_low = X"0000" then
+            if t_low = X"0000000000000000" then
                 t_low <= h_new;
                 t_high <= h_new;
                 u_low_adr <= (others => '0');
@@ -273,9 +273,9 @@ begin
                 u_0_adr <= (others => '0');
                 out_low_from <= '1';
             end if;
-        elsif h_new > X"0000" and h_new < out_time_1 then
+        elsif h_new > X"0000000000000000" and h_new < out_time_1 then
             is_stored <= '0';
-            t_low <= X"0000";
+            t_low <= X"0000000000000000";
             t_high <= out_time_1;
             u_low_adr <= (others => '0');
             u_high_adr <= (others => '0');
@@ -365,7 +365,7 @@ begin
             U_out_wr <= '0';
             U_out_rd <= '1';
             u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1);
-        elsif u_out_adr = multiply2(M_vec) then
+        elsif u_out_adr = multiply2(M_vec)(6 downto 0) then
             in_data <= U_out_data_out;
             send_output_enable <= '0';
         else
@@ -385,7 +385,7 @@ begin
             U_0_wr <= '0';
             U_0_rd <= '1';  
             u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
-        elsif u_0_adr = multiply2(M_vec) then
+        elsif u_0_adr = multiply2(M_vec)(6 downto 0) then
             in_data <= U_0_data_out;
             send_u_0_enable <= '0';
         else
@@ -405,7 +405,7 @@ begin
             U_s_wr <= '0';
             U_s_rd <= '1';
             u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1); 
-        elsif u_low_adr = multiply2(M_vec) then
+        elsif u_low_adr = multiply2(M_vec)(8 downto 0) then
             in_data <= U_s_data_out;
             send_u_s_enable <= '0';
         else
@@ -680,7 +680,7 @@ begin
                             fpu_sub_2_in_2 <= t_low;
                             enable_sub_2 <= '1';
                             interp_state <= "00011";
-                        elsif is_stored = '1' and h_new = X"0000" and out_low_from = '0' then
+                        elsif is_stored = '1' and h_new = X"0000000000000000" and out_low_from = '0' then
                             interp_done_op <= "01";
                             send_u_0_enable <= '1';
                             send_u_0;

@@ -80,131 +80,129 @@ begin
 end architecture;
 
 architecture first_algo of fpu_divider is
-  	constant scale_factor : integer := 7;  -- fixed scale factor
+	constant scale_factor : integer := 7;  -- fixed scale factor
 	constant size         : integer := 16; -- operands' size
-	
+
 	-- FSM states
-	type state_type is (idle, shift, op);     
- 
-	signal state, state_next : state_type;   
-	signal z, z_next, quotient, a, b : std_logic_vector(4*size-1 downto 0);  
-	signal out64, out_neg,test : std_logic_vector(4*size-1 downto 0):="0000000000000000000000000000000000000000000000000000000000000000";  
-	signal i, i_next : integer;
-	signal zero_flag, posv_flag, ovfl_flag, div_by_zero, ready,temp : std_logic := '0';
+	type state_type is (idle, shift, op);
+
+	signal state, state_next                                         : state_type;
+	signal z, z_next, quotient, a, b                                 : std_logic_vector(4 * size - 1 downto 0);
+	signal out64, out_neg, test                                      : std_logic_vector(4 * size - 1 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000";
+	signal i, i_next                                                 : integer;
+	signal zero_flag, posv_flag, ovfl_flag, div_by_zero, ready, temp : std_logic := '0';
 
 	-- The subtraction
-	signal operation, enbl_add	: std_logic:='1';
-	signal sub : std_logic_vector(4*size-1 downto 0);
-	
-	component fpu_adder is
-    port (
-        mode    : in std_logic_vector(1 downto 0);
-        clk     : in std_logic;
-        rst     : in std_logic;
-        enbl    : in std_logic;
-        add_sub : in std_logic; -- add = 0, sub = 1
-        in_a    : in std_logic_vector(63 downto 0);
-        in_b    : in std_logic_vector(63 downto 0);
+	signal operation, enbl_add                                       : std_logic := '1';
+	signal sub                                                       : std_logic_vector(4 * size - 1 downto 0);
 
-        out_c   : out std_logic_vector(63 downto 0);
-        done    : out std_logic;
-        err     : out std_logic;
-        zero    : out std_logic;
-        posv    : out std_logic
-    );
-	end component; 
-			  
+	component fpu_adder is
+		port (
+			mode    : in std_logic_vector(1 downto 0);
+			clk     : in std_logic;
+			rst     : in std_logic;
+			enbl    : in std_logic;
+			add_sub : in std_logic; -- add = 0, sub = 1
+			in_a    : in std_logic_vector(63 downto 0);
+			in_b    : in std_logic_vector(63 downto 0);
+
+			out_c   : out std_logic_vector(63 downto 0);
+			done    : out std_logic;
+			err     : out std_logic;
+			zero    : out std_logic;
+			posv    : out std_logic
+		);
+	end component;
+
 begin
-	a         <= std_logic_vector(abs(signed(in_a)) sll scale_factor);
-	b         <= std_logic_vector(abs(signed(in_b)));
-	process(clk, rst)
+	a <= std_logic_vector(abs(signed(in_a)) sll scale_factor);
+	b <= std_logic_vector(abs(signed(in_b)));
+	process (clk, rst)
 	begin
-		if (rst='1') then
+		if (rst = '1') then
 			state <= idle;
 		elsif (clk'event) then
 			state <= state_next;
 		end if;
 	end process;
-		
+
 	--FSM next state calculation
-	process(state, enbl, i_next)
+	process (state, enbl, i_next)
 	begin
 		case state is
 			when idle =>
-				if ( enbl = '1' ) then
+				if (enbl = '1') then
 					state_next <= shift;
 				else
 					state_next <= idle;
 				end if;
-							
+
 			when shift =>
 				state_next <= op;
-					
+
 			when op =>
-				if ( i_next = 23 ) then
+				if (i_next = 23) then
 					state_next <= idle;
 				else
 					state_next <= shift;
 				end if;
-							
-			end case;
+
+		end case;
 	end process;
-		
+
 	--counter
-	process(clk, rst)
+	process (clk, rst)
 	begin
-		if (rst='1') then
+		if (rst = '1') then
 			i <= 0;
 		elsif (clk'event) then
 			i <= i_next;
 		end if;
 	end process;
 
-	process(state, i)
+	process (state, i)
 	begin
 		case state is
 			when idle =>
-				i_next <= 0;	
+				i_next <= 0;
 			when shift =>
 				i_next <= i;
 			when op =>
 				i_next <= i + 1;
 		end case;
 	end process;
-					
-			
-	process(clk, rst)
+	process (clk, rst)
 	begin
-		if ( rst='1' ) then
+		if (rst = '1') then
 			z <= (others => '0');
-		elsif (clk'event)then
+		elsif (clk'event) then
 			z <= z_next;
 		end if;
 	end process;
-			
-	process( state, a, b, z, sub)
+
+	process (state, a, b, z, sub)
 	begin
-		
+
 		case state is
 			when idle =>
-				z_next <= z(4*size-2 downto 0) & a(size + scale_factor - 1);
+				z_next   <= z(4 * size - 2 downto 0) & a(size + scale_factor - 1);
 				quotient <= (others => '0');
-			when shift =>
-				z_next <= z(4*size-2 downto 0) & a(size + scale_factor - i - 1);
+			when shift          =>
+				z_next <= z(4 * size - 2 downto 0) & a(size + scale_factor - i - 1);
 			when op =>
-				if ( z < b ) then
-					z_next <= z;
+				if (z < b) then
+					z_next                                <= z;
 					quotient(size + scale_factor - i - 1) <= '0';
 				else
-					z_next <= sub;
+					z_next                                <= sub;
 					quotient(size + scale_factor - i - 1) <= '1';
 				end if;
 		end case;
 	end process;
 
-	subtractor: entity work.fpu_adder (with_operators) port map(mode=>mode, clk=>clk, rst=>rst, enbl=>enbl_add, add_sub=>operation, in_a=>z, in_b=>b, out_c=>sub);
+	subtractor : entity work.fpu_adder (sec_algo) port map(mode => mode, clk => clk, rst => rst, enbl => enbl_add, add_sub => operation, in_a => z, in_b => b, out_c => sub);
 	out_neg <= std_logic_vector(unsigned (not (quotient)) + 1);
-	
+
 	--output and control signals
 	out64 	<= 	out_neg  when ((i_next = 23 )and (in_a(size - 1) = '1' xor in_b(size - 1) = '1')) else 
 				quotient when (i_next = 23) else 

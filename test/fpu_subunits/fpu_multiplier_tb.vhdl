@@ -57,7 +57,7 @@ begin
             rst   <= '0';
             enbl  <= '1';
             wait for CLKPERIOD;
-            assert(testc = x"0000000000000000" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "error flag 1 test failed" severity ERROR;
+            assert(testc = x"FFFFFFFFFFFFD5F0" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "error flag 1 test failed" severity ERROR;
 
             -- testing operation while enable is 0 (it should reset all except error state)
             testa <= "0000000000000000000000000000000000000000000000000000000000000101";

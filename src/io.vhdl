@@ -23,7 +23,6 @@ architecture rtl of io is
     signal dcm_out_data      : std_logic_vector(in_data'range);
     signal dcm_out_ready     : std_logic;
     signal dcm_enbl_in       : std_logic;
-    signal dcm_interrupt     : std_logic;
     signal dcm_state_wait    : std_logic;
     signal dcm_error_success : std_logic;
 
