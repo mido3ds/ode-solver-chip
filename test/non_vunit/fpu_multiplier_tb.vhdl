@@ -1,9 +1,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 entity fpu_multiplier_tb is
-end fpu_multiplier_tb;
+end entity;
 
 architecture tb of fpu_multiplier_tb is
     signal testa, testb, testc                              : std_logic_vector (63 downto 0);
@@ -27,11 +27,7 @@ begin
             posv  => testPosv
         );
 
-    process
-    begin
-        clk <= not clk;
-        wait for CLKPERIOD/2;
-    end process;
+    clk <= not clk after CLKPERIOD/2;
 
     process
     begin
@@ -41,7 +37,7 @@ begin
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"FFFFFFFFFFFFD5F0" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "overflow test failed" severity ERROR;
+        assert(testc = x"FFFFFFFFFFFFD5F0" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "overflow test failed" severity error;
 
         -- testing operation while error flag is 1
         testa <= "0000000000000000000000000000000000000000000000000000000000000101";
@@ -49,7 +45,7 @@ begin
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000000" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "error flag 1 test failed" severity ERROR;
+        assert(testc = x"FFFFFFFFFFFFD5F0" and testDone = '1' and testErr = '1' and testZero = '0' and testPosv = '0') report "error flag 1 test failed" severity error;
 
         -- testing operation while enable is 0 (it should reset all except error state)
         testa <= "0000000000000000000000000000000000000000000000000000000000000101";
@@ -57,7 +53,7 @@ begin
         rst   <= '0';
         enbl  <= '0';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000000" and testDone = '0' and testErr = '1' and testZero = '0' and testPosv = '0') report "enable 0 test failed" severity ERROR;
+        assert(testc = x"0000000000000000" and testDone = '0' and testErr = '1' and testZero = '0' and testPosv = '0') report "enable 0 test failed" severity error;
 
         -- resetting	while enable is 0 
         testa <= "0000000000000000000000000000000000000000000000000000000000000101";
@@ -65,14 +61,14 @@ begin
         rst   <= '1';
         enbl  <= '0';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "reset test failed" severity ERROR;
+        assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "reset test failed" severity error;
         -- testing valid positive * positive operation 
         testa <= "0000000000000000000000000000000000000000000000000000000000000101";
         testb <= "0000000000000000000000000000000000000000000000000100100011100001";
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"00000000000002D8" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "positive * positive test failed" severity ERROR;
+        assert(testc = x"00000000000002D8" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "positive * positive test failed" severity error;
 
         -- testing valid positive * negative operation 
         testa <= "1111111111111111111111111111111111111111111111111111111111111011";
@@ -80,7 +76,7 @@ begin
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"FFFFFFFFFFFFFD27" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "positive * negative test failed" severity ERROR;
+        assert(testc = x"FFFFFFFFFFFFFD27" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '0') report "positive * negative test failed" severity error;
 
         -- testing valid negative * negative operation 
         testa <= "1111111111111111111111111111111111111111111111111111111111111011";
@@ -88,7 +84,7 @@ begin
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000227" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "negative * negative test failed" severity ERROR;
+        assert(testc = x"0000000000000227" and testDone = '1' and testErr = '0' and testZero = '0' and testPosv = '1') report "negative * negative test failed" severity error;
 
         -- testing valid zero * number operation 
         testa <= "1111111111111111111111111111111111111111111111111111111111111011";
@@ -96,7 +92,7 @@ begin
         rst   <= '0';
         enbl  <= '1';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '1' and testPosv = '0') report "zero * number test failed" severity ERROR;
+        assert(testc = x"0000000000000000" and testDone = '1' and testErr = '0' and testZero = '1' and testPosv = '0') report "zero * number test failed" severity error;
 
         -- testing valid operation when enable is 0
         testa <= "1111111111111111111111111111111111111111111111111111111111111011";
@@ -104,6 +100,8 @@ begin
         rst   <= '0';
         enbl  <= '0';
         wait for CLKPERIOD;
-        assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "enable 0 2nd test failed" severity ERROR;
+        assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "enable 0 2nd test failed" severity error;
+
+        wait;
     end process;
 end architecture;

@@ -2,9 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-
+library vunit_lib;
+context vunit_lib.vunit_context;
 
 entity fpu_multiplier_tb is
+    generic (runner_cfg : string);
 end entity;
 
 architecture tb of fpu_multiplier_tb is
@@ -37,6 +39,10 @@ begin
 
     process
     begin
+        test_runner_setup(runner, runner_cfg);
+        set_stop_level(failure);
+
+        if run("all") then
             -- testing overflow error
             testa <= "1111111111111111111111111111111111111111111111111010011111100101";
             testb <= "0000000000000000000000000000000000000000000000000100100011100001";
@@ -107,5 +113,10 @@ begin
             enbl  <= '0';
             wait for CLKPERIOD;
             assert(testc = x"0000000000000000" and testDone = '0' and testErr = '0' and testZero = '0' and testPosv = '0') report "enable 0 2nd test failed" severity ERROR;
+        end if;
+
+        wait for CLKPERIOD/2;
+        test_runner_cleanup(runner);
+        wait;
     end process;
 end architecture;
