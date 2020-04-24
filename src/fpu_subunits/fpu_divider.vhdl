@@ -211,7 +211,7 @@ begin
 				"0000000000000000000000000000000000000000000000000000000000000000";
 	out_c <= out64;
 	
-	div_by_zero <= '1' when ( in_b = "0000000000000000000000000000000000000000000000000000000000000000" ) else '0';
+	div_by_zero <= '1' when ((i_next = 23) and in_b = "0000000000000000000000000000000000000000000000000000000000000000" ) else '0';
 	ovfl_flag 	<= '1' when ((i_next = 23) and (quotient(22) = '1' or quotient(21) = '1' or quotient(20) = '1' or quotient(19) = '1'
 							or quotient(18) = '1' or quotient(17) = '1' or quotient(16) = '1')) else '0';
 	zero 		<= '1' when (i_next = 23 and unsigned(out64) = 0) else '0';
