@@ -40,7 +40,7 @@
     [ ] Synthesize your code 
     [ ] post-synthesize simulation.
 
-[ ] cpu_tb should pass by commenting lines of integration
+[x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
 
 [ ] IO 
