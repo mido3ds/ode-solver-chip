@@ -15,6 +15,7 @@
     [x] Implement the 2 fixed point multipliers using same interface  (module/entity) so that it is easy to plug them into your code. (use the adder interface inside it to easily switch etween different adders)
     [x] Wrap the multiplier you implemented last phase wrap it in an entity/module that shares the interface as the other 2 multipliers.
     [x] Adjust testbench to the updated interface and re-run your testing.
+    [ ] sw equivalent
     [ ] Synthesize your code 
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each multiplier in a Table form.
