@@ -37,6 +37,7 @@
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
     [ ] Synthesize your code 
     [ ] post-synthesize simulation.
+    [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
@@ -50,6 +51,7 @@
     [ ] post-synthesize simulation
     [ ] Testbench (use output of the CPU software to test and simulate IO)
     [ ] Software equivalent functionality
+    [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Interpolator
 
@@ -59,6 +61,7 @@
     [ ] post-synthesize simulation
     [ ] Testbench 
     [ ] Software equivalent functionality
+    [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Solver
 
@@ -68,6 +71,7 @@
     [ ] post-synthesize simulation
     [ ] Testbench 
     [ ] Software equivalent functionality
+    [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] all vunit tests pass
 [ ] vunit tests are up-to-date with non_vunit of tests
