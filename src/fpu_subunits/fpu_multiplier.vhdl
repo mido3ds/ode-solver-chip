@@ -111,7 +111,7 @@ begin
 			end if;
 			posv_flag := not output(SIZE - 1) and not zero_flag; -- positive output?
 			done_flag := '1';
-		elsif enbl = '0'
+		elsif enbl = '0' then
 			zero_flag  := '0';
 			posv_flag  := '0';
 			done_flag  := '0';

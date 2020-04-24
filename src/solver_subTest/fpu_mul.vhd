@@ -34,7 +34,11 @@ architecture rtl of solver_test is
     --signal x_temp_2 : std_logic_vector(63 downto 0) := X"1111111122222222";
     
     signal main_fsm, fsm_out : std_logic_vector(1 downto 0) := (others => '0');
-    --signal N_counter: std_logic_vector(5 downto 0) := "000101";
+    signal N_counter: std_logic_vector(5 downto 0) := "000101";
+    signal M_counter: std_logic_vector(5 downto 0) := "000010";
+    signal N_N_vec : std_logic_vector(11 downto 0) := (others => '0');
+    signal N_M_vec : std_logic_vector(11 downto 0) := (others => '0');
+    
     --signal N_counter_2: std_logic_vector(5 downto 0) := (others => '0');
     signal mode_sig : std_logic_vector(1 downto 0) := "10";
     --signal wares : std_logic_vector(2 downto 0) := "001";
@@ -43,7 +47,7 @@ architecture rtl of solver_test is
     
     signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
-    signal L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
+    signal L_tol,L_nine : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '1');
     --signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '0');
     --signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
     --signal h_adapt, h_div : std_logic_vector(MAX_LENGTH-1 downto 0) := (others => '0');
@@ -96,8 +100,13 @@ architecture rtl of solver_test is
         if rst = '0' and rising_edge(clk) then
             --Fill X_i with data..
             case( main_fsm ) is
-            
                 when "00" => 
+                    mul_N_N_and_M_N (
+                        N_vec => N_counter,
+                        M_vec => M_counter,
+                        N_N_vec => N_N_vec,
+                        N_M_vec => N_M_vec
+                        );
                     --h_adapt <= to_vec(10,h_adapt'length);
                     L_tol <= to_vec(10,L_tol'length);
                     

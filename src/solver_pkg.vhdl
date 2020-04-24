@@ -112,6 +112,16 @@ package solver_pkg is
 		signal done_div_1 : in std_logic ;
 		signal fsm : inout std_logic
 		);
+
+
+	procedure mul_N_N_and_M_N (
+		
+		signal N_vec,M_vec: in  std_logic_vector(5 downto 0);
+		signal N_N_vec,N_M_vec: out  std_logic_vector(11 downto 0)
+		);
+
+
+	
 end package solver_pkg;
 
 package body solver_pkg is 
@@ -344,11 +354,6 @@ package body solver_pkg is
 			case( fsm ) is
 			
 				when '1' =>
-					if done_mul_1 = '1' then
-                    	enable_mul_1 <= '0';
-                    	L_nine <= fpu_mul_1_out;
-                    	fsm <= '0';
-                    end if;
 					enable_mul_1 <= '1';
                     fpu_mul_1_in_1 <= L_tol;
                     case( mode ) is
@@ -361,8 +366,12 @@ package body solver_pkg is
                     	when others =>
                     		fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
                     end case ;
+                    L_nine <= fpu_mul_1_out;
                     ------------------------ERROR here ya EV, check FPU_MUL------------------
-                    
+                    if done_mul_1 = '1' then
+                    	enable_mul_1 <= '0';
+                    	fsm <= '0';
+                    end if;
 				when others =>
 					--00
 					null;
@@ -411,10 +420,15 @@ package body solver_pkg is
                     fpu_mul_1_in_2 <= fpu_mul_1_out;
                     enable_mul_1<= '1';
                     if done_mul_1 = '1' then
-                    	err_sum <= fpu_mul_1_out;
-                    	fsm <= "00";
+                    	--enable_mul_1<= '0';
+                    	
+                    	fsm <= "10";
                     end if;
-				when others =>
+                when "10" =>
+                	err_sum <= fpu_mul_1_out;
+                    enable_mul_1<= '0';
+                    fsm <= "00";
+ 				when others =>
 					--00
 					null;
 			end case ;
@@ -459,4 +473,16 @@ package body solver_pkg is
 			end case ;
 		end div_h_2;
 
+
+	procedure mul_N_N_and_M_N (
+		
+		signal N_vec,M_vec: in  std_logic_vector(5 downto 0);
+		signal N_N_vec,N_M_vec: out  std_logic_vector(11 downto 0)
+		)is
+
+		begin
+			N_N_vec <= to_vec ( to_int(N_vec)* to_int(N_vec) ,N_N_vec'length);
+			N_M_vec <= to_vec ( to_int(N_vec)* to_int(M_vec) ,N_M_vec'length);
+			
+		end mul_N_N_and_M_N;
 end package body solver_pkg;
