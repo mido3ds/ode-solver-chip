@@ -508,16 +508,22 @@ begin
     --calculates A = (I+hA)
     --note: so many signals are global...
     procedure proc_run_h_a (
-        signal fsm_read_a,fsm_write_a :  std_logic_vector(1 downto 0);
+        --dummies...
+        signal fsm_read_a, fsm_write_a :  std_logic_vector(1 downto 0);
         signal N_N_counter : std_logic_vector(15 downto 0);
-        signal N_N_counter_2 : std_logic_vector(15 downto 0)
+        signal diagonal : std_logic_vector(15 downto 0)
         )is
         begin
             case(fsm_run_h_a) is
-                when "0000" =>
-                    --END
-                    null;
-                when "0001" =>
+                when "111" =>
+                    --start here :D
+                    fsm_read_a <= "11";
+                    a_coeff_address <= (others =>'0');
+
+                    diagonal <= to_vec(to_int(N_X_A_B_vec)+1, diagonal'length);
+                    N_N_counter <= to_vec(to_int(N_N)-1, N_N_counter'length);
+                    fsm_run_h_a <= "001";
+                when "001" =>
 
                     read_before_write_reg
                         (
@@ -532,21 +538,21 @@ begin
                         enable_mul_1 <= '1';
                         fpu_mul_1_in_1 <= a_temp;
                         fpu_mul_1_in_2 <= h_main;
-                        fsm_run_h_a <= "0010";
+                        fsm_run_h_a <= "010";
                     end if;
 
                     if done_mul_1 = '1' then
                         a_temp <= fpu_mul_1_out;
-                        fsm_run_h_a <= "0011";
+                        fsm_run_h_a <= "011";
                     end if;
 
                 when "0011" =>
                     enable_mul_1 <= '0';
                     --check here whether to add 1 or not, before writing the output
-                    if N_N_counter_2 = N_N_counter then
+                    if diagonal = N_N_counter then
                         --add 1 before you write please
                         fpu_add_1_in_1 <= a_temp;
-                        case( mode ) is
+                        case( mode_sig ) is
                             when "00" =>
                                 fpu_add_1_in_2 <= (others => '0');
                                 fpu_add_1_in_2(15 downto 0) <=  "0000000010000000";
@@ -558,12 +564,12 @@ begin
                         end case ;
                         enable_add_1 <= '1';
                         thisIsAdder_1 <= '0';
-                        fsm_run_h_a <= "0101";
+                        fsm_run_h_a <= "101";
                     else
                         fsm_write_a <= "11";
-                        fsm_run_h_a <= "0100";
+                        fsm_run_h_a <= "100";
                     end if;
-                when "0100" =>
+                when "100" =>
                     write_after_read_reg(
                         data_in => a_temp,
                         reg_data_in => a_coeff_data_in,
@@ -577,28 +583,21 @@ begin
                         --decrement something here
                         if N_N_counter = X"0000" then
                             a_coeff_address <= (others =>'0');
-                            fsm_run_h_a <= "0000";
+                            fsm_run_h_a <= "000";
                         else
                             N_N_counter <= to_vec(to_int(N_N_counter)-1, N_N_counter'length);
                             fsm_read_a <= "11";
-                            fsm_run_h_a <= "0001";
+                            fsm_run_h_a <= "001";
                         end if;
                     end if;
-                when "0101" =>
+                when "101" =>
                     if done_add_1 = '1' then
                         enable_add_1 <= '0';
                         a_temp <= fpu_add_1_out;
                         fsm_write_a <= "11";
-                        fsm_run_h_a <= "0100";
+                        fsm_run_h_a <= "100";
                     end if;
-                when "1111" =>
-                    --start here :D
-                    fsm_read_a <= "11";
-                    a_coeff_address <= (others =>'0');
-
-                    N_N_counter_2 <= to_vec(to_int(N_X_A_B_vec)+1, N_N_counter_2'length);
-                    N_N_counter <= to_vec(to_int(N_N)-1, N_N_counter'length);
-                    fsm_run_h_a <= "0001";
+                
                 when others =>
                     null;
             end case ;
