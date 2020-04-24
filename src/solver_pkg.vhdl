@@ -85,6 +85,22 @@ package solver_pkg is
 		signal done_mul_1 : in std_logic ;
 		signal fsm : inout std_logic);
 
+
+	procedure proc_run_err_h_L (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal h_adapt, L_nine: in  std_logic_vector(63 downto 0);
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		signal fpu_div_1_in_1, fpu_div_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_div_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_div_1 : out std_logic ;
+		signal done_div_1 : in std_logic ;
+		
+		signal err_sum : inout  std_logic_vector(63 downto 0);
+		signal fsm : inout std_logic_vector(1 downto 0)
+		);
 end package solver_pkg;
 
 package body solver_pkg is 
@@ -329,7 +345,7 @@ package body solver_pkg is
                     	when others =>
                     		fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
                     end case ;
-                    ------------------------ERROR here ya EV, check FPU_MUL-------------------
+                    ------------------------ERROR here ya EV, check FPU_MUL------------------
                     if done_mul_1 = '1' then
                     	enable_mul_1 <= '0';
                     	L_nine <= fpu_mul_1_out;
@@ -340,5 +356,57 @@ package body solver_pkg is
 					null;
 			end case ;
 		end mul_L_9;
+
+	--gets err_sum
+	--and returns err_sum = (h*h*L9)/err_sum
+	procedure proc_run_err_h_L (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal h_adapt, L_nine: in  std_logic_vector(63 downto 0);
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		signal fpu_div_1_in_1, fpu_div_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_div_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_div_1 : out std_logic ;
+		signal done_div_1 : in std_logic ;
+		
+		signal err_sum : inout  std_logic_vector(63 downto 0);
+		signal fsm : inout std_logic_vector(1 downto 0)
+		)is
+
+		begin
+			case( fsm ) is
+			
+				when "11" =>
+					--start the mul and div together
+					enable_mul_1<='1';
+                    fpu_mul_1_in_1 <= h_adapt;
+                    fpu_mul_1_in_2 <= h_adapt;
+
+                    enable_div_1 <= '1';
+                    fpu_div_1_in_1 <= L_nine;
+                    fpu_div_1_in_2 <= err_sum;
+
+                    if done_mul_1 = '1' and done_div_1 = '1' then
+                    	enable_div_1 <= '0';
+                    	enable_mul_1<='0';
+                    	fsm <= "01";
+                    end if;
+
+                when "01" =>
+                	fpu_mul_1_in_1 <= fpu_div_1_out;
+                    fpu_mul_1_in_2 <= fpu_mul_1_out;
+                    enable_mul_1<= '1';
+                    if done_mul_1 = '1' then
+                    	err_sum <= fpu_mul_1_out;
+                    	fsm <= "00";
+                    end if;
+				when others =>
+					--00
+					null;
+			end case ;
+
+		end proc_run_err_h_L;
 
 end package body solver_pkg;
