@@ -652,6 +652,7 @@ begin
                 when "00000" => 
                     --check input address
                     --read lower part of h_new
+                    in_data <= (others => 'Z');
                     if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
