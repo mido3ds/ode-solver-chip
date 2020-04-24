@@ -15,6 +15,8 @@ def post_run(results):
 
 
 def isignored(p):
+    if 'non_vunit' in p: return True
+    
     with open(p, 'r') as f:
         ignored = '--%IGNORE%--' in f.readline()
         if ignored:
