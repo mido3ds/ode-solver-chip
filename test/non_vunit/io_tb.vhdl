@@ -35,38 +35,54 @@ begin
 	process
 	begin
 		-- reset at the beginning
-		rst <= '1';
+		rst     <= '1';
+		in_data <= (others => 'Z');
 		wait for CLKPERIOD;
 		wait for 1 ps; -- shift checks 1 ps for combinational circuits to calculate their output
 		assert(interrupt = '0' and error_success = '1' and adr = x"FFFF") report "error in resetting" severity error;
+
 		-- test loading
 		rst      <= '0';
 		in_state <= "00";
 
 		cpu_data <= x"63490101";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"FFFF") report "data has been written - test1 failed" severity error;
+
 		cpu_data <= x"43272112";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"FFFF") report "data has been written - test2 failed" severity error;
+
 		cpu_data <= x"72341010";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data = x"0C7D4679" and interrupt = '0' and adr = x"0000") report "data hasn't been written - test3 failed" severity error;
+
 		cpu_data <= x"94366349";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data /= x"9E62BE30" and interrupt = '0' and adr = x"0000") report "data has been written - test4 failed" severity error;
+
 		cpu_data <= x"01014327";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data = x"9E62BE30" and interrupt = '0' and adr = x"0001") report "data hasn't been written - test5 failed" severity error;
+
 		cpu_data <= x"21127234";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data /= x"0C7D4679" and interrupt = '0' and adr = x"0001") report "data has been written - test6 failed" severity error;
+
 		cpu_data <= x"10109436";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data = x"0C7D4679" and interrupt = '0' and adr = x"0003") report "data hasn't been written - test7 failed" severity error;
 
 		-- WAIT 
 		in_state <= "01";
+		in_data  <= (others => 'Z');
 		wait for CLKPERIOD;
 		assert(in_data = x"9E62BE30" and interrupt = '0' and adr = x"0005") report "data hasn't been written - test8 failed" severity error;
 
@@ -75,7 +91,6 @@ begin
 		in_data  <= x"FFFFFFFF";
 		wait for CLKPERIOD;
 		assert(cpu_data = x"FFFFFFFF" and interrupt = '0' and error_success = '1') report "didn't out the data - test9 failed" severity error;
-
 		wait;
 	end process;
 end arch;
