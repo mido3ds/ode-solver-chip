@@ -79,15 +79,12 @@ begin
 	begin
 		-- these initializations are for reset and enable 
 		-- when enbl is 0 all outputs except err are reset , when rst is 1 all outputs are reset
-		zero_flag  := '0';
-		posv_flag  := '0';
-		done_flag  := '0';
-		multiplier := (others => '0');
-		output     := (others => '0');
-		out64      := (others => '0');
 		if (rst = '1') then -- reset signal
-			error_local := '0';
-			done_flag   := '1';
+			zero_flag  := '0';
+			posv_flag  := '0';
+			done_flag  := '1';
+			error_local:= '0';
+			out64      := (others => '0');
 		elsif (enbl = '1' and error = '0' and rising_edge(clk)) then -- enabled 
 
 			-- booth algorithm
@@ -114,6 +111,12 @@ begin
 			end if;
 			posv_flag := not output(SIZE - 1) and not zero_flag; -- positive output?
 			done_flag := '1';
+		elsif enbl = '0'
+			zero_flag  := '0';
+			posv_flag  := '0';
+			done_flag  := '0';
+			error_local:= '0';
+			out64      := (others => '0');
 		end if;
 		err   <= error_local; -- storing the error for output
 		error <= error_local; -- storing the error for latching 
