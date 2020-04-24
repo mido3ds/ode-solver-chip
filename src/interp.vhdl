@@ -125,7 +125,7 @@ begin
             zero      => zero_mul_1,
             posv      => posv_mul_1
         );
-    fpu_div_1 : entity work.fpu_divider(with_operators)
+    fpu_div_1 : entity work.fpu_divider(first_algo)
         port map(
             clk       => clk,
             rst       => rst,
