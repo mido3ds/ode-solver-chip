@@ -505,7 +505,6 @@ package body solver_pkg is
 			
 		end mul_N_N_and_M_N;
 
-
 	procedure mul_vector_by_number (
 		--FPU
 		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
@@ -593,5 +592,6 @@ package body solver_pkg is
 
 		end mul_vector_by_number;
 
+	
  
 end package body solver_pkg;

@@ -370,430 +370,28 @@ begin
             rst      => rst
         );
 -----------------------------------------------------------------MEMORY IO-----------------------------------------------------------------------------------
-    --reads A coefficient
-    --This sub_process is responsible for reading a[address,address+1]
-    --and store it at a_temp[63:0]
-    --proc_read_a_coeff : process(clk, read_a_coeff, write_a_coeff)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_a_coeff = '1' and write_a_coeff = '0' then
-    --        if a_high = '0' then
-    --            if increment_a_address = '0' then
-    --                --reading the low part
-    --                a_coeff_rd <= '1';
-    --                a_temp(63 downto 32) <= a_coeff_data_out;
-    --                a_high <= '1';
-    --                increment_a_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_a_address = '0' then
-    --                a_coeff_rd <= '1';
-    --                a_temp(31 downto 0) <= a_coeff_data_out;
-    --                a_high <= '0';
-    --                decrement_a_address <= '1';
-    --                read_a_coeff <= '0';
-    --            end if;
-    --        end if;        
-    --    end if;
-    --end process ; -- proc_read_a_coeff
+--Use it if you're gonna write reg_64_where_u_want_your_data at the same place
+--
+--don't bother the different addresses length, it's already handled
+--read_before_write_reg
+--    (
+--    data_out => reg_64_where_u_want_your_data,
+--    reg_data_out=>memory_data_out,
+--    reg_adrs => memory_address,
+--    read_enbl => memory_read_enable,
+--    write_enbl => memory_write_enable,
+--    fsm => fsm_read-->place ones (11) and wait for (00)
+--    ); 
 
-    ----writes A coefficient
-    ----This sub process takes data from resut_a_temo and stores it at a[adr,adr+1]
-    --proc_write_a_coeff : process(clk, read_a_coeff, write_a_coeff)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_a_coeff = '0' and write_a_coeff = '1' then
-    --        if a_high = '0' then
-    --            if decrement_a_address = '0' then 
-    --                a_coeff_wr <= '1';
-    --                a_coeff_data_in <= result_a_temp (63 downto 32) ;
-    --                a_high <= '1';
-    --                increment_a_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_a_address = '0' then
-    --                a_coeff_wr <= '1';
-    --                a_coeff_data_in <= result_a_temp (31 downto 0) ;
-    --                a_high <= '0';
-    --                increment_a_address <= '1';
-    --                write_a_coeff <= '0';
-    --            end if;
-    --        end if;            
-    --end if;
-    --end process ; -- proc_write_a_coeff
+--write_after_read_reg(
+--    data_in => reg_64_where_u_want_your_data,
+--    reg_data_in => memory_data_in,
+--    reg_adrs => memory_address,
+--    read_enbl => memory_read_enable,
+--    write_enbl => memory_write_enable,
+--    fsm => fsm_write
+--    );
 
-    ----increments A address
-    --inc_a_address : process( clk, increment_a_address )
-    --begin
-    --    if rst = '0' and rising_edge(clk) and increment_a_address = '1' then
-    --        if address_inc_1_enbl = '0' then
-    --            address_inc_1_in <= (others => '0');
-    --            address_inc_1_in(12 downto 0) <= a_coeff_address;
-    --            address_inc_1_enbl <= '1';
-    --            a_coeff_rd <= '0';
-    --            a_coeff_wr <= '0';
-    --        else
-    --            a_coeff_address <= address_inc_1_out(12 downto 0);
-    --            address_inc_1_enbl <= '0';
-    --            increment_a_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- inc_a_address
-
-    ----decrements A address
-    --dec_a_address : process( clk, decrement_a_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and decrement_a_address = '1' then
-    --        if address_dec_1_enbl = '0' then
-    --            address_dec_1_in <= (others => '0');
-    --            address_dec_1_in(12 downto 0) <= a_coeff_address;
-    --            address_dec_1_enbl <= '1';
-    --            a_coeff_rd <= '0';
-    --            a_coeff_wr <= '0';
-    --        else
-    --            a_coeff_address <= address_dec_1_out(12 downto 0);
-    --            address_dec_1_enbl <= '0';
-    --            decrement_a_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- dec_a_address
-
-    ----reads B coefficient
-    --proc_read_b_coeff : process(clk, read_b_coeff, write_b_coeff)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_b_coeff = '1' and write_b_coeff = '0' then
-    --        if b_high = '0' then
-    --            if increment_b_address = '0' then
-    --                --reading the low part
-    --                b_coeff_rd <= '1';
-    --                b_temp(63 downto 32) <= b_coeff_data_out;
-    --                b_high <= '1';
-    --                increment_b_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_b_address = '0' then
-    --                b_coeff_rd <= '1';
-    --                b_temp(31 downto 0) <= b_coeff_data_out;
-    --                b_high <= '0';
-    --                decrement_b_address <= '1';
-    --                read_b_coeff <= '0';
-    --            end if;
-    --        end if;            
-    --end if;
-    --end process ; 
-
-    ----writes B coefficient
-    --proc_write_b_coeff : process(clk, read_b_coeff, write_b_coeff)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_b_coeff = '0' and write_b_coeff = '1' then
-    --        if b_high = '0' then
-    --                if decrement_b_address = '0' then 
-    --                    b_coeff_wr <= '1';
-    --                    b_coeff_data_in <= result_b_temp (63 downto 32) ;
-    --                    b_high <= '1';
-    --                    increment_b_address <= '1';
-    --                end if;
-    --            else
-    --                if increment_b_address = '0' then
-    --                    b_coeff_wr <= '1';
-    --                    b_coeff_data_in <= result_b_temp (31 downto 0) ;
-    --                    b_high <= '0';
-    --                    increment_b_address <= '1';
-    --                    write_b_coeff <= '0';
-    --                end if;
-    --            end if;            
-
-    --    end if;
-    --end process ; -- proc_write_b_coeff
-
-    ----increments B address
-    --inc_b_address : process( clk, increment_b_address )
-    --begin
-    --    if rst = '0' and rising_edge(clk) and increment_b_address = '1' then
-    --        if address_inc_1_enbl = '0' then
-    --            address_inc_1_in <= (others => '0');
-    --            address_inc_1_in(12 downto 0) <= b_coeff_address;
-    --            address_inc_1_enbl <= '1';
-    --            b_coeff_rd <= '0';
-    --            b_coeff_wr <= '0';
-    --        else
-    --            b_coeff_address <= address_inc_1_out(12 downto 0);
-    --            address_inc_1_enbl <= '0';
-    --            increment_b_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- inc_b_address
-
-    ----decrements B address
-    --dec_b_address : process( clk, decrement_b_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and decrement_b_address = '1' then
-    --        if address_dec_1_enbl = '0' then
-    --            address_dec_1_in <= (others => '0');
-    --            address_dec_1_in(12 downto 0) <= b_coeff_address;
-    --            address_dec_1_enbl <= '1';
-    --            b_coeff_rd <= '0';
-    --            b_coeff_wr <= '0';
-    --        else
-    --            b_coeff_address <= address_dec_1_out(12 downto 0);
-    --            address_dec_1_enbl <= '0';
-    --            decrement_b_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- dec_b_address
-    
-    ----reads X from X_ware
-    --proc_read_x : process(clk, read_x, write_x)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_x = '1' and write_x = '0' then
-    --        if x_high = '0' then
-    --            if increment_x_address = '0' then
-    --                --reading higher part
-    --                X_ware_rd <= '1';
-    --                x_temp(63 downto 32) <= x_ware_data_out;
-    --                x_high <= '1';
-    --                increment_x_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_x_address = '0' then
-    --                --reading lower part
-    --                X_ware_rd <= '1';
-    --                x_temp(31 downto 0) <= x_ware_data_out;
-    --                x_high <= '0';
-    --                decrement_x_address <= '1';
-    --                read_x <= '0';
-    --            end if;
-    --        end if;        
-    --    end if;
-    --end process ; -- proc_read_x
-
-    ----writes X in X_ware
-    --proc_write_x : process(clk, read_x, write_x)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_x = '0' and write_x = '1' then
-    --        if x_high = '0' then
-    --                if decrement_x_address = '0' then 
-    --                    X_ware_wr <= '1';
-    --                    x_ware_data_in <= result_x_temp(63 downto 32) ;
-    --                    x_high <= '1';
-    --                    increment_x_address <= '1';
-    --                end if;
-    --            else
-    --                if increment_x_address = '0' then
-    --                    X_ware_wr <= '1';
-    --                    x_ware_data_in <= result_x_temp(31 downto 0) ;
-    --                    x_high <= '0';
-    --                    increment_x_address <= '1';
-    --                    write_x <= '0';
-    --                end if;
-    --            end if;            
-    --    end if;
-    --end process ; -- proc_write_x_coeff
-
-    ----increments X address
-    --inc_x_address : process(clk, increment_x_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and increment_x_address = '1' then
-    --        if address_inc_1_enbl = '0' then
-    --            address_inc_1_in <= (others => '0');
-    --            address_inc_1_in(9 downto 0) <= x_ware_address;
-    --            address_inc_1_enbl <= '1';
-    --            x_ware_rd <= '0';
-    --            x_ware_wr <= '0';
-    --        else
-    --            x_ware_address <= address_inc_1_out(9 downto 0);
-    --            address_inc_1_enbl <= '0';
-    --            increment_x_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- inc_x_address
-
-    ----decrements X address
-    --dec_x_address : process(clk, decrement_x_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and decrement_x_address = '1' then
-    --        if address_dec_1_enbl = '0' then
-    --            address_dec_1_in <= (others => '0');
-    --            address_dec_1_in(9 downto 0) <= x_ware_address;
-    --            address_dec_1_enbl <= '1';
-    --            x_ware_rd <= '0';
-    --            x_ware_wr <= '0';
-    --        else
-    --            x_ware_address <= address_dec_1_out(9 downto 0);
-    --            address_dec_1_enbl <= '0';
-    --            decrement_x_address <='0';
-    --        end if;
-    --    end if;       
-    --end process ; -- dec_x_address   
-
-    ----reads X intermediate
-    --proc_read_x_i : process(clk, read_x_i, write_x_i)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_x_i = '1' and write_x_i = '0' then
-    --        if x_i_high = '0' then
-    --            if increment_x_i_address = '0' then
-    --                --reading higher part
-    --                X_intm_rd <= '1';
-    --                x_i_temp(63 downto 32) <= X_intm_data_out;
-    --                x_i_high <= '1';
-    --                increment_x_i_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_x_i_address = '0' then
-    --                --reading lower part
-    --                X_intm_rd <= '1';
-    --                x_i_temp(31 downto 0) <= X_intm_data_out;
-    --                x_i_high <= '0';
-    --                decrement_x_i_address <= '1';
-    --                read_x_i <= '0';
-    --            end if;
-    --        end if;        
-    --    end if;
-    --end process ; -- proc_read_x_i
-    
-    ----writes X intermediate
-    --proc_write_x_i : process(clk, read_x_i, write_x_i)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_x_i = '0' and write_x_i = '1' then
-    --        if x_i_high = '0' then
-    --                if decrement_x_i_address = '0' then 
-    --                    X_intm_wr <= '1';
-    --                    X_intm_data_in <= result_x_temp(63 downto 32) ;
-    --                    x_i_high <= '1';
-    --                    increment_x_i_address <= '1';
-    --                end if;
-    --            else
-    --                if increment_x_i_address = '0' then
-    --                    X_intm_wr <= '1';
-    --                    X_intm_data_in <= result_x_i_temp(31 downto 0) ;
-    --                    x_i_high <= '0';
-    --                    increment_x_i_address <= '1';
-    --                    write_x_i <= '0';
-    --                end if;
-    --            end if;            
-    --    end if;
-    --end process ; -- proc_write_x_i_coeff
-
-    ----increments X_i address
-    ----when we calculate x_i = x_i + x_c
-    ----x_c uses address_inc_1 and address_dec_1
-    ----so I need another one...e4m3na hwa :'(
-    --inc_x_i_address : process(clk, increment_x_i_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and increment_x_i_address = '1' then
-    --        if address_inc_2_enbl = '0' then
-    --            address_inc_2_in <= (others => '0');
-    --            address_inc_2_in(6 downto 0) <= X_intm_address;
-    --            address_inc_2_enbl <= '1';
-    --            X_intm_rd <= '0';
-    --            X_intm_wr <= '0';
-    --        else
-    --            X_intm_address <= address_inc_2_out(6 downto 0);
-    --            address_inc_2_enbl <= '0';
-    --            increment_x_i_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; -- inc_x_i_address
-
-    ----decrements X_i address
-    --dec_x_i_address : process(clk, decrement_x_i_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and decrement_x_i_address = '1' then
-    --        if address_dec_2_enbl = '0' then
-    --            address_dec_2_in <= (others => '0');
-    --            address_dec_2_in(6 downto 0) <= X_intm_address;
-    --            address_dec_2_enbl <= '1';
-    --            X_intm_rd <= '0';
-    --            X_intm_wr <= '0';
-    --        else
-    --            X_intm_address <= address_dec_2_out(6 downto 0);
-    --            address_dec_2_enbl <= '0';
-    --            decrement_x_i_address <='0';
-    --        end if;
-    --    end if;       
-    --end process ; -- dec_x_i_address
-
-    ----reads U main
-    --proc_read_u_main : process(clk, read_u_main, write_u_main)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_u_main = '1' and write_u_main = '0' then
-    --        if u_main_high = '0' then
-    --            if increment_u_main_address = '0' then
-    --                --reading the low part
-    --                u_main_rd <= '1';
-    --                u_main_temp(63 downto 32) <= u_main_data_out;
-    --                u_main_high <= '1';
-    --                increment_u_main_address <= '1';
-    --            end if;
-    --        else
-    --            if increment_u_main_address = '0' then
-    --                u_main_rd <= '1';
-    --                u_main_temp(31 downto 0) <= u_main_data_out;
-    --                u_main_high <= '0';
-    --                decrement_u_main_address <= '1';
-    --                read_u_main <= '0';
-    --            end if;
-    --        end if;            
-    --    end if;
-    --end process ; --proc_read_u_main
-
-    ----writes U main
-    --proc_write_u_main : process(clk, read_u_main, write_u_main)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and read_u_main = '0' and write_u_main = '1' then
-    --        if u_main_high = '0' then
-    --                if decrement_u_main_address = '0' then 
-    --                    u_main_wr <= '1';
-    --                    u_main_data_in <= result_u_main_temp (63 downto 32) ;
-    --                    u_main_high <= '1';
-    --                    increment_u_main_address <= '1';
-    --                end if;
-    --            else
-    --                if increment_u_main_address = '0' then
-    --                    u_main_wr <= '1';
-    --                    u_main_data_in <= result_u_main_temp (31 downto 0) ;
-    --                    u_main_high <= '0';
-    --                    increment_u_main_address <= '1';
-    --                    write_u_main <= '0';
-    --                end if;
-    --            end if;            
-
-    --    end if;
-    --end process ; -- proc_write_u_main
-
-    ----increments U main address
-    --inc_u_main_address : process(clk, increment_u_main_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and increment_u_main_address = '1' then
-    --        if address_inc_1_enbl = '0' then
-    --            address_inc_1_in <= (others => '0');
-    --            address_inc_1_in(6 downto 0) <= u_main_address;
-    --            address_inc_1_enbl <= '1';
-    --            u_main_rd <= '0';
-    --            u_main_wr <= '0';
-    --        else
-    --            u_main_address <= address_inc_1_out(6 downto 0);
-    --            address_inc_1_enbl <= '0';
-    --            increment_u_main_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; --inc_u_main_address
-
-    ----decrements U main address
-    --dec_u_main_address : process(clk, decrement_u_main_address)
-    --begin
-    --    if rst = '0' and rising_edge(clk) and decrement_u_main_address = '1' then
-    --        if address_dec_1_enbl = '0' then
-    --            address_dec_1_in <= (others => '0');
-    --            address_dec_1_in(6 downto 0) <= u_main_address;
-    --            address_dec_1_enbl <= '1';
-    --            u_main_rd <= '0';
-    --            u_main_wr <= '0';
-    --        else
-    --            u_main_address <= address_dec_1_out(6 downto 0);
-    --            address_dec_1_enbl <= '0';
-    --            decrement_u_main_address <='0';
-    --        end if;
-    --    end if;    
-    --end process ; --dec_u_main_address
 -----------------------------------------------------------------MAIN PROCESS-----------------------------------------------------------------------------------
     ----Code Flow and Comments
 
@@ -907,175 +505,187 @@ begin
 
     process(clk, rst, in_data, adr, in_state, fixed_or_var, fixed_point_state, fsm_var_step_main, err_mul_1, err_add_1, err_add_2, err_div_1) 
     
-    --calculates (I+hA)
-    procedure proc_run_h_a is
+    --calculates A = (I+hA)
+    --note: so many signals are global...
+    procedure proc_run_h_a (
+        signal fsm_read_a,fsm_write_a :  std_logic_vector(1 downto 0);
+        signal N_N_counter : std_logic_vector(15 downto 0);
+        signal N_N_counter_2 : std_logic_vector(15 downto 0)
+        )is
         begin
             case(fsm_run_h_a) is
                 when "0000" =>
                     --END
                     null;
                 when "0001" =>
-                    read_a_coeff <= '1';
-                    fsm_run_h_a <= "0010";
-                when "0010" =>
-                    if read_a_coeff = '0' then
+
+                    read_before_write_reg
+                        (
+                        data_out => a_temp,
+                        reg_data_out=>a_coeff_data_out,
+                        reg_adrs => a_coeff_address,
+                        read_enbl => a_coeff_rd,
+                        write_enbl => a_coeff_wr,
+                        fsm => fsm_read_a -->place ones (11) and wait for (00)
+                        ); 
+                    if fsm_read_a = "00" then
                         enable_mul_1 <= '1';
                         fpu_mul_1_in_1 <= a_temp;
                         fpu_mul_1_in_2 <= h_main;
+                        fsm_run_h_a <= "0010";
+                    end if;
+
+                    if done_mul_1 = '1' then
+                        a_temp <= fpu_mul_1_out;
                         fsm_run_h_a <= "0011";
                     end if;
+
                 when "0011" =>
-                    if done_mul_1 = '1' then
-                        enable_mul_1 <= '0';
-                        --SHOULD WE ADD 1 ?????
-                        if N_N_counter_2 = N_N_counter then
-                            --add one
-                            fpu_add_1_in_1 <= a_temp;
-                            --fpu_add_1_in_2 <= (63 downto 16 => '0') & X"0080";
-                            case( mode_sig ) is
-                            
-                                when "00" =>
-                                    fpu_add_1_in_2 <= (others => '0');
-                                    fpu_add_1_in_2(15 downto 0) <=  "0000000010000000";
-                                when "01" =>
-                                    fpu_add_1_in_2 <= (others => '0');
-                                    fpu_add_1_in_2(31 downto 0) <="00111111100000000000000000000000";
-                                when others =>
-                                    fpu_add_1_in_2 <= "0011111111110000000000000000000000000000000000000000000000000000";
-                            end case ;
-                            fpu_add_1_in_2 <= (others =>'0');
-                            fpu_add_1_in_2(55) <= '1';
-                            enable_add_1 <= '1';
-                            thisIsAdder_1 <= '0';
-                            fsm_run_h_a <= "1011";
-                        else
-                            --continue 3ady
-                            write_a_coeff <='1';
-                            fsm_run_h_a <= "0100";
-                        end if;
-                    end if;
-                when "0100" =>
-                    if write_a_coeff = '0' then
-                        if N_N_counter = X"0000" then
-                            --END LOOOOOP
-                            a_coeff_address <= (others => '0');
-                            fsm_run_h_a <= "0000";
-                        else
-                            fsm_run_h_a <= "1100";
-                        end if;
-                    end if;
-                when "0101" => 
-                    if done_add_1 = '1' then
-                        enable_add_1<= '0';
+                    enable_mul_1 <= '0';
+                    --check here whether to add 1 or not, before writing the output
+                    if N_N_counter_2 = N_N_counter then
+                        --add 1 before you write please
+                        fpu_add_1_in_1 <= a_temp;
+                        case( mode ) is
+                            when "00" =>
+                                fpu_add_1_in_2 <= (others => '0');
+                                fpu_add_1_in_2(15 downto 0) <=  "0000000010000000";
+                            when "01" =>
+                                fpu_add_1_in_2 <= (others => '0');
+                                fpu_add_1_in_2(31 downto 0) <="00111111100000000000000000000000";
+                            when others =>
+                                fpu_add_1_in_2 <= "0011111111110000000000000000000000000000000000000000000000000000";
+                        end case ;
+                        enable_add_1 <= '1';
                         thisIsAdder_1 <= '0';
-                        write_a_coeff <='1';
+                        fsm_run_h_a <= "0101";
+                    else
+                        fsm_write_a <= "11";
                         fsm_run_h_a <= "0100";
                     end if;
-                --when "0110" => 
-                --when "0111" => 
-                --when "1000" =>
-                --when "1001" =>
-                when "1010" =>
-                    N_N_counter_2 <= int_adder_1_out;
-                    int_adder_1_enbl <='0';
-                    fsm_run_h_a <= "0101";
-                when "1011" =>
-                    --DECREMENT N_N_temp_2 with N+1 (N_incremented)
-                    int_adder_1_enbl <='1';
-                    int_adder_1_in_1 <= N_N_counter_2;
-                    int_adder_1_in_2 <= not N_incremented;
-                    int_adder_1_cin  <= '1';
-                    fsm_run_h_a <= "1010";
-                when "1100" =>
-                    address_dec_1_in <= N_N_counter;
-                    address_dec_1_enbl <= '1';
-                    fsm_run_h_a <= "1101";
-
-                when "1101" =>
-                    --disable dec
-                    address_dec_1_enbl <= '0';
-                    N_N_counter <= address_dec_1_out;
-                    fsm_run_h_a <= "0001";
-
-                when "1110" =>
-                    N_incremented <= address_inc_1_out;
-                    address_inc_1_enbl <= '0';
-                    fsm_run_h_a <= "1100";
+                when "0100" =>
+                    write_after_read_reg(
+                        data_in => a_temp,
+                        reg_data_in => a_coeff_data_in,
+                        reg_adrs => a_coeff_address,
+                        read_enbl => a_coeff_rd,
+                        write_enbl => a_coeff_wr,
+                        fsm => fsm_write_a
+                        );
+                    if fsm_write_a = "00" then
+                        --check the end of the loop or not?
+                        --decrement something here
+                        if N_N_counter = X"0000" then
+                            a_coeff_address <= (others =>'0');
+                            fsm_run_h_a <= "0000";
+                        else
+                            N_N_counter <= to_vec(to_int(N_N_counter)-1, N_N_counter'length);
+                            fsm_read_a <= "11";
+                            fsm_run_h_a <= "0001";
+                        end if;
+                    end if;
+                when "0101" =>
+                    if done_add_1 = '1' then
+                        enable_add_1 <= '0';
+                        a_temp <= fpu_add_1_out;
+                        fsm_write_a <= "11";
+                        fsm_run_h_a <= "0100";
+                    end if;
                 when "1111" =>
                     --start here :D
-                    --This variable to keep track of the main loop
-                    N_N_counter <= N_N;
-                    --this var to keep track of % N+1
-                    N_N_counter_2 <= N_N;
-                    address_inc_1_in <= N_X_A_B_vec;
-                    address_inc_1_enbl <= '1';
+                    fsm_read_a <= "11";
                     a_coeff_address <= (others =>'0');
-                    fsm_run_h_a <= "1110";
+
+                    N_N_counter_2 <= to_vec(to_int(N_X_A_B_vec)+1, N_N_counter_2'length);
+                    N_N_counter <= to_vec(to_int(N_N)-1, N_N_counter'length);
+                    fsm_run_h_a <= "0001";
                 when others =>
                     null;
             end case ;
         end procedure;
 
-    --calculate (hB)
-    procedure proc_run_h_b is
-        begin
-            case( fsm_run_h_b ) is
-                when "000" =>
-                    --NOP for now
-                    null;
-                when "001" =>
-                    --read B coeff
-                    --operated only once
-                    read_b_coeff <='1';
-                    fsm_run_h_b <= "010";
-                when "010" =>
-                    if read_b_coeff = '0' then
-                        --b_temp holds current b element..
-                        enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= b_temp;
-                        fpu_mul_1_in_2 <= h_main;
-                        result_b_temp<= fpu_mul_1_out;
-                        fsm_run_h_b <= "011";
-                    end if;
-                when "011" =>
-                    --store hb at b
-                    if done_mul_1 = '1' then
-                        enable_mul_1 <= '0';
-                        write_b_coeff <= '1';
-                        fsm_run_h_b <= "100";
-                    end if;
-                when "100" =>
-                    -- check if we reached end of the loop!!
-                    --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
-                    -- if it's zero, we escape
-                    if write_b_coeff = '0' then
-                        address_dec_1_in <= N_M_counter;
-                        address_dec_1_enbl <= '1';
-                        fsm_run_h_b <= "101";
-                    end if;
-                when "101" =>
-                    address_dec_1_enbl <= '0';
-                    N_M_counter <= address_dec_1_out;
-                    fsm_run_h_b <= "110";
-                when "110" =>
-                        if N_M_counter = X"0000" then
-                            --end loop
-                            b_coeff_address <= (others => '0');
-                            fsm_run_h_b <= "000";
-                        else
-                            --LOOP AGAIN
-                            fsm_run_h_b <= "001";
-                        end if;
-                when others =>
-                    if fsm_run_h_a = "0000" then
-                        --START working, init w kda
-                        b_coeff_address <= (others => '0');
-                        N_M_counter <= N_M;
-                        fsm_run_h_b <= "001";
-                    end if;
-            end case ;
-        end procedure;
+    --calculate B = (hB) ----> a common procedure
+    --procedure proc_run_h_b is
+    --    begin
+    --        case( fsm_run_h_b ) is
+    --            when "000" =>
+    --                --NOP for now
+    --                null;
+    --            when "001" =>
+    --                --read B coeff
+    --                --operated only once
+    --                read_b_coeff <='1';
+    --                fsm_run_h_b <= "010";
+    --            when "010" =>
+    --                if read_b_coeff = '0' then
+    --                    --b_temp holds current b element..
+    --                    enable_mul_1 <= '1';
+    --                    fpu_mul_1_in_1 <= b_temp;
+    --                    fpu_mul_1_in_2 <= h_main;
+    --                    result_b_temp<= fpu_mul_1_out;
+    --                    fsm_run_h_b <= "011";
+    --                end if;
+    --            when "011" =>
+    --                --store hb at b
+    --                if done_mul_1 = '1' then
+    --                    enable_mul_1 <= '0';
+    --                    write_b_coeff <= '1';
+    --                    fsm_run_h_b <= "100";
+    --                end if;
+    --            when "100" =>
+    --                -- check if we reached end of the loop!!
+    --                --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
+    --                -- if it's zero, we escape
+    --                if write_b_coeff = '0' then
+    --                    address_dec_1_in <= N_M_counter;
+    --                    address_dec_1_enbl <= '1';
+    --                    fsm_run_h_b <= "101";
+    --                end if;
+    --            when "101" =>
+    --                address_dec_1_enbl <= '0';
+    --                N_M_counter <= address_dec_1_out;
+    --                fsm_run_h_b <= "110";
+    --            when "110" =>
+    --                    if N_M_counter = X"0000" then
+    --                        --end loop
+    --                        b_coeff_address <= (others => '0');
+    --                        fsm_run_h_b <= "000";
+    --                    else
+    --                        --LOOP AGAIN
+    --                        fsm_run_h_b <= "001";
+    --                    end if;
+    --            when others =>
+    --                if fsm_run_h_a = "0000" then
+    --                    --START working, init w kda
+    --                    b_coeff_address <= (others => '0');
+    --                    N_M_counter <= N_M;
+    --                    fsm_run_h_b <= "001";
+    --                end if;
+    --        end case ;
+    --    end procedure;
+    --------------------------------------------------instead of B = hB----------------------------
+    mul_vector_by_number(
+        fpu_mul_1_in_2 => fpu_mul_1_in_2,
+        fpu_mul_1_in_1 => fpu_mul_1_in_1,
+        fpu_mul_1_out => fpu_mul_1_out,
+        enable_mul_1 => enable_mul_1,
+        done_mul_1 => done_mul_1,
 
+        reg_data_out => b_coeff_data_out,
+        reg_data_in => b_coeff_data_in,
+        reg_address => b_coeff_address,
+        read_enbl => b_coeff_rd,
+        write_enbl => b_coeff_wr,
+        N_vec => M_U_B_vec,
+        numb => h_main,
+        fsm =>fsm_out,
+        -------------You can use any dummy signal here, but make sure no one writes at it--------------------
+        N_counter => procedure_dumm(16 downto 5),
+        my_reg => x_temp_dump,
+        fsm_read =>procedure_dumm(4 downto 3),
+        fsm_write =>procedure_dumm(1 downto 0)        
+        );
+    -------------------------------------------------------------------------------------------------------
     --calculates AX
     procedure proc_run_a_x is
         begin 
@@ -1390,145 +1000,203 @@ begin
             end case;
         end procedure;
 
-    --calculates hX (for variable step)
-    procedure proc_run_x_h is
-        begin
-            case( fsm_run_x_h ) is
-                when "000" =>
-                    --NOP for now
-                    null;
-                when "001" =>
-                    --read X coeff
-                    --operated only once
-                    if from_i_to_c = '0' then
-                        --from c to i then
-                        read_x <='1';
-                    else
-                        --from i to c then
-                        read_x_i <= '1';
-                    end if;
-                    fsm_run_x_h <= "010";
-                when "010" =>
-                    if from_i_to_c = '0' then
-                        --from c to i then
-                        if read_x = '0' then
-                        --b_temp holds current b element..
-                            if div_or_adapt = '0' then
-                                --div
-                                enable_mul_1 <= '1';
-                                fpu_mul_1_in_1 <= x_temp;
-                                fpu_mul_1_in_2 <= h_div;
-                                fsm_run_x_h <= "011";
-                            else
-                                --adapt
-                                enable_mul_1 <= '1';
-                                fpu_mul_1_in_1 <= x_temp;
-                                fpu_mul_1_in_2 <= h_adapt;
-                                fsm_run_x_h <= "011";
-                            end if;
-                        end if;
-                    else
-                        --from i to c then
-                        if read_x_i = '0' then
-                            --b_temp holds current b element..
-                            if div_or_adapt = '0' then
-                                --div
-                                enable_mul_1 <= '1';
-                                fpu_mul_1_in_1 <= x_i_temp;
-                                fpu_mul_1_in_2 <= h_div;
-                                fsm_run_x_h <= "011";
-                            else
-                                --adapt
-                                enable_mul_1 <= '1';
-                                fpu_mul_1_in_1 <= x_temp;
-                                fpu_mul_1_in_2 <= h_adapt;
-                                fsm_run_x_h <= "011";
-                            end if;
-                        end if;
-                    end if;
-                when "011" =>
-                    --store hb at b
-                    if done_mul_1 = '1' then
-                        if from_i_to_c = '0' then
-                            --from c to i then
-                            result_x_i_temp<= fpu_mul_1_out;
-                            enable_mul_1 <= '0';
-                            write_x_i <= '1';
-                            fsm_run_x_h <= "100";
-                        else
-                            --from i to c then
-                            result_x_temp<= fpu_mul_1_out;
-                            enable_mul_1 <= '0';
-                            write_x <= '1';
-                            fsm_run_x_h <= "100";
-                        end if;
-                    end if;
-                when "100" =>
-                    -- check if we reached end of the loop!!
-                    --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
-                    -- if it's zero, we escape
-                    if from_i_to_c = '0' then
-                        --from c to i then
-                        if write_x_i = '0' then
-                            address_dec_1_in <= N_counter;
-                            address_dec_1_enbl <= '1';
-                            fsm_run_x_h <= "101";
-                        end if;
-                    else
-                        --from i to c then
-                        if write_x = '0' then
-                            address_dec_1_in <= N_counter;
-                            address_dec_1_enbl <= '1';
-                            fsm_run_x_h <= "101";
-                        end if;
-                    end if;
-                when "101" =>
-                    address_dec_1_enbl <= '0';
-                    N_counter <= address_dec_1_out;
-                    if N_counter = X"0000" then
-                        --end loop
-                        X_intm_address <= (others => '0');
-                        fsm_run_x_h <= "000";
-                    else
-                        --LOOP AGAIN
-                        fsm_run_x_h <= "001";
-                    end if;
-                when "110" =>
-                        null;
-                when others =>
-                    --START working, init w kda
-                    X_intm_address <= (others => '0');
-                    N_counter <= N_X_A_B_vec;
-                    fsm_run_x_h <= "001";
-            end case ;
-        end procedure;
+    --calculates X = hX (for variable step) --> a common procedure
+    --procedure proc_run_x_h is
+    --    begin
+    --        case( fsm_run_x_h ) is
+    --            when "000" =>
+    --                --NOP for now
+    --                null;
+    --            when "001" =>
+    --                --read X coeff
+    --                --operated only once
+    --                if from_i_to_c = '0' then
+    --                    --from c to i then
+    --                    read_x <='1';
+    --                else
+    --                    --from i to c then
+    --                    read_x_i <= '1';
+    --                end if;
+    --                fsm_run_x_h <= "010";
+    --            when "010" =>
+    --                if from_i_to_c = '0' then
+    --                    --from c to i then
+    --                    if read_x = '0' then
+    --                    --b_temp holds current b element..
+    --                        if div_or_adapt = '0' then
+    --                            --div
+    --                            enable_mul_1 <= '1';
+    --                            fpu_mul_1_in_1 <= x_temp;
+    --                            fpu_mul_1_in_2 <= h_div;
+    --                            fsm_run_x_h <= "011";
+    --                        else
+    --                            --adapt
+    --                            enable_mul_1 <= '1';
+    --                            fpu_mul_1_in_1 <= x_temp;
+    --                            fpu_mul_1_in_2 <= h_adapt;
+    --                            fsm_run_x_h <= "011";
+    --                        end if;
+    --                    end if;
+    --                else
+    --                    --from i to c then
+    --                    if read_x_i = '0' then
+    --                        --b_temp holds current b element..
+    --                        if div_or_adapt = '0' then
+    --                            --div
+    --                            enable_mul_1 <= '1';
+    --                            fpu_mul_1_in_1 <= x_i_temp;
+    --                            fpu_mul_1_in_2 <= h_div;
+    --                            fsm_run_x_h <= "011";
+    --                        else
+    --                            --adapt
+    --                            enable_mul_1 <= '1';
+    --                            fpu_mul_1_in_1 <= x_temp;
+    --                            fpu_mul_1_in_2 <= h_adapt;
+    --                            fsm_run_x_h <= "011";
+    --                        end if;
+    --                    end if;
+    --                end if;
+    --            when "011" =>
+    --                --store hb at b
+    --                if done_mul_1 = '1' then
+    --                    if from_i_to_c = '0' then
+    --                        --from c to i then
+    --                        result_x_i_temp<= fpu_mul_1_out;
+    --                        enable_mul_1 <= '0';
+    --                        write_x_i <= '1';
+    --                        fsm_run_x_h <= "100";
+    --                    else
+    --                        --from i to c then
+    --                        result_x_temp<= fpu_mul_1_out;
+    --                        enable_mul_1 <= '0';
+    --                        write_x <= '1';
+    --                        fsm_run_x_h <= "100";
+    --                    end if;
+    --                end if;
+    --            when "100" =>
+    --                -- check if we reached end of the loop!!
+    --                --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
+    --                -- if it's zero, we escape
+    --                if from_i_to_c = '0' then
+    --                    --from c to i then
+    --                    if write_x_i = '0' then
+    --                        address_dec_1_in <= N_counter;
+    --                        address_dec_1_enbl <= '1';
+    --                        fsm_run_x_h <= "101";
+    --                    end if;
+    --                else
+    --                    --from i to c then
+    --                    if write_x = '0' then
+    --                        address_dec_1_in <= N_counter;
+    --                        address_dec_1_enbl <= '1';
+    --                        fsm_run_x_h <= "101";
+    --                    end if;
+    --                end if;
+    --            when "101" =>
+    --                address_dec_1_enbl <= '0';
+    --                N_counter <= address_dec_1_out;
+    --                if N_counter = X"0000" then
+    --                    --end loop
+    --                    X_intm_address <= (others => '0');
+    --                    fsm_run_x_h <= "000";
+    --                else
+    --                    --LOOP AGAIN
+    --                    fsm_run_x_h <= "001";
+    --                end if;
+    --            when "110" =>
+    --                    null;
+    --            when others =>
+    --                --START working, init w kda
+    --                X_intm_address <= (others => '0');
+    --                N_counter <= N_X_A_B_vec;
+    --                fsm_run_x_h <= "001";
+    --        end case ;
+    --    end procedure;
+    --------------------------------------------------------instead of X = h X---------------------------------
+    mul_vector_by_number(
+        fpu_mul_1_in_2 => fpu_mul_1_in_2,
+        fpu_mul_1_in_1 => fpu_mul_1_in_1,
+        fpu_mul_1_out => fpu_mul_1_out,
+        enable_mul_1 => enable_mul_1,
+        done_mul_1 => done_mul_1,
 
-    --calculates X_i + X_c (for variable step)
-    procedure proc_run_x_i_c is
+        reg_data_out => X_intm_data_out,
+        reg_data_in => X_intm_data_in,
+        reg_address => X_intm_address,
+        read_enbl => X_intm_rd,
+        write_enbl => X_intm_wr,
+        N_vec => N_X_A_B_vec,
+        numb => h_adapt,
+        fsm =>fsm_out,
+        -------------You can use any dummy signal here, but make sure no one writes at it--------------------
+        N_counter => procedure_dumm(10 downto 5),
+        my_reg => x_temp_dump,
+        fsm_read =>procedure_dumm(4 downto 3),
+        fsm_write =>procedure_dumm(1 downto 0)        
+        );
+    --------------------------------------------------------instead of X = h X---------------------------------
+
+--------------EVRAM: this function is two ways i and c, you need to work more with the from_i_to_c signal
+---------------------adjust the read to read 64 bits depending on the mode
+    --calculates X_i = X_i + X_c (for variable step)
+    --we assume c_ware is placed right
+    procedure proc_run_x_i_c (
+        signal N_counter : std_logic_vector(5 downto 0);
+        signal c_ware_vec : std_logic_vector (2 downto 0);
+        signal dumm : std_logic_vector (15 downto 0);
+        signal reg_address: std_logic_vector (9 downto 0);
+        signal fsm_read_1, fsm_read_2 : std_logic_vector (1 downto 0);
+
+        )is
+
         begin
             case(fsm_run_x_i_c) is
                 when "000" =>
                     --NOP for now
                     null;
                 when "001" =>
-                    --read x's coeff
-                    --operated only once
-                    read_x_i <='1';
-                    read_x <= '1';
-                    fsm_run_x_i_c <= "010";
-                when "010" =>
-                    if read_x_i = '0' and read_x = '0' then
-                        --b_temp holds current b element..
+                    read_before_write_reg
+                        (
+                        data_out => x_temp,
+                        reg_data_out=>X_ware_data_out,
+                        reg_adrs => x_ware_address,
+                        read_enbl => X_ware_rd,
+                        write_enbl => X_ware_wr,
+                        fsm => fsm_read_1 -->place ones (11) and wait for (00)
+                        ); 
+
+                        read_before_write_reg
+                        (
+                        data_out => x_i_temp,
+                        reg_data_out=>X_intm_data_out,
+                        reg_adrs => X_intm_address,
+                        read_enbl => X_intm_rd,
+                        write_enbl => X_intm_wr,
+                        fsm => fsm_read_2 -->place ones (11) and wait for (00)
+                        ); 
+                    if fsm_read_1 = "00" and fsm_read_2 = "00" then
                         enable_add_1 <= '1';
                         thisIsAdder_1 <= '0';
                         fpu_add_1_in_1 <= x_temp;
                         fpu_add_1_in_2 <= x_i_temp;
-                        fsm_run_x_i_c <= "011";
+                        fsm_run_x_i_c <= "010";
                     end if;
-                when "011" =>
-                    --store hb at b
-                    if done_add_1 = '1' then
+                    
+                when "010" =>
+                   if done_add_1 = '1' then
+                        --where to write at ?????
                         if from_i_to_c = '0' then
+
+                            write_after_read_reg
+                            (
+                                data_in => a_temp,
+                                reg_data_in => a_coeff_data_in,
+                                reg_adrs => a_coeff_address,
+                                read_enbl => a_coeff_rd,
+                                write_enbl => a_coeff_wr,
+                                fsm => fsm_write_a
+                            );
+
                             --from c to i then
                             result_x_i_temp<= fpu_add_1_out;
                             enable_add_1 <= '0';
@@ -1542,6 +1210,8 @@ begin
                             fsm_run_x_i_c <= "100";
                         end if;
                     end if;
+             
+                    
                 when "100" =>
                     -- check if we reached end of the loop!!
                     --assuming N_M = 4, then we decrement it-->3-->2-->1-->0
@@ -1575,14 +1245,17 @@ begin
                         --LOOP AGAIN
                         fsm_run_x_i_c <= "001";
                     end if;
-                when "110" =>
-                        null;
                 when others =>
-                    --START working, init w kda
+                        null;
+                when "111" =>
                     X_intm_address <= (others => '0');
-                    --x_ware_address is already updated as C_ware is updated
-                    --check proc_update_X_ware_address for more info :D
                     N_counter <= N_X_A_B_vec;
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => dumm,
+                        x_ware_address => reg_address);
+                    fsm_read_1 <= "11";
+                    fsm_read_2 <= "11";
                     fsm_run_x_i_c <= "001";
             end case;
         end procedure;
