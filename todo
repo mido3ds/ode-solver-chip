@@ -1,4 +1,5 @@
-[] Adder: 
+[ ] Adder: 
+
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
     [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement the 2 fixed point adder/subtractors using same interface (module/entity) so that it is easy to plug them into your code. 
@@ -10,6 +11,7 @@
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Multiplier:
+
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
     [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement the 2 fixed point multipliers using same interface  (module/entity) so that it is easy to plug them into your code. (use the adder interface inside it to easily switch etween different adders)
@@ -20,6 +22,7 @@
     [ ] Record the Different Area/power/time for each multiplier in a Table form.
 
 [ ] Division:
+
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
     [ ] vunit tests are up-to-date with non_vunit of testsfinish.
     [x] Implement fixed-point division (use the adder interface inside it to easily switch between different adders).
@@ -30,6 +33,7 @@
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] RAM: 
+
     [x] implement your memory, and make it generic (widths and height) with the correct number of ports and address buses as required by your design.
     [x] Implement testbench to test the above circuit .
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
@@ -40,6 +44,7 @@
 [x] CPU: Implement the CPU software (parsing and compressing data)
 
 [ ] IO 
+
     [x] Design  
     [ ] vunit tests are up-to-date with non_vunit of tests
     [x] Implementation
@@ -49,6 +54,7 @@
     [ ] Software equivalent functionality
 
 [ ] Interpolator
+
     [x] Design  
     [ ] vunit tests are up-to-date with non_vunit of tests
     [ ] Implementation
@@ -58,6 +64,7 @@
     [ ] Software equivalent functionality
 
 [ ] Solver
+
     [x] Design  
     [ ] vunit tests are up-to-date with non_vunit of tests
     [ ] Implementation
@@ -67,7 +74,9 @@
     [ ] Software equivalent functionality
 
 [ ] all vunit tests pass
+
 [ ] Zipped Folder with your TeamNumber as its name that contains
+
     [ ] 1. Complete System Design Report
     [ ] 2. Mini Folder with
         [ ] 2.1. Mini Modules Design Report + comparison in Time/Area/Power.
