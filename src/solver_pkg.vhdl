@@ -21,14 +21,6 @@ package solver_pkg is
 			signal fsm : inout  std_logic_vector(1 downto 0)
 			);
 
-	--procedure read_reg_inc_adrs_twice(	
-	--		signal data_out : out std_logic_vector(63 downto 0);
-	--		signal reg_data_out : in std_logic_vector(31 downto 0);
-	--		signal reg_adrs: inout std_logic_vector;
-	--		signal read_enbl : out std_logic;
-	--		signal write_enbl : in std_logic;
-	--		signal fsm : inout  std_logic_vector(1 downto 0)
-	--		);
 	procedure read_reg_inc_adrs_once(	
 			signal data_out : out std_logic_vector(31 downto 0);
 			signal reg_data_out : in std_logic_vector(31 downto 0);
@@ -117,9 +109,31 @@ package solver_pkg is
 	procedure mul_N_N_and_M_N (
 		
 		signal N_vec,M_vec: in  std_logic_vector(5 downto 0);
-		signal N_N_vec,N_M_vec: out  std_logic_vector(11 downto 0)
+		signal N_N_vec,N_M_vec: out  std_logic_vector(15 downto 0)
 		);
 
+
+	procedure mul_vector_by_number (
+		--FPU
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		--matrix
+		signal reg_data_out: in std_logic_vector(31 downto 0);
+		signal reg_data_in : out std_logic_vector(31 downto 0);
+		signal reg_address: inout std_logic_vector;
+		signal read_enbl : inout std_logic;
+		signal write_enbl : inout std_logic;
+		signal N_vec: in std_logic_vector(5 downto 0);
+		--number
+		signal numb: in  std_logic_vector(63 downto 0);
+		--my dummies
+		signal N_counter: inout std_logic_vector(5 downto 0);
+		signal my_reg : inout std_logic_vector(63 downto 0);
+		signal fsm_read,fsm_write: inout std_logic_vector(1 downto 0);
+		signal fsm : inout std_logic_vector(2 downto 0)
+		);
 
 
 end package solver_pkg;
@@ -137,27 +151,32 @@ package body solver_pkg is
 		signal fsm : inout  std_logic_vector(1 downto 0)
 			) is
 		begin
-
-			if fsm = "11" then
-				if write_enbl = '0' then
-					read_enbl <= '1';
-					fsm <= "01";
-				end if;
-			elsif fsm = "01" then
-				if write_enbl = '0' then
-					read_enbl <= '1';
-					reg_adrs <= to_vec(to_int(reg_adrs) + 1, reg_adrs'length);
-					data_out(63 downto 32) <= reg_data_out;
-					fsm <= "10";
-				end if;
-
-			elsif fsm = "10" then
-				data_out(31 downto 0) <= reg_data_out;	
-				reg_adrs <= to_vec(to_int(reg_adrs) - 1,reg_adrs'length);
-				read_enbl <= '0';
-				fsm <= "00";
-			end if;
+			case( fsm ) is
 			
+				when "11" =>
+					if write_enbl = '0' then
+						read_enbl <= '1';
+						
+						fsm <= "01";
+					end if;
+				when "01" =>
+					if write_enbl = '0' then
+						--read_enbl <= '1';
+						data_out(63 downto 32) <= reg_data_out;
+						
+						reg_adrs <= to_vec(to_int(reg_adrs) + 1, reg_adrs'length);
+						fsm <= "10";
+					end if;
+				when "10" =>
+					data_out(31 downto 0) <= reg_data_out;	
+
+					reg_adrs <= to_vec(to_int(reg_adrs) - 1,reg_adrs'length);
+					read_enbl <= '0';
+					fsm <= "00";
+				when others =>
+					null;
+			end case ;
+
 		end read_before_write_reg;
 
 	procedure write_after_read_reg(
@@ -487,6 +506,92 @@ package body solver_pkg is
 		end mul_N_N_and_M_N;
 
 
+	procedure mul_vector_by_number (
+		--FPU
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		--matrix
+		signal reg_data_out: in std_logic_vector(31 downto 0);
+		signal reg_data_in : out std_logic_vector(31 downto 0);
+		signal reg_address: inout std_logic_vector;
+		signal read_enbl : inout std_logic;
+		signal write_enbl : inout std_logic;
+		signal N_vec: in std_logic_vector(5 downto 0);
+		--number
+		signal numb: in  std_logic_vector(63 downto 0);
+		--my dummies
+		signal N_counter: inout std_logic_vector(5 downto 0);
+		signal my_reg : inout std_logic_vector(63 downto 0);
+		signal fsm_read,fsm_write: inout std_logic_vector(1 downto 0);
+		signal fsm : inout std_logic_vector(2 downto 0)
+		)is
+		begin
 
-	procedure 
+		
+			case( fsm ) is
+			
+				when "111" =>
+					reg_address <= to_vec(0,reg_address'length);
+					N_counter <= (others => '0');
+					fsm_read <= "11";
+					fsm <= "001";
+
+				when "001" =>
+					read_before_write_reg
+						(
+						data_out => my_reg,
+						reg_data_out=>reg_data_out,
+						reg_adrs => reg_address,
+						read_enbl => read_enbl,
+						fsm => fsm_read,
+						write_enbl => write_enbl
+						);
+					
+					if fsm_read = "00" then
+						enable_mul_1 <= '1';
+						fpu_mul_1_in_1 <= numb;
+						fpu_mul_1_in_2 <= my_reg;
+						
+						
+						if done_mul_1 = '1' then
+							fsm_write <= "11";
+							fsm <= "011";
+						end if;
+					end if;
+
+				
+				when "011" =>
+					write_after_read_reg(
+						data_in => fpu_mul_1_out,
+						reg_data_in => reg_data_in,
+						reg_adrs => reg_address,
+						read_enbl => read_enbl,
+						write_enbl => write_enbl,
+						fsm => fsm_write
+						);
+					if fsm_write = "00" then
+						N_counter <= to_vec (to_int(N_counter) + 1, N_counter'length);
+						enable_mul_1 <= '0';
+						fsm <= "100";
+					end if;
+
+				when "100" =>
+					if N_counter = N_vec then
+						--we're done
+						--exit :D
+						fsm <= "000";
+					else
+						--loop again
+						fsm_read <= "11";
+						fsm <= "001";	
+					end if;
+				when others =>
+					null;
+			end case ;
+
+		end mul_vector_by_number;
+
+ 
 end package body solver_pkg;
