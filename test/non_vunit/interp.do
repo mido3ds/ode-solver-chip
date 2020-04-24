@@ -319,16 +319,16 @@ run
 
 force sim:/interp/adr zzzzzzzzzzzzzzzz 0
 force sim:/interp/in_data zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz 0
-run 10000
+run 2000
 
 force sim:/interp/adr 0010110000110011 0
 force sim:/interp/in_data 00000000000000000000000000000000 0
 run 
 
 force sim:/interp/adr 0010110000110100 0
-force sim:/interp/in_data 00000000000000000000000000100000 0
+force sim:/interp/in_data 00000000000000000000000011100000 0
 run
 
 force sim:/interp/adr zzzzzzzzzzzzzzzz 0
 force sim:/interp/in_data zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz 0
-run 10000
+run 20000

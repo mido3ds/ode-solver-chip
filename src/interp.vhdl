@@ -658,20 +658,15 @@ begin
                 when "00001" =>
                     --check input address
                     --read higher part of h_new
-                    --start range finder process
                     if adr = MM_H_NEW_1 then
                         h_new(31 downto 0) <= in_data;
-                        range_finder_enable <= '1';
-                        range_finder;
-                        interp_state <= "00010";
+                        interp_state <= "10011";
                     end if;
                 when "00010" =>
                     --check range finder completion
                     --subtract Tz-Tn and Tk-Tn
                     if range_finder_enable = '0' then
                         if is_stored = '0' then
-                            report "not existing";
-                            report to_str(t_high);
                             fpu_sub_1_in_1 <= t_high;
                             fpu_sub_1_in_2 <= t_low;
                             enable_sub_1 <= '1';
@@ -680,15 +675,11 @@ begin
                             enable_sub_2 <= '1';
                             interp_state <= "00011";
                         elsif is_stored = '1' and h_new = X"0000000000000000" and out_low_from = '0' then
-                            report "already existing";
-                            report to_str(t_high);
                             interp_done_op <= "01";
                             send_u_0_enable <= '1';
                             send_u_0;
                             interp_state <= "01100";
                         elsif is_stored = '1' then
-                            report "already existing";
-                            report to_str(t_high);
                             interp_done_op <= "01";
                             send_u_s_enable <= '1';
                             send_u_s;
@@ -860,6 +851,11 @@ begin
                     else
                         interp_state <= "00101";
                     end if;
+                when "10011" =>
+                    --start range finder process
+                    range_finder_enable <= '1';
+                    range_finder;
+                    interp_state <= "00010";
                 when others =>
                     --NOP
                     null;
