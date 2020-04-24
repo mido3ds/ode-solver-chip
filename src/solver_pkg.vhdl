@@ -75,7 +75,15 @@ package solver_pkg is
 		);
 
 
-
+	procedure mul_L_9 (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal L_tol: in  std_logic_vector(63 downto 0);
+		signal L_nine: out  std_logic_vector(63 downto 0);
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		signal fsm : inout std_logic);
 
 end package solver_pkg;
 
@@ -261,8 +269,6 @@ package body solver_pkg is
 			end case ;
 		end outing;
 
-
-
 	procedure x_ware_find_address (
 		signal c_ware: in  std_logic_vector(2 downto 0);
 		signal x_ware_address: out std_logic_vector(9 downto 0);
@@ -295,5 +301,44 @@ package body solver_pkg is
 
 
 		end x_ware_find_address;
+
+	procedure mul_L_9 (
+		signal mode: in std_logic_vector(1 downto 0);
+		signal L_tol: in  std_logic_vector(63 downto 0);
+		signal L_nine: out  std_logic_vector(63 downto 0);
+		signal fpu_mul_1_in_1, fpu_mul_1_in_2 : out std_logic_vector(64 - 1 downto 0) ;
+		signal fpu_mul_1_out : in std_logic_vector(64 - 1 downto 0) ;
+		signal enable_mul_1 : out std_logic ;
+		signal done_mul_1 : in std_logic ;
+		signal fsm : inout std_logic
+		)is
+
+		begin
+			case( fsm ) is
+			
+				when '1' =>
+					enable_mul_1 <= '1';
+                    fpu_mul_1_in_1 <= L_tol;
+                    case( mode ) is
+                    	when "00" =>
+                    		fpu_mul_1_in_2 <= (others => '0');
+                            fpu_mul_1_in_2(7 downto 0) <= "01110011";
+                    	when "01" =>
+                    		fpu_mul_1_in_2 <= (others => '0');
+                            fpu_mul_1_in_2(31 downto 0) <= "00111111011001100110011001100110";
+                    	when others =>
+                    		fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
+                    end case ;
+                    ------------------------ERROR here ya EV, check FPU_MUL-------------------
+                    if done_mul_1 = '1' then
+                    	enable_mul_1 <= '0';
+                    	L_nine <= fpu_mul_1_out;
+                    	fsm <= '0';
+                    end if;
+				when others =>
+					--00
+					null;
+			end case ;
+		end mul_L_9;
 
 end package body solver_pkg;

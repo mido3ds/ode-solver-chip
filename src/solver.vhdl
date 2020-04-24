@@ -2155,43 +2155,43 @@ begin
     --f16: 0000000001110011
     --f32: 0011 1111 0110 0110 0110 0110 0110 0110
     --f64: 0011111111101100110011001100110011001100110011001100110011001101
-    proc_run_L_nine : process(clk, fsm_run_L_nine )
-    begin
-        if rising_edge(clk) then
-            case( fsm_run_L_nine ) is
+    --proc_run_L_nine : process(clk, fsm_run_L_nine )
+    --begin
+    --    if rising_edge(clk) then
+    --        case( fsm_run_L_nine ) is
             
-                when "11" =>
-                    --START
-                    case( mode_sig ) is
+    --            when "11" =>
+    --                --START
+    --                case( mode_sig ) is
                     
-                        when "00" =>
-                            fpu_mul_1_in_2 <= (others => '0');
-                            fpu_mul_1_in_2(7 downto 0) <= "01110011";
-                        when "01" =>
-                            fpu_mul_1_in_2 <= (others => '0');
-                            fpu_mul_1_in_2(31 downto 0) <= "00111111011001100110011001100110";
-                        when "10" =>
-                            fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
-                        when others =>
-                            null;
-                    end case ;
-                    fsm_run_L_nine <= "01";
-                when "01" =>
-                    enable_mul_1 <= '1';
-                    fpu_mul_1_in_1 <= L_tol;
-                    fsm_run_L_nine <= "10";
-                when "10" =>
-                    if done_mul_1 = '1' then
-                        L_nine <= fpu_mul_1_out;
-                        enable_mul_1 <= '0';
-                        fsm_run_L_nine <= "00";
-                    end if;
-                when others =>
-                    --zeros and others
-                    null;
-            end case ;
-        end if;
-    end process ; -- proc_run_L_nine
+    --                    when "00" =>
+    --                        fpu_mul_1_in_2 <= (others => '0');
+    --                        fpu_mul_1_in_2(7 downto 0) <= "01110011";
+    --                    when "01" =>
+    --                        fpu_mul_1_in_2 <= (others => '0');
+    --                        fpu_mul_1_in_2(31 downto 0) <= "00111111011001100110011001100110";
+    --                    when "10" =>
+    --                        fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
+    --                    when others =>
+    --                        null;
+    --                end case ;
+    --                fsm_run_L_nine <= "01";
+    --            when "01" =>
+    --                enable_mul_1 <= '1';
+    --                fpu_mul_1_in_1 <= L_tol;
+    --                fsm_run_L_nine <= "10";
+    --            when "10" =>
+    --                if done_mul_1 = '1' then
+    --                    L_nine <= fpu_mul_1_out;
+    --                    enable_mul_1 <= '0';
+    --                    fsm_run_L_nine <= "00";
+    --                end if;
+    --            when others =>
+    --                --zeros and others
+    --                null;
+    --        end case ;
+    --    end if;
+    --end process ; -- proc_run_L_nine
 
     --you know the regs. err_sum
     --this process takes err_sum
@@ -2289,83 +2289,83 @@ begin
         end if;
     end process ; -- proc_termination
 
-    proc_outing : process( clk, fsm_outing )
-    begin
-        if rising_edge(clk) and in_state = "11" then
-            case( fsm_outing ) is
+    --proc_outing : process( clk, fsm_outing )
+    --begin
+    --    if rising_edge(clk) and in_state = "11" then
+    --        case( fsm_outing ) is
             
-                when "1111" =>
-                    --reset c_Ware
-                    c_ware <= (others => '0');
-                    adr <= x_address_out;
+    --            when "1111" =>
+    --                --reset c_Ware
+    --                c_ware <= (others => '0');
+    --                adr <= x_address_out;
 
-                    fsm_outing <= "0001";
-                when "0001" =>
-                    --start sending x_w[c]
-                    read_x <= '1';
-                    fsm_outing <= "0010";
-                when "0010" =>
-                    if read_x = '0' then
-                        in_data <= x_temp(63 downto 32);
-                        fsm_outing <= "0011";
-                    end if;
-                when "0011" =>
-                    address_inc_1_in <= adr;
-                    address_inc_1_enbl <= '1';
-                    fsm_outing <= "0100";
-                when "0100" =>
-                    adr <= address_inc_1_out;
-                    address_inc_1_enbl <= '0';
-                    in_data <= x_temp(31 downto 0);
-                    fsm_outing <= "0101";
-                when "0101" =>
-                    --check for the end of the loop against N_X_A_B_vec
-                    address_inc_1_in <= N_Counter;
-                    address_inc_1_enbl <= '1';
-                    fsm_outing <= "0110";
-                when "0110" =>
-                    N_Counter <= address_inc_1_out;
-                    address_inc_1_enbl <= '0';
-                    --N_X_A_B_vec [1:50]
-                    fsm_outing <= "1001";
+    --                fsm_outing <= "0001";
+    --            when "0001" =>
+    --                --start sending x_w[c]
+    --                read_x <= '1';
+    --                fsm_outing <= "0010";
+    --            when "0010" =>
+    --                if read_x = '0' then
+    --                    in_data <= x_temp(63 downto 32);
+    --                    fsm_outing <= "0011";
+    --                end if;
+    --            when "0011" =>
+    --                address_inc_1_in <= adr;
+    --                address_inc_1_enbl <= '1';
+    --                fsm_outing <= "0100";
+    --            when "0100" =>
+    --                adr <= address_inc_1_out;
+    --                address_inc_1_enbl <= '0';
+    --                in_data <= x_temp(31 downto 0);
+    --                fsm_outing <= "0101";
+    --            when "0101" =>
+    --                --check for the end of the loop against N_X_A_B_vec
+    --                address_inc_1_in <= N_Counter;
+    --                address_inc_1_enbl <= '1';
+    --                fsm_outing <= "0110";
+    --            when "0110" =>
+    --                N_Counter <= address_inc_1_out;
+    --                address_inc_1_enbl <= '0';
+    --                --N_X_A_B_vec [1:50]
+    --                fsm_outing <= "1001";
 
                     
-                when "0111" =>
-                    --check for c_Ware and inc or terminate..
-                    address_inc_1_in <= c_ware;
-                    address_inc_1_enbl <= '1';
-                    fsm_outing <= "1000";
-                when "1000" =>
-                    c_ware <= address_inc_1_out;
-                    address_inc_1_enbl <= '0';
-                    fsm_outing <= "1010";
-                when "1001" =>
-                    if N_Counter = N_X_A_B_vec then
-                        --done
-                        fsm_outing <= "0111";
-                    else
-                        --continue
-                        fsm_outing <= "0001";
-                    end if;
-                when "1010" =>
-                    if c_ware = t_size then
-                        --we are done
-                        fsm_outing <= "0000";
-                    else
-                        adr <= x_address_out;
-                        fsm_outing <= "0001";
-                    end if;
-                --when "1011" =>
-                --when "1100" =>
-                --when "1101" =>
-                --when "1110" =>
+    --            when "0111" =>
+    --                --check for c_Ware and inc or terminate..
+    --                address_inc_1_in <= c_ware;
+    --                address_inc_1_enbl <= '1';
+    --                fsm_outing <= "1000";
+    --            when "1000" =>
+    --                c_ware <= address_inc_1_out;
+    --                address_inc_1_enbl <= '0';
+    --                fsm_outing <= "1010";
+    --            when "1001" =>
+    --                if N_Counter = N_X_A_B_vec then
+    --                    --done
+    --                    fsm_outing <= "0111";
+    --                else
+    --                    --continue
+    --                    fsm_outing <= "0001";
+    --                end if;
+    --            when "1010" =>
+    --                if c_ware = t_size then
+    --                    --we are done
+    --                    fsm_outing <= "0000";
+    --                else
+    --                    adr <= x_address_out;
+    --                    fsm_outing <= "0001";
+    --                end if;
+    --            --when "1011" =>
+    --            --when "1100" =>
+    --            --when "1101" =>
+    --            --when "1110" =>
                 
-                when others =>
-                    null;
-            end case ;
+    --            when others =>
+    --                null;
+    --        end case ;
 
-        end if;
-    end process ; -- proc_outing
+    --    end if;
+    --end process ; -- proc_outing
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
     --Fixed Step Size
     --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
