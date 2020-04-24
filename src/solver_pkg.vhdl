@@ -344,6 +344,11 @@ package body solver_pkg is
 			case( fsm ) is
 			
 				when '1' =>
+					if done_mul_1 = '1' then
+                    	enable_mul_1 <= '0';
+                    	L_nine <= fpu_mul_1_out;
+                    	fsm <= '0';
+                    end if;
 					enable_mul_1 <= '1';
                     fpu_mul_1_in_1 <= L_tol;
                     case( mode ) is
@@ -357,11 +362,7 @@ package body solver_pkg is
                     		fpu_mul_1_in_2 <= "0011111111101100110011001100110011001100110011001100110011001101";
                     end case ;
                     ------------------------ERROR here ya EV, check FPU_MUL------------------
-                    if done_mul_1 = '1' then
-                    	enable_mul_1 <= '0';
-                    	L_nine <= fpu_mul_1_out;
-                    	fsm <= '0';
-                    end if;
+                    
 				when others =>
 					--00
 					null;
