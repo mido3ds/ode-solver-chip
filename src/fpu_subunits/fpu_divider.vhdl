@@ -121,7 +121,7 @@ begin
 	begin
 		if (rst = '1') then
 			state <= idle;
-		elsif (clk'event) then
+		elsif (rising_edge(clk)) then
 			state <= state_next;
 		end if;
 	end process;
@@ -155,7 +155,7 @@ begin
 	begin
 		if (rst = '1') then
 			i <= 0;
-		elsif (clk'event) then
+		elsif (rising_edge(clk)) then
 			i <= i_next;
 		end if;
 	end process;
@@ -175,7 +175,7 @@ begin
 	begin
 		if (rst = '1') then
 			z <= (others => '0');
-		elsif (clk'event) then
+		elsif (rising_edge(clk)) then
 			z <= z_next;
 		end if;
 	end process;
