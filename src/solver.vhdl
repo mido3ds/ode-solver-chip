@@ -1146,15 +1146,15 @@ begin
     --      x_Ware_address
     procedure proc_run_x_i_c (
         --both have the same length, this is the iterator
-        signal N_counter : std_logic_vector(5 downto 0);
+        signal N_counter : inout std_logic_vector(5 downto 0);
         --no need for that
         --signal c_ware_vec : std_logic_vector (2 downto 0);
         -- incremented address for x_intm
         --signal reg_address: std_logic_vector (9 downto 0);
         --to enable/disable read for both x_ware and x_intm
-        signal fsm_read_1, fsm_read_2, fsm_write_1 : std_logic_vector (1 downto 0);
+        signal fsm_read_1, fsm_read_2, fsm_write_1 : inout std_logic_vector (1 downto 0);
         --my dummies
-        signal dumm : std_logic_vector (15 downto 0);
+        signal dumm : inout std_logic_vector (15 downto 0)
         
 
         )is
@@ -1260,7 +1260,7 @@ begin
 
                         if fsm_write_1 = "00" then
                             enable_add_1 <= '0';
-                            if N_counter = X"0000" then
+                            if N_counter = "000000" then
                                 --end loop
                                 --This trick to make sure that adress of X_ware is updated
                                 --without updating c_ware
@@ -1268,6 +1268,7 @@ begin
                                 fsm_run_x_i_c <= "000";
                             else
                                 --LOOP AGAIN
+                                N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
                                 fsm_read_1 <= "11";
                                 fsm_read_2 <= "11";
                                 fsm_run_x_i_c <= "001";
@@ -1277,8 +1278,6 @@ begin
              
                 when others =>
                         null;
-                
-                   
             end case;
         end procedure;
 
