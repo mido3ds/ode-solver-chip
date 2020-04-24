@@ -21,7 +21,16 @@ package solver_pkg is
 			signal fsm : inout  std_logic_vector(1 downto 0)
 			);
 
-	procedure read_reg_inc_adrs_once(	
+	procedure read_reg_inc_adrs_once_64(
+			signal data_out : out std_logic_vector(63 downto 0);
+			signal reg_data_out : in std_logic_vector(31 downto 0);
+			signal reg_adrs: inout std_logic_vector;
+			signal read_enbl : out std_logic;
+			signal write_enbl : in std_logic;
+			signal fsm : inout  std_logic_vector(1 downto 0)
+			);
+
+	procedure read_reg_inc_adrs_once_32(	
 			signal data_out : out std_logic_vector(31 downto 0);
 			signal reg_data_out : in std_logic_vector(31 downto 0);
 			signal reg_adrs: inout std_logic_vector;
@@ -212,8 +221,10 @@ package body solver_pkg is
 			
 		end write_after_read_reg;	
 
-
-	procedure read_reg_inc_adrs_once(
+	--this procedure reads only 32 bits and increment by 2
+	--or reads 32 bits and increment by 1
+	--used when outputing X_out to the IO
+	procedure read_reg_inc_adrs_once_32(
 		signal data_out : out std_logic_vector(31 downto 0);
 		signal reg_data_out : in std_logic_vector(31 downto 0);
 		signal reg_adrs: inout std_logic_vector;
@@ -245,7 +256,46 @@ package body solver_pkg is
 
 		end if;
 		
-		end read_reg_inc_adrs_once;
+		end read_reg_inc_adrs_once_32;
+
+
+	procedure read_reg_inc_adrs_once_64 (
+		signal data_out : out std_logic_vector(63 downto 0);
+		signal reg_data_out : in std_logic_vector(31 downto 0);
+		signal reg_adrs: inout std_logic_vector;
+		signal read_enbl : out std_logic;
+		signal write_enbl : in std_logic;
+		signal fsm : inout  std_logic_vector(1 downto 0)
+			) is
+		begin
+			case( fsm ) is
+			
+				when "11" =>
+					if write_enbl = '0' then
+						read_enbl <= '1';
+						--reading the high part happened here at the falling_Edge(clk) with the init address
+						fsm <= "01";
+					end if;
+				when "01" =>
+					if write_enbl = '0' then
+						data_out(63 downto 32) <= reg_data_out;
+						--reading the low part happened here at the falling_edge() with the incremented address
+						reg_adrs <= to_vec(to_int(reg_adrs) + 1, reg_adrs'length);
+						fsm <= "10";
+					end if;
+				when "10" =>
+					data_out(31 downto 0) <= reg_data_out;	
+					--increment the address to proceed readings
+					reg_adrs <= to_vec(to_int(reg_adrs) + 1,reg_adrs'length);
+					read_enbl <= '0';
+					fsm <= "00";
+				when others =>
+					null;
+			end case ;
+
+
+		end read_reg_inc_adrs_once_64;
+
 
 	procedure outing(
 		--what belongs to system:
@@ -282,7 +332,7 @@ package body solver_pkg is
 					fsm <= "001";
 				when "001" =>
 					--reads 32 bits always
-					read_reg_inc_adrs_once
+					read_reg_inc_adrs_once_32
 						(
 						data_out => data_bus,
 						reg_data_out=>x_ware_data_out,
