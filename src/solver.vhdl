@@ -1292,7 +1292,8 @@ begin
         --dummies..
         signal N_counter : inout std_logic_vector(5 downto 0);
         signal fsm_read_1, fsm_read_2 : inout std_logic_vector (1 downto 0);
-        signal error_check :  inout std_logic_vector (63 downto 0)
+        signal error_check :  inout std_logic_vector (63 downto 0);
+        signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
 
         )is
         begin
@@ -1304,7 +1305,7 @@ begin
 
                     x_ware_find_address
                         (c_ware => c_ware,
-                        x_address_out => dumm,
+                        x_address_out => adr,
                         x_ware_address => x_ware_address);
 
                     N_counter <= N_X_A_B_vec;
@@ -1331,14 +1332,14 @@ begin
                         write_enbl => X_ware_wr,
                         fsm => fsm_read_1 -->place ones (11) and wait for (00)
                         );
-
+                    thisIsAdder_1 <= '1'; 
                     if fsm_read_1 = "00" and fsm_read_2 = "00" then
                         enable_add_1 <= '1';
                         thisIsAdder_1 <= '1'; ---no SUBTRACTOR
                         fsm_run_sum_err <= "0010";
                     end if;
                     
-                when "010" =>
+                when "0010" =>
                     if done_add_1 = '1' then
                         error_check <= fpu_add_1_out;
                         fsm_run_sum_err <= "0011";
@@ -1350,6 +1351,7 @@ begin
                         --negative
                         --take absolute then continue
                         enable_add_1 <= '0';
+                        thisIsAdder_1 <= '0';
                         enable_mul_1 <= '1';
                         fpu_mul_1_in_1 <= error_check;
                         --What is -1 ?
@@ -1373,6 +1375,8 @@ begin
                     else
                         --positive
                         --continue
+                        enable_add_1 <= '0';
+                        thisIsAdder_1 <= '0';
                         fpu_add_1_in_1 <= error_check;
                         fpu_add_1_in_2 <= err_sum;
                         fsm_run_sum_err <= "0100";
@@ -1381,15 +1385,19 @@ begin
 
                     when "0100" =>
                         enable_add_1 <= '1';
-                        thisIsAdder_1 <= '1';
+                        thisIsAdder_1 <= '0';
                         if done_add_1 = '1' then
                             err_sum <= fpu_add_1_out;
-                            enable_add_1 <= '0';
                             N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
                             fsm_run_sum_err <= "0101";
                         end if;
 
-                    when "0101"
+                    when "0101" =>
+                        enable_add_1 <= '0';
+                        thisIsAdder_1 <= '1'; --1 for sub
+                        fsm_run_sum_err <= "0111";
+
+                    when "0111" =>
                         if N_counter = "000000" then
                             X_intm_address <= (others => '0');
                             enable_add_1 <= '1';
@@ -1411,7 +1419,7 @@ begin
                             if posv_add_1 = '0' or zero_add_1 = '1' then
                                 --negative or zero means err_sum <= L
                                 error_tolerance_is_good <= '1';
-                                fsm_run_sum_err <= "000";
+                                fsm_run_sum_err <= "0000";
                             else
                                 --positive and non-zero means err_sum > L
                                 error_tolerance_is_good <= '0';
@@ -1432,7 +1440,7 @@ begin
                                     err_sum => err_sum,
                                     fsm => fsm_run_err_h_L
                                     );
-                                if fsm_run_err_h_L "00" then
+                                if fsm_run_err_h_L =  "00" then
                                     fsm_run_sum_err <= "0000";
                                 end if;
                                 fsm_run_sum_err <= "0000";
@@ -1443,7 +1451,6 @@ begin
                         null;
             end case ;
         end procedure;
-
 
     --calculates main equation (for variable step)
     procedure proc_run_main_eq is

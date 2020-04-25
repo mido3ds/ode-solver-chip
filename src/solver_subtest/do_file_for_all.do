@@ -27,6 +27,7 @@
 	add wave -position end  sim:/solver_test/err_sum
 	add wave -position end  sim:/solver_test/error_tolerance_is_good
 	add wave -position end  sim:/solver_test/x_temp
+	add wave -position end  sim:/solver_test/thisIsAdder_1
 
 
 
