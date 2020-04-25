@@ -7,7 +7,11 @@ entity ram is
     --NUM_WORDS: maximum number (and no more) of words you want the ram to hold.
     --ADR_LENGTH: number of adress bits, ADR_LENGTH <= ceil(log2(NUM_WORDS)).
     --WORD_LENGTH: number of bits of data bus and the word stored in one address in ram.
-    generic (NUM_WORDS, WORD_LENGTH, ADR_LENGTH : integer);
+    generic (
+        NUM_WORDS   : integer := 100;
+        WORD_LENGTH : integer := 32;
+        ADR_LENGTH  : integer := 16
+    );
 
     port (
         -- wr: write to ram through data_in
