@@ -3,9 +3,9 @@
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
     [x] Implement the 2 fixed point adder/subtractors using same interface (module/entity) so that it is easy to plug them into your code. 
     [x] ripple adder shouldn’t be one of the two adders. 
-    [ ] SW equivalent
+    [ ] sw equivalent
     [x] testbench to the updated interface & subtractor part and re-run your testing.
-    [ ] synth (produce vhdl files)
+    [ ] synth (produce verilog files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
@@ -16,7 +16,7 @@
     [x] Wrap the multiplier you implemented last phase wrap it in an entity/module that shares the interface as the other 2 multipliers.
     [x] Adjust testbench to the updated interface and re-run your testing.
     [ ] sw equivalent
-    [ ] synth (produce vhdl files)
+    [ ] synth (produce verilog files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each multiplier in a Table form.
 
@@ -24,9 +24,9 @@
 
     [x] Provide to the rest of the team the number of cycles needed or the handshaking signals that indicates the module 
     [x] Implement fixed-point division (use the adder interface inside it to easily switch between different adders).
-    [ ] Implement software equivalent functionality.
+    [ ] sw equivalent
     [x] Implement testbench to test the above circuit.
-    [ ] synth (produce vhdl files)
+    [ ] synth (produce verilog files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
@@ -35,29 +35,27 @@
     [x] implement your memory, and make it generic (widths and height) with the correct number of ports and address buses as required by your design.
     [x] Implement testbench to test the above circuit .
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
-    [ ] synth (produce vhdl files)
+    [ ] synth (produce verilog files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
-[ ] script to run post synth tests
 
 [ ] IO 
 
     [x] Design  
     [x] Implementation
-    [ ] synth (produce vhdl files) 
+    [ ] synth (produce verilog files) 
     [ ] post-synthesize simulation
-    [ ] Testbench (use output of the CPU software to test and simulate IO)
-    [ ] Software equivalent functionality
+    [x] Testbench (use output of the CPU software to test and simulate IO)
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Interpolator
 
     [x] Design  
     [x] Implementation
-    [ ] synth (produce vhdl files) 
+    [ ] synth (produce verilog files) 
     [ ] post-synthesize simulation
     [x] Testbench 
     [x] Software equivalent functionality
@@ -67,7 +65,7 @@
 
     [x] Design  
     [ ] Implementation
-    [ ] synth (produce vhdl files) 
+    [ ] synth (produce verilog files) 
     [ ] post-synthesize simulation
     [x] Testbench 
     [x] Software equivalent functionality
@@ -82,6 +80,8 @@
     [ ] 1. Complete System Design Report
     [ ] 2. Mini Folder with
         [ ] 2.1. Mini Modules Design Report + comparison in Time/Area/Power.
+        [ ] cpu_tb.vhdl
+        [ ] scripts/preprocessor.py and output_formatter.py
         [ ] 2.2 Mini Modules Codes.
         [ ] 2.3 Readme.txt the explains how to run any attached software.
     [ ] 3. Macro Folder with
