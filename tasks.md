@@ -9,8 +9,8 @@ problems: conflicts in signals when filling and flushing the decompressor buffer
 # Mohamed Shawky, SEC:2, BN:16
 
 tasks: solver (fixed step)
-time: TODO
-problems: TODO
+time: 6 days
+problems: Main process design, Debugging through simulation and logs.
 
 # Remonda Talaat, SEC:1, BN:20
 
