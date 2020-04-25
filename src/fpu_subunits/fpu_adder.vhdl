@@ -56,6 +56,12 @@ begin
             zero  <= zero_signal;
             out_c <= out_c_signal;
             done  <= '1';
+        else
+            zero <= '1';
+            posv <= '0'; -- reset signal
+            err <= '0';
+            out_c <= (others => '0');
+            done <='0';
         end if;
     end process;
 end architecture;
@@ -123,6 +129,12 @@ begin
             zero  <= zero_signal;
             out_c <= out_c_signal;
             done  <= '1';
+            else
+                zero <= '1';
+                posv <= '0'; -- reset signal
+                err <= '0';
+                out_c <= (others => '0');
+                done <='0';
         end if;
     end process;
 end architecture;
@@ -197,6 +209,12 @@ begin
             zero  <= zero_signal;
             out_c <= out_c_signal;
             done  <= '1';
+        else
+            zero <= '1';
+            posv <= '0'; -- reset signal
+            err <= '0';
+            out_c <= (others => '0');
+            done <='0';
         end if;
     end process;
 end architecture;
