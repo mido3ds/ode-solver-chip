@@ -23,8 +23,6 @@ end entity;
 architecture with_operators of fpu_divider is
 	constant scale_factor : integer := 7;  -- fixed scale factor
 	constant size         : integer := 16; -- operands' size
-	signal Q              : std_logic_vector(size - 1 downto 0);
-	signal F              : std_logic_vector(scale_factor - 1 downto 0);
 begin
 	process (in_a, in_b, clk)
 		variable zero_flag, posv_flag, ovfl_flag, divide_by_zero_error, ready : std_logic;
@@ -63,12 +61,12 @@ begin
 				out64   := out_neg;
 			end if;
 			-- zero flag 
-			if (unsigned(out64(size + scale_factor - 1 downto scale_factor)) = 0 and divide_by_zero_error = '0') then
+			if (unsigned(out64(size + scale_factor - 1 downto scale_factor)) = 0 and divide_by_zero_error = '0' and ovfl_flag = '0') then
 				zero_flag := '1';
 			end if;
 
 			-- positive flag
-			posv_flag := not out64(size - 1) and not zero_flag and not divide_by_zero_error;
+			posv_flag := not out64(size - 1) and zero_flag = '0' and not divide_by_zero_error = '0' and ovfl_flag = '0';
 			ready     := '1';
 		end if;
 		err   <= divide_by_zero_error or ovfl_flag;
