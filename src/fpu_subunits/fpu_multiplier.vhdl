@@ -44,6 +44,12 @@ begin
 			error <= '0';
 			err   <= '0';
 			out_c  <= (others => '0');
+		elsif enbl = '0' then
+			zero  <= '0';
+			posv  <= '0';
+			done  <= '0';
+			err   <= error;
+			out_c  <= (others => '0');
 		elsif (enbl = '1' and error = '0' and rising_edge(clk)) then -- enabled 
 			output := (others => '0');
 			out64  := (others => '0');
@@ -70,12 +76,6 @@ begin
 			zero <= zero_flag;
 			done <= '1';
 			out_c <= out64;
-		elsif enbl = '0' then
-			zero  <= '0';
-			posv  <= '0';
-			done  <= '0';
-			err   <= error;
-			out_c  <= (others => '0');
 		end if;
 	end process;
 end architecture;
@@ -102,6 +102,12 @@ begin
 			done  <= '1';
 			error <= '0';
 			err   <= '0';
+			out_c  <= (others => '0');
+		elsif enbl = '0' then
+			zero  <= '0';
+			posv  <= '0';
+			done  <= '0';
+			err   <= error;
 			out_c  <= (others => '0');
 		elsif (enbl = '1' and error = '0' and rising_edge(clk)) then -- enabled 
 			output := (others => '0');
@@ -138,12 +144,6 @@ begin
 			zero <= zero_flag;
 			done <= '1';
 			out_c <= out64;
-		elsif enbl = '0' then
-			zero  <= '0';
-			posv  <= '0';
-			done  <= '0';
-			err   <= error;
-			out_c  <= (others => '0');
 		end if;
 	end process;
 end architecture;
@@ -168,6 +168,12 @@ begin
 			done  <= '1';
 			error <= '0';
 			err   <= '0';
+			out_c  <= (others => '0');
+		elsif enbl = '0' then
+			zero  <= '0';
+			posv  <= '0';
+			done  <= '0';
+			err   <= error;
 			out_c  <= (others => '0');
 		elsif (enbl = '1' and error = '0' and rising_edge(clk)) then -- enabled 
 			output := (others => '0');
@@ -205,12 +211,6 @@ begin
 			zero <= zero_flag;
 			done <= '1';
 			out_c <= out64;
-		elsif enbl = '0' then
-			zero  <= '0';
-			posv  <= '0';
-			done  <= '0';
-			err   <= error;
-			out_c  <= (others => '0');
 		end if;
 	end process;
 end architecture;

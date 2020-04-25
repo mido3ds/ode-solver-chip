@@ -33,17 +33,17 @@ problems: implementing Multiblication algorithm twice as it's attached steps in 
 # Mazen Amr , SEC:2, BN:8
 
 tasks: fpu adder, solver tests
-time: TODO
-problems: TODO
+time: 5 days
+problems: solver testing
 
 # Mohamed Ahmed Ibrahim, SEC:2, BN:9
 
 tasks: fpu multiplier first algorithm + its tests, interpolator tests
-time: TODO
-problems: TODO
+time: 5 days
+problems: using adder/subtractor components in the multiplier
 
 # Mahmoud Mohamed, SEC:2, BN:22
 
 tasks: fpu divider + its tests, solver tests
-time: TODO
-problems: TODO
+time: 5 days
+problems: using adder/subtractor components in the divider , solver testing
