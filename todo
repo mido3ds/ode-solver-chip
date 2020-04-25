@@ -5,7 +5,7 @@
     [x] ripple adder shouldn’t be one of the two adders. 
     [ ] SW equivalent
     [x] testbench to the updated interface & subtractor part and re-run your testing.
-    [ ] synth
+    [ ] synth (produce vhdl files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
@@ -16,7 +16,7 @@
     [x] Wrap the multiplier you implemented last phase wrap it in an entity/module that shares the interface as the other 2 multipliers.
     [x] Adjust testbench to the updated interface and re-run your testing.
     [ ] sw equivalent
-    [ ] synth
+    [ ] synth (produce vhdl files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each multiplier in a Table form.
 
@@ -26,7 +26,7 @@
     [x] Implement fixed-point division (use the adder interface inside it to easily switch between different adders).
     [ ] Implement software equivalent functionality.
     [x] Implement testbench to test the above circuit.
-    [ ] synth
+    [ ] synth (produce vhdl files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
@@ -35,7 +35,7 @@
     [x] implement your memory, and make it generic (widths and height) with the correct number of ports and address buses as required by your design.
     [x] Implement testbench to test the above circuit .
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
-    [ ] synth
+    [ ] synth (produce vhdl files)
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
@@ -47,7 +47,7 @@
 
     [x] Design  
     [x] Implementation
-    [ ] synth 
+    [ ] synth (produce vhdl files) 
     [ ] post-synthesize simulation
     [ ] Testbench (use output of the CPU software to test and simulate IO)
     [ ] Software equivalent functionality
@@ -57,24 +57,25 @@
 
     [x] Design  
     [x] Implementation
-    [ ] synth 
+    [ ] synth (produce vhdl files) 
     [ ] post-synthesize simulation
     [x] Testbench 
-    [ ] Software equivalent functionality
+    [x] Software equivalent functionality
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Solver
 
     [x] Design  
     [ ] Implementation
-    [ ] synth 
+    [ ] synth (produce vhdl files) 
     [ ] post-synthesize simulation
     [x] Testbench 
-    [ ] Software equivalent functionality
+    [x] Software equivalent functionality
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] all vunit tests pass
 [ ] vunit tests are up-to-date with non_vunit of tests
+[ ] use fastest architectures in all files
 
 [ ] Zipped Folder with your TeamNumber as its name that contains
 

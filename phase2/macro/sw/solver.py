@@ -12,12 +12,13 @@ e.g. solve sample-f16 in (see input dir)
 $ ./solver.py <sample-f16.json
 '''
 import json
+import math
 import sys
 
 import numpy as np
 
-import utils
 import interpolator as interp
+import utils
 
 
 def read_inputs():
@@ -38,27 +39,51 @@ def read_inputs():
     return us, ts, a, b, x, mode, inp['H'], inp['Err']
 
 
-def solve_fixed(us, ts, a, b, x, h) -> list:
+def one_step_euler(us, ts, tk, a, b, x, h):
+    un = interp.interpolate(us, ts, tk)
+    return x + h * (a.dot(x) + b.dot(un))
+
+
+def solve_fixed(us, ts, a, b, x, h) -> np.array:
     out_pts = ts[1:] - h
     xs = np.zeros((out_pts.size, x.size))
     i = 0
 
     for tk in np.arange(0, ts.max(), h):
-        un = interp.interpolate(us, ts, tk)
-        x = x + h * (a.dot(x) + b.dot(un))
+        x = one_step_euler(us, ts, tk, a, b, x, h)
 
         if tk in out_pts:
             xs[i] = x
             i += 1
 
-    return xs.tolist()
+    return xs
 
 
-def solve_var(us, ts, a, b, x, h, err) -> list:
-    return x.tolist()
+def solve_var(us, ts, a, b, x, h, err) -> np.array:
+    out_pts = ts[1:] - h
+    xs = np.zeros((out_pts.size, x.size))
+    i = 0
+
+    for tk in np.arange(0, ts.max(), h):
+        e = math.inf
+        while e > err:
+            x0 = one_step_euler(us, ts, tk, a, b, x, h)
+
+            x1 = one_step_euler(us, ts, tk, a, b, x, h/2)
+            x1 = one_step_euler(us, ts, tk, a, b, x1, h/2)
+            x = x1
+
+            e = np.sum(np.abs(x1-x0))
+            h = (0.9*(h**2)*err)/(e)
+
+        if tk in out_pts:
+            xs[i] = x
+            i += 1
+
+    return xs
 
 
-def solve(us, ts, a, b, x, mode, h, err) -> list:
+def solve(us, ts, a, b, x, mode, h, err) -> np.array:
     if mode == 'fixed':
         return solve_fixed(us, ts, a, b, x, h)
     else:
@@ -66,4 +91,4 @@ def solve(us, ts, a, b, x, mode, h, err) -> list:
 
 
 if __name__ == "__main__":
-    print(solve(*read_inputs()))
+    print(solve(*read_inputs()).tolist())
