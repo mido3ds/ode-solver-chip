@@ -78,7 +78,7 @@
 
 [ ] Zipped Folder with your TeamNumber as its name that contains
 
-    [ ] 1. Complete System Design Report
+    [x] 1. Complete System Design Report
     [ ] 2. Mini Folder with
         [ ] 2.1. Mini Modules Design Report + comparison in Time/Area/Power.
         [ ] cpu_tb.vhdl
@@ -88,5 +88,5 @@
     [ ] 3. Macro Folder with
         [ ] 3.1 Macro Modules Design Report + report Time/Area/Power.
         [ ] 3.2 Macro Modules Codes (verilog/vhdl before and after synthesis, testbench, software, do.files)
-        [ ] 3.3 Readme.txt the explains how to run any attached software.
+        [x] 3.3 Readme.txt the explains how to run any attached software.
     [ ] 4. Task distribution Excel sheet (Name, task, estimated time,problem faced) don’t add total time for all tasks, and record time as soon as you do it.
