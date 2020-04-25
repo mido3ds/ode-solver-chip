@@ -6,11 +6,11 @@ from vunit import VUnit
 ghdl_elab_flags = '-g -Wbinding -Wreserved -Wlibrary -Wvital-generic -Wdelayed-checks -Wbody -Wspecs -Wunused --mb-comments --std=08 --ieee=synopsys -fexplicit'.split()
 ghdl_sim_flags = ''.split()
 
-mic_src_path = join(dirname(__file__), '..', "micro", "src")
-mic_test_path = join(dirname(__file__), '..', "micro", "test")
+mic_src_path = join(dirname(__file__), "micro", "src")
+mic_test_path = join(dirname(__file__), "micro", "test")
 
-mac_src_path = join(dirname(__file__), '..', "macro", "src")
-mac_test_path = join(dirname(__file__), '..', "macro", "test")
+mac_src_path = join(dirname(__file__), "macro", "src")
+mac_test_path = join(dirname(__file__), "macro", "test")
 
 
 def post_run(results):
@@ -35,7 +35,7 @@ def get_files(p):
 vu = VUnit.from_argv()
 
 vu.add_library("project").add_source_files(
-    [*get_files(mic_src_path), *get_files(mic_test_path)]
+    [*get_files(mic_src_path), *get_files(mic_test_path), *get_files(mac_src_path), *get_files(mac_test_path)]
 )
 
 vu.set_compile_option("ghdl.flags", ghdl_elab_flags)
