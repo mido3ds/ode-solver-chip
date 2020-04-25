@@ -5,8 +5,8 @@
     [x] ripple adder shouldn’t be one of the two adders. 
     [ ] sw equivalent
     [x] testbench to the updated interface & subtractor part and re-run your testing.
-    [ ] synth (produce verilog files)
-    [ ] post-synthesize simulation.
+    [x] synth (produce verilog files)
+    [x] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Multiplier:
@@ -46,8 +46,8 @@
 
     [x] Design  
     [x] Implementation
-    [ ] synth (produce verilog files) 
-    [ ] post-synthesize simulation
+    [x] synth (produce verilog files) 
+    [x] post-synthesize simulation
     [x] Testbench (use output of the CPU software to test and simulate IO)
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
