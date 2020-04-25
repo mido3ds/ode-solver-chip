@@ -36,9 +36,14 @@ architecture rtl of solver_test is
 
 
     signal x_temp,x_i_temp : std_logic_vector(63 downto 0) := (others => '1');
-    signal x_temp_2 : std_logic_vector(63 downto 0) := X"1111111111111111";
-    signal x_temp_3 : std_logic_vector(63 downto 0) := X"2222222222222222";
-    
+    signal x_temp_2 : std_logic_vector(63 downto 0) := X"0000000000000000";
+
+    signal x_temp_3 : std_logic_vector(63 downto 0) := X"0000000000000180";
+
+    signal h_adapt : std_logic_vector(63 downto 0) := X"0000000000000280";
+    signal L_tol: std_logic_vector(63 downto 0) := X"0000000000000080";
+
+    signal L_nine: std_logic_vector(63 downto 0) := (others => '0');
 
     signal fsm_write_1,fsm_write_2 : std_logic_vector(1 downto 0) := (others => '0');
     signal main_fsm, fsm_out : std_logic_vector(2 downto 0) := (others => '0');
@@ -50,18 +55,29 @@ architecture rtl of solver_test is
     --signal N_M_vec : std_logic_vector(11 downto 0) := (others => '0');
     
     signal N_counter_2: std_logic_vector(5 downto 0) := (others => '0');
-    signal mode_sig : std_logic_vector(1 downto 0) := "10";
+    signal mode_sig : std_logic_vector(1 downto 0) := "00";
     --signal wares : std_logic_vector(2 downto 0) := "001";
-    signal procedure_dumm : std_logic_vector(11 downto 0) := (others => '0');
+    signal procedure_dumm : std_logic_vector(15 downto 0) := (others => '0');
     
 
 
     signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '1');
     signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1,thisIsAdder_1 : std_logic                                  := '0';
     
-    signal c_ware_vec : std_logic_vector(2 downto 0) := (others => '0');
+    signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '1');
+    signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic                                  := '0';
+    
+    signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out               : std_logic_vector(MAX_LENGTH - 1 downto 0)  := (others => '1');
+    signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic                                  := '0';
+    
+
+    
+    signal c_ware : std_logic_vector(2 downto 0) := (others => '0');
     signal from_i_to_c : std_logic    := '1';
-    signal fsm_run_x_i_c :  std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_run_sum_err :  std_logic_vector(3 downto 0) := (others => '0');
+    signal fsm_L_nine : std_logic    := '1';
+    signal err_sum  :  std_logic_vector(63 downto 0) := (others => '0');
+    signal error_tolerance_is_good : std_logic    := '0';
     begin
     X_i : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
@@ -99,173 +115,200 @@ architecture rtl of solver_test is
             posv      => posv_add_1,
             add_sub   => thisIsAdder_1
         );
-        --fpu_mul_1 : entity work.fpu_multiplier(first_algo)
-        --port map(
-        --    clk       => clk,
-        --    rst       => rst,
-        --    mode      => mode_sig,
-        --    enbl      => enable_mul_1,
-        --    in_a      => fpu_mul_1_in_1,
-        --    in_b      => fpu_mul_1_in_2,
-        --    out_c     => fpu_mul_1_out,
-        --    done      => done_mul_1,
-        --    err       => err_mul_1,
-        --    zero      => zero_mul_1,
-        --    posv      => posv_mul_1
-        --);
+        fpu_mul_1 : entity work.fpu_multiplier(first_algo)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_mul_1,
+            in_a      => fpu_mul_1_in_1,
+            in_b      => fpu_mul_1_in_2,
+            out_c     => fpu_mul_1_out,
+            done      => done_mul_1,
+            err       => err_mul_1,
+            zero      => zero_mul_1,
+            posv      => posv_mul_1
+        );
 
-        --fpu_div_1 : entity work.fpu_divider(first_algo)
-        --port map(
-        --    clk       => clk,
-        --    rst       => rst,
-        --    mode      => mode_sig,
-        --    enbl      => enable_div_1,
-        --    in_a      => fpu_div_1_in_1,
-        --    in_b      => fpu_div_1_in_2,
-        --    out_c     => fpu_div_1_out,
-        --    done      => done_div_1,
-        --    err       => err_div_1,
-        --    zero      => zero_div_1,
-        --    posv      => posv_div_1
-        --);
+        fpu_div_1 : entity work.fpu_divider(first_algo)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_div_1,
+            in_a      => fpu_div_1_in_1,
+            in_b      => fpu_div_1_in_2,
+            out_c     => fpu_div_1_out,
+            done      => done_div_1,
+            err       => err_div_1,
+            zero      => zero_div_1,
+            posv      => posv_div_1
+        );
 
     main_proc : process(clk, rst)
-    procedure proc_run_x_i_c (
-        --both have the same length, this is the iterator
+    procedure proc_run_sum_err (
+
+        --dummies..
         signal N_counter : inout std_logic_vector(5 downto 0);
-        --no need for that
-        --signal c_ware_vec : std_logic_vector (2 downto 0);
-        -- incremented address for x_intm
-        --signal reg_address: std_logic_vector (9 downto 0);
-        --to enable/disable read for both x_ware and x_intm
-        signal fsm_read_1, fsm_read_2, fsm_write_1 : inout std_logic_vector (1 downto 0);
-        --my dummies
-        signal dumm : inout std_logic_vector (15 downto 0)
-        
+        signal fsm_read_1, fsm_read_2 : inout std_logic_vector (1 downto 0);
+        signal error_check :  inout std_logic_vector (63 downto 0);
+        signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
 
         )is
-
         begin
-            case(fsm_run_x_i_c) is
-                when "111" =>
+            case(fsm_run_sum_err) is
+                when "1111" =>
+                    --START:
                     X_intm_address <= (others => '0');
-                    --decrement first m3l4 :D
-                    --N_counter = N - 1
-                    --if N = 5, loops when N_counter = 4,3,2,1,0 (loop then exit)
-                    N_counter <= to_vec(to_int(N_X_A_B_vec) -1, N_counter'length);
+                    err_sum <= (others =>'0');
+
                     x_ware_find_address
-                        (c_ware => c_ware_vec,
-                        x_address_out => dumm,
+                        (c_ware => c_ware,
+                        x_address_out => adr,
                         x_ware_address => x_ware_address);
 
+                    N_counter <= N_X_A_B_vec;
                     fsm_read_1 <= "11";
                     fsm_read_2 <= "11";
-                    fsm_run_x_i_c <= "001";
+                    fsm_run_sum_err <= "0001";
+               
+                when "0001" =>
+                    --call the readers and store at x_temp and x_i_temp
+                    read_reg_inc_adrs_once_64(
+                        data_out => fpu_add_1_in_2,
+                        reg_data_out=>X_intm_data_out,
+                        reg_adrs => X_intm_address,
+                        read_enbl => X_intm_rd,
+                        write_enbl => X_intm_wr,
+                        fsm => fsm_read_2 -->place ones (11) and wait for (00)
+                        );
 
+                    read_reg_inc_adrs_once_64(
+                        data_out => fpu_add_1_in_1,
+                        reg_data_out=>X_ware_data_out,
+                        reg_adrs => x_ware_address,
+                        read_enbl => X_ware_rd,
+                        write_enbl => X_ware_wr,
+                        fsm => fsm_read_1 -->place ones (11) and wait for (00)
+                        );
 
-                when "001" =>
-                --depending on from_i_to_c 
-                -- from_i_to_c = 1 --> x_w = X_i + x_w --> read_x_i_normal, read_befire_write x_w
-                --             = 0 --> x_i = x_i + x_w --> read_x_w_normal, read_befire_write x_i
-                    if from_i_to_c = '0' then
-                        --No, from c to i, then i will be overwritten
-                        read_before_write_reg(
-                            data_out => x_i_temp,
-                            reg_data_out=>X_intm_data_out,
-                            reg_adrs => X_intm_address,
-                            read_enbl => X_intm_rd,
-                            write_enbl => X_intm_wr,
-                            fsm => fsm_read_2 -->place ones (11) and wait for (00)
-                            );
-
-                        read_reg_inc_adrs_once_64(
-                            data_out => x_temp,
-                            reg_data_out=>X_ware_data_out,
-                            reg_adrs => x_ware_address,
-                            read_enbl => X_ware_rd,
-                            write_enbl => X_ware_wr,
-                            fsm => fsm_read_1 -->place ones (11) and wait for (00)
-                            );
-                    else
-                        --yes, from i to c
-                        read_before_write_reg
-                            (
-                            data_out => x_temp,
-                            reg_data_out=>X_ware_data_out,
-                            reg_adrs => x_ware_address,
-                            read_enbl => X_ware_rd,
-                            write_enbl => X_ware_wr,
-                            fsm => fsm_read_1 -->place ones (11) and wait for (00)
-                            ); 
-
-                        read_reg_inc_adrs_once_64(
-                            data_out => x_i_temp,
-                            reg_data_out=>X_intm_data_out,
-                            reg_adrs => X_intm_address,
-                            read_enbl => X_intm_rd,
-                            write_enbl => X_intm_wr,
-                            fsm => fsm_read_2 -->place ones (11) and wait for (00)
-                            );
-                    end if;
-                    
                     if fsm_read_1 = "00" and fsm_read_2 = "00" then
                         enable_add_1 <= '1';
-                        thisIsAdder_1 <= '0';
-                        fpu_add_1_in_1 <= x_temp;
-                        fpu_add_1_in_2 <= x_i_temp;
-                        fsm_write_1 <= "11";
-
-                        fsm_run_x_i_c <= "010";
+                        thisIsAdder_1 <= '1'; ---no SUBTRACTOR
+                        fsm_run_sum_err <= "0010";
                     end if;
                     
-                when "010" =>
-                   if done_add_1 = '1' then
-                        --where to write at ?????
+                when "0010" =>
+                    if done_add_1 = '1' then
+                        enable_add_1 <= '0';
+                        error_check <= fpu_add_1_out;
+                        fsm_run_sum_err <= "0011";
+                    end if;
 
-                        if from_i_to_c = '0' then
-                            --no, from c to i, we will write at i
-                            write_after_read_reg(
-                                data_in => fpu_add_1_out,
-                                reg_data_in => X_intm_data_in,
-                                reg_adrs => X_intm_address,
-                                read_enbl => X_intm_rd,
-                                write_enbl => X_intm_wr,
-                                fsm => fsm_write_1
-                                );
+                when "0011" =>
 
-                        else
-                            write_after_read_reg(
-                                data_in => fpu_add_1_out,
-                                reg_data_in => X_ware_data_in,
-                                reg_adrs => x_ware_address,
-                                read_enbl => X_ware_rd,
-                                write_enbl => X_ware_wr,
-                                fsm => fsm_write_1
-                                );
+                    if posv_add_1 = '0' then
+                        --negative
+                        --take absolute then continue
+                        --enable_add_1 <= '0';
+                        enable_mul_1 <= '1';
+                        fpu_mul_1_in_1 <= error_check;
+                        --What is -1 ?
+                        case( mode_sig ) is
+                            when "00" => 
+                                fpu_mul_1_in_2 <= (others =>'0');
+                                fpu_mul_1_in_2(15 downto 0) <= "1111111110000000";
+                            when "01" =>
+                                fpu_mul_1_in_2 <= (others =>'0');
+                                fpu_mul_1_in_2(31 downto 0) <= "10111111100000000000000000000000";
+                            when "10" =>
+                                fpu_mul_1_in_2(63 downto 0) <= "1011111111110000000000000000000000000000000000000000000000000000";
+                            when others =>
+                        end case ;
+                        if done_mul_1 = '1' then
+                            fpu_add_1_in_1 <= fpu_mul_1_out;
+                            fpu_add_1_in_2 <= err_sum;
+                            fsm_run_sum_err <= "0100";
+                        end if;
+                        
+                    else
+                        --positive
+                        --continue
+                        --enable_add_1 <= '0';
+                        fpu_add_1_in_1 <= error_check;
+                        fpu_add_1_in_2 <= err_sum;
+                        fsm_run_sum_err <= "0100";
+                    end if;
+
+
+                    when "0100" =>
+                        enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
+                        if done_add_1 = '1' then
+                            err_sum <= fpu_add_1_out;
+                            enable_add_1 <= '0';
+                            N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
+                            fsm_run_sum_err <= "0101";
                         end if;
 
-                        if fsm_write_1 = "00" then
-                            enable_add_1 <= '0';
-                            if N_counter = "000000" then
-                                --end loop
-                                --This trick to make sure that adress of X_ware is updated
-                                --without updating c_ware
-                                X_intm_address <= (others => '0');
-                                fsm_run_x_i_c <= "000";
+                    when "0101" =>
+                        if N_counter = "000000" then
+                            X_intm_address <= (others => '0');
+                            enable_add_1 <= '1';
+                            thisIsAdder_1 <= '1'; --1 for sub
+                            fpu_add_1_in_1 <= err_sum;
+                            fpu_add_1_in_2 <= L_tol;
+                            --init here, won't be affective until we reach the procedure call
+                            fsm_run_err_h_L <= (others => '1');
+                            fsm_run_sum_err <= "0110";
+                        else
+                            --keep looping
+                            fsm_read_1 <= "11";
+                            fsm_read_2 <= "11";
+                            fsm_run_sum_err <= "0001";
+                        end if;
+
+                    when "0110" =>
+                        if done_add_1 = '0' then
+                            if posv_add_1 = '0' or zero_add_1 = '1' then
+                                --negative or zero means err_sum <= L
+                                error_tolerance_is_good <= '1';
+                                fsm_run_sum_err <= "0000";
                             else
-                                --LOOP AGAIN
-                                N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
-                                fsm_read_1 <= "11";
-                                fsm_read_2 <= "11";
-                                fsm_run_x_i_c <= "001";
+                                --positive and non-zero means err_sum > L
+                                error_tolerance_is_good <= '0';
+                                proc_run_err_h_L(
+                                    mode => mode_sig,
+                                    h_adapt => h_adapt,
+                                    L_nine => L_nine,
+                                    fpu_mul_1_in_1 => fpu_mul_1_in_1,
+                                    fpu_mul_1_in_2 => fpu_mul_1_in_2,
+                                    fpu_mul_1_out => fpu_mul_1_out,
+                                    enable_mul_1 => enable_mul_1,
+                                    done_mul_1 => done_mul_1,
+                                    fpu_div_1_in_1 => fpu_div_1_in_1,
+                                    fpu_div_1_in_2 => fpu_div_1_in_2,
+                                    fpu_div_1_out => fpu_div_1_out,
+                                    enable_div_1 => enable_div_1,
+                                    done_div_1 => done_div_1,
+                                    err_sum => err_sum,
+                                    fsm => fsm_run_err_h_L
+                                    );
+                                if fsm_run_err_h_L =  "00" then
+                                    fsm_run_sum_err <= "0000";
+                                end if;
+                                fsm_run_sum_err <= "0000";
                             end if;
                         end if;
-                    end if;
-             
-                when others =>
+
+                    when others => 
                         null;
-            end case;
+            end case ;
         end procedure;
+
+
+
+
 
     
     begin
@@ -273,10 +316,25 @@ architecture rtl of solver_test is
             --Fill X_i with data..
             case( main_fsm ) is
                 when "000" => 
-                    N_counter_2 <= (others => '0');
-                    fsm_write_1 <= "11";
-                    fsm_write_2 <= "11";
-                    main_fsm <= "001";
+                    
+                    mul_L_9(
+                        mode => mode_sig,
+                        L_tol => L_tol,
+                        L_nine => L_nine,
+                        fpu_mul_1_in_1 => fpu_mul_1_in_1,
+                        fpu_mul_1_in_2 => fpu_mul_1_in_2,
+                        fpu_mul_1_out => fpu_mul_1_out,
+                        enable_mul_1 => enable_mul_1,
+                        done_mul_1 => done_mul_1,
+                        fsm => fsm_L_nine
+                        );
+
+                    if fsm_L_nine = '0' then
+                        N_counter_2 <= (others => '0');
+                        fsm_write_1 <= "11";
+                        fsm_write_2 <= "11";
+                        main_fsm <= "001";
+                    end if;
                 when "001" =>
 
                 write_after_read_reg (
@@ -305,7 +363,7 @@ architecture rtl of solver_test is
                     if N_counter_2 = N_X_A_B_vec then
                         main_fsm <= "011";
                         --init........
-                        fsm_run_x_i_c <= "111";
+                        fsm_run_sum_err <= "1111";
                     else
                         fsm_write_1 <= "11";
                         fsm_write_2 <= "11";
@@ -313,15 +371,16 @@ architecture rtl of solver_test is
                     end if;
                 when "011" =>
                     --run multiplication procedure
-                    proc_run_x_i_c (
-                        N_counter => procedure_dumm (11 downto 6),
-                        fsm_read_1 => procedure_dumm (1 downto 0),
-                        fsm_read_2=> procedure_dumm (3 downto 2),
-                        fsm_write_1=> procedure_dumm (5 downto 4),
-                        dumm => adr
+                    
+                    proc_run_sum_err (
+                        N_counter => procedure_dumm (5 downto 0),
+                        fsm_read_1 =>  procedure_dumm (7 downto 6),
+                        fsm_read_2 =>  procedure_dumm (9 downto 8),
+                        error_check => x_temp,
+                        fsm_run_err_h_L => procedure_dumm (11 downto 10)
                         );
 
-                    if fsm_run_x_i_c = "000" then
+                    if fsm_run_sum_err = "0000" then
                         main_fsm <= "111";
                     end if;
         when others =>
