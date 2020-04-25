@@ -20,7 +20,7 @@ I wrote the following scripts to ease the use of vunit+ghdl stack.
 * gnu-bash `4.4.19(1)-release` 
 * gtkwave (only to view simulation output) `3.3.93` 
 
-## Docker Postinstall
+## After Installing Docker
 
 1. Run Docker Daemon
 
