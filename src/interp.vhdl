@@ -99,14 +99,16 @@ signal out_low_from : std_logic := '0'; --determines which memory to out from in
 signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
 
 --U0 IO Signals
-signal read_u_0, u_0_high : std_logic := '0';
+signal read_u_0 : std_logic := '0';
+signal u_0_state : std_logic_vector(1 downto 0) := "00";
 
 --Us IO Signals
-signal read_u_s_low, u_s_low_high : std_logic := '0';
-signal read_u_s_high, u_s_high_high : std_logic := '0';
+signal read_u_s_low, read_u_s_high : std_logic := '0';
+signal u_s_low_state, u_s_high_state : std_logic_vector(1 downto 0) := "00";
 
 --Uout IO Signals
-signal write_u_out, u_out_high : std_logic := '0';
+signal write_u_out : std_logic := '0';
+signal u_out_state : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -420,20 +422,22 @@ begin
     --reads U0 entry
     procedure read_u0 is
     begin
-        if u_0_high = '0' then
+        if u_0_state = "00" then
             U_0_address <= u_0_adr;
             U_0_wr <= '0';
             U_0_rd <= '1';
+            u_0_state <= "01";
+            u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+        elsif u_0_state = "01" then
             u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
-            u_0_high <= '1';
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            u_0_state <= "10";
             u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
         else
-            U_0_address <= u_0_adr;
-            U_0_wr <= '0';
-            U_0_rd <= '1';
             u_0_temp(31 downto 0) <= U_0_data_out;
-            u_0_high <= '0';
-            u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            u_0_state <= "00";
             read_u_0 <= '0';
         end if;
     end procedure; 
@@ -441,20 +445,22 @@ begin
     --reads low Us entry
     procedure read_low_us is
     begin
-        if u_s_low_high = '0' then
+        if u_s_low_state = "00" then
             U_s_address <= u_low_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
+            u_s_low_state <= "01";
+            u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+        elsif u_s_low_state = "01" then
             u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-            u_s_low_high <= '1';
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_s_low_state <= "10";
             u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
         else
-            U_s_address <= u_low_adr;
-            U_s_wr <= '0';
-            U_s_rd <= '1';
             u_low_temp(31 downto 0) <= U_s_data_out;
-            u_s_low_high <= '0';
-            u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+            u_s_low_state <= "00";
             read_u_s_low <= '0';
         end if;
     end procedure; 
@@ -462,20 +468,27 @@ begin
     --reads high Us entry
     procedure read_high_us is
     begin
-        if u_s_high_high = '0' then
+        if u_s_high_state = "00" then
+            report to_str(u_high_adr);
             U_s_address <= u_high_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
+            u_s_high_state <= "01";
+            u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+        elsif u_s_high_state = "01" then
+            report to_str(u_high_adr);
+            report to_str(U_s_data_out);
             u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-            u_s_high_high <= '1';
+            U_s_address <= u_high_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_s_high_state <= "10";
             u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
         else
-            U_s_address <= u_high_adr;
-            U_s_wr <= '0';
-            U_s_rd <= '1';
+            report to_str(u_high_adr);
+            report to_str(U_s_data_out);
             u_high_temp(31 downto 0) <= U_s_data_out;
-            u_s_high_high <= '0';
-            u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+            u_s_high_state <= "00";
             read_u_s_high <= '0';
         end if;
     end procedure; 
@@ -483,19 +496,19 @@ begin
     --writes Uout entry
     procedure write_uout is
     begin
-        if u_out_high = '0' then
+        if u_out_state = '0' then
             U_out_address <= u_out_adr;
             U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
             U_out_rd <= '0';
             U_out_wr <= '1';
-            u_out_high <= '1';
+            u_out_state <= '1';
             u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
         else
             U_out_address <= u_out_adr;
             U_out_data_in <= u_out_result(31 downto 0);
             U_out_rd <= '0';
             U_out_wr <= '1';
-            u_out_high <= '0';
+            u_out_state <= '0';
             u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             write_u_out <= '0';
         end if;
@@ -562,13 +575,13 @@ begin
             send_u_0_enable <= '0';
             send_u_s_enable <= '0';
             read_u_0 <= '0';
-            u_0_high <= '0';
+            u_0_state <= "00";
             read_u_s_low <= '0';
-            u_s_low_high <= '0';
+            u_s_low_state <= "00";
             read_u_s_high <= '0';
-            u_s_high_high <= '0';
+            u_s_high_state <= "00";
             write_u_out <= '0';
-            u_out_high <= '0';
+            u_out_state <= '0';
         
         --ERROR HANDLING    
         elsif rising_edge(clk) and (err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1') then
@@ -723,8 +736,13 @@ begin
                     --subtract two Us
                     fpu_sub_1_in_1 <= u_high_temp;
                     if out_low_from = '0' then
+                        report "sub u0";
+                        report to_str(u_0_temp);
                         fpu_sub_1_in_2 <= u_0_temp;
                     else
+                        report "sub ulow";
+                        report to_str(u_high_temp);
+                        report to_str(u_low_temp);
                         fpu_sub_1_in_2 <= u_low_temp;
                     end if;
                     enable_sub_1 <= '1';
@@ -733,6 +751,8 @@ begin
                     --check subtraction completion
                     --multiply resultant T with subtraction result
                     if done_sub_1 = '1' then
+                        report "sub done";
+                        report to_str(fpu_sub_1_out);
                         enable_sub_1 <= '0';
                         fpu_mul_1_in_1 <= fpu_sub_1_out;
                         fpu_mul_1_in_2 <= t_const;
@@ -743,6 +763,7 @@ begin
                     --check multiplication completion
                     --add multiplication result to U low
                     if done_mul_1 = '1' then
+                        report "multiplication done";
                         enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         if out_low_from = '0' then
