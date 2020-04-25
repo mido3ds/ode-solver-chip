@@ -7,25 +7,6 @@ entity interp_tb is
 end entity;
 
 architecture arch of interp_tb is
-	component interp is
-		generic (
-			WORD_LENGTH : integer := 32;
-			ADDR_LENGTH : integer := 16;
-			MAX_LENGTH  : integer := 64
-		);
-
-		port (
-			in_state       : in std_logic_vector(1 downto 0); --state signal sent from CPU
-			clk            : in std_logic;
-			rst            : in std_logic;
-			adr            : in std_logic_vector(ADDR_LENGTH - 1 downto 0);
-			in_data        : inout std_logic_vector(WORD_LENGTH - 1 downto 0);
-			interp_done_op : out std_logic_vector(1 downto 0);
-			interrupt      : out std_logic;
-			error_success  : out std_logic
-		);
-	end component;
-
 	signal in_state, interp_done_op      : std_logic_vector(1 downto 0);
 	signal clk                           : std_logic := '1';
 	signal rst, interrupt, error_success : std_logic;
@@ -36,7 +17,7 @@ architecture arch of interp_tb is
 	type list is array(0 to 4) of std_logic_vector(63 downto 0);
 	signal Uout : list := (others => (others => 'Z'));
 begin
-	interp1 : interp port map(
+	interp1 : entity work.interp port map(
 		in_state       => in_state,
 		clk            => clk,
 		rst            => rst,

@@ -30,26 +30,26 @@
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
-[ ] RAM: 
+[x] RAM: 
 
     [x] implement your memory, and make it generic (widths and height) with the correct number of ports and address buses as required by your design.
     [x] Implement testbench to test the above circuit .
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
-    [ ] synth (produce verilog files)
-    [ ] post-synthesize simulation.
-    [ ] Record the Different Area/power/time for each adder in a Table form.
+    [x] synth (produce verilog files)
+    [x] post-synthesize simulation.
+    [x] Record the Different Area/power/time for each adder in a Table form.
 
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
 
-[ ] IO 
+[x] IO 
 
     [x] Design  
     [x] Implementation
     [x] synth (produce verilog files) 
     [x] post-synthesize simulation
     [x] Testbench (use output of the CPU software to test and simulate IO)
-    [ ] Record the Different Area/power/time for each adder in a Table form.
+    [x] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Interpolator
 
@@ -64,7 +64,7 @@
 [ ] Solver
 
     [x] Design  
-    [ ] Implementation
+    [x] Implementation
     [ ] synth (produce verilog files) 
     [ ] post-synthesize simulation
     [x] Testbench 
@@ -78,7 +78,7 @@
 
 [ ] Zipped Folder with your TeamNumber as its name that contains
 
-    [ ] 1. Complete System Design Report
+    [x] 1. Complete System Design Report
     [ ] 2. Mini Folder with
         [ ] 2.1. Mini Modules Design Report + comparison in Time/Area/Power.
         [ ] cpu_tb.vhdl
@@ -88,5 +88,5 @@
     [ ] 3. Macro Folder with
         [ ] 3.1 Macro Modules Design Report + report Time/Area/Power.
         [ ] 3.2 Macro Modules Codes (verilog/vhdl before and after synthesis, testbench, software, do.files)
-        [ ] 3.3 Readme.txt the explains how to run any attached software.
+        [x] 3.3 Readme.txt the explains how to run any attached software.
     [ ] 4. Task distribution Excel sheet (Name, task, estimated time,problem faced) don’t add total time for all tasks, and record time as soon as you do it.
