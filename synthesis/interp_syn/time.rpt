@@ -1,0 +1,157 @@
+Report for group default
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+Startpoint: fpu_div_1/z_reg[0]/Q
+    (Clocked by sysclk R)
+Endpoint: fpu_div_1/z_reg[63]/D
+    (Clocked by sysclk R)
+Path Group: default
+Data required time: 59958.8
+    (Clock shift: 60000.0, minus Uncertainty: 0.0, plus Latency 0.0, minus Setup time: 41.2)
+Data arrival time: 4881.1
+Slack: 55077.7
+Logic depth: 66
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                     Arrival               Arc      Net               Net    Total   fan-                                   
+Path                     Module/Cell           Edge     Time    Delay    Delay    Delay     Slew     Load     Load    out     Location Power Domain      (V)
+                                                        (ps)     (ps)     (ps)     (ps)     (ps)     (ff)     (ff)    (#)      (um,um)                      
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+clk                      {create_clock}           r      0.0      0.0      0.0                        0.0      0.0     40     0,  562                       
+fpu_div_1/clk_gate_z_reg/CK->GCK
+                         CLKGATETST_X1           rr      0.0      0.0      0.0      0.0      0.0      0.0      0.0     64   365,  566  /PD_TOP        (1.10)
+fpu_div_1/z_reg[0]/CK->Q DFFR_X1*                rf    122.8    122.8    122.8      0.0      0.0      2.2     32.3      3   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_0/B->CO
+                         HA_X1                   ff    160.1     37.3     37.3      0.0     15.3      0.8      3.5      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_1/CI->CO
+                         FA_X1                   ff    231.3     71.2     71.2      0.0      7.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_2/CI->CO
+                         FA_X1                   ff    305.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_3/CI->CO
+                         FA_X1                   ff    379.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_4/CI->CO
+                         FA_X1                   ff    453.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_5/CI->CO
+                         FA_X1                   ff    528.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_6/CI->CO
+                         FA_X1                   ff    602.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_7/CI->CO
+                         FA_X1                   ff    676.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_8/CI->CO
+                         FA_X1                   ff    750.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_9/CI->CO
+                         FA_X1                   ff    824.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_10/CI->CO
+                         FA_X1                   ff    899.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_11/CI->CO
+                         FA_X1                   ff    973.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_12/CI->CO
+                         FA_X1                   ff   1047.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_13/CI->CO
+                         FA_X1                   ff   1121.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_14/CI->CO
+                         FA_X1                   ff   1195.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_15/CI->CO
+                         FA_X1                   ff   1270.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_16/CI->CO
+                         FA_X1                   ff   1344.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_17/CI->CO
+                         FA_X1                   ff   1418.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_18/CI->CO
+                         FA_X1                   ff   1492.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_19/CI->CO
+                         FA_X1                   ff   1566.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_20/CI->CO
+                         FA_X1                   ff   1641.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_21/CI->CO
+                         FA_X1                   ff   1715.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_22/CI->CO
+                         FA_X1                   ff   1789.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_23/CI->CO
+                         FA_X1                   ff   1863.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_24/CI->CO
+                         FA_X1                   ff   1937.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_25/CI->CO
+                         FA_X1                   ff   2012.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_26/CI->CO
+                         FA_X1                   ff   2086.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_27/CI->CO
+                         FA_X1                   ff   2160.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_28/CI->CO
+                         FA_X1                   ff   2234.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_29/CI->CO
+                         FA_X1                   ff   2308.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_30/CI->CO
+                         FA_X1                   ff   2383.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_31/CI->CO
+                         FA_X1                   ff   2457.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_32/CI->CO
+                         FA_X1                   ff   2531.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_33/CI->CO
+                         FA_X1                   ff   2605.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_34/CI->CO
+                         FA_X1                   ff   2679.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_35/CI->CO
+                         FA_X1                   ff   2754.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_36/CI->CO
+                         FA_X1                   ff   2828.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_37/CI->CO
+                         FA_X1                   ff   2902.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_38/CI->CO
+                         FA_X1                   ff   2976.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_39/CI->CO
+                         FA_X1                   ff   3050.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_40/CI->CO
+                         FA_X1                   ff   3125.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_41/CI->CO
+                         FA_X1                   ff   3199.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_42/CI->CO
+                         FA_X1                   ff   3273.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_43/CI->CO
+                         FA_X1                   ff   3347.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_44/CI->CO
+                         FA_X1                   ff   3421.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_45/CI->CO
+                         FA_X1                   ff   3496.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_46/CI->CO
+                         FA_X1                   ff   3570.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_47/CI->CO
+                         FA_X1                   ff   3644.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_48/CI->CO
+                         FA_X1                   ff   3718.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_49/CI->CO
+                         FA_X1                   ff   3792.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_50/CI->CO
+                         FA_X1                   ff   3867.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_51/CI->CO
+                         FA_X1                   ff   3941.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_52/CI->CO
+                         FA_X1                   ff   4015.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_53/CI->CO
+                         FA_X1                   ff   4089.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_54/CI->CO
+                         FA_X1                   ff   4163.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_55/CI->CO
+                         FA_X1                   ff   4238.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_56/CI->CO
+                         FA_X1                   ff   4312.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_57/CI->CO
+                         FA_X1                   ff   4386.5     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_58/CI->CO
+                         FA_X1                   ff   4460.7     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_59/CI->CO
+                         FA_X1                   ff   4534.9     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_60/CI->CO
+                         FA_X1                   ff   4609.1     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_61/CI->CO
+                         FA_X1                   ff   4683.3     74.2     74.2      0.0     15.9      0.8      3.6      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_62/CI->CO
+                         FA_X1                   ff   4759.5     76.2     76.2      0.0     15.9      0.7      4.4      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_8/i_64/B->ZN
+                         XNOR2_X2                ff   4800.8     41.3     41.3      0.0     17.0      0.6      2.9      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/subtractor/i_0_64/A2->ZN
+                         AND2_X4                 ff   4828.6     27.8     27.8      0.0     10.0      0.7      2.0      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/i_2_249/B->Z   MUX2_X2                 ff   4881.1     52.5     52.5      0.0      5.0      0.8      1.9      1   365,  566  /PD_TOP        (1.10)
+fpu_div_1/z_reg[63]/D    DFFR_X1                  f   4881.1      0.0               0.0     10.3                            365,  566  /PD_TOP        (1.10)
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+Report for group I2R
+Report for group I2O
+Report for group R2O
