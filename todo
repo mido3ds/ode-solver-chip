@@ -7,7 +7,7 @@
     [x] testbench to the updated interface & subtractor part and re-run your testing.
     [x] synth (produce verilog files)
     [x] post-synthesize simulation.
-    [ ] Record the Different Area/power/time for each adder in a Table form.
+    [x] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Multiplier:
 
