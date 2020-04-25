@@ -61,12 +61,12 @@ def solve_fixed(us, ts, a, b, x, h) -> np.array:
 
 def solve_var(us, ts, a, b, x, h, err) -> np.array:
     out_pts = ts[1:] - h
-    xs = np.zeros((out_pts.size, x.size))
-    i = 0
+    xs = []
 
-    for tk in np.arange(0, ts.max(), h):
+    tk = 0
+    while tk < ts.max():
         e = math.inf
-        while true:
+        while True:
             x0 = one_step_euler(us, ts, tk, a, b, x, h)
 
             x1 = one_step_euler(us, ts, tk, a, b, x, h/2)
@@ -81,11 +81,13 @@ def solve_var(us, ts, a, b, x, h, err) -> np.array:
             else:
                 h = (0.9*(h**2)*err)/(e)
 
-        if tk in out_pts:
-            xs[i] = x
-            i += 1
+        for pt in out_pts:
+            if math.isclose(tk, pt, rel_tol=1e-3):
+                xs.append(x)
+                break
+        tk += h
 
-    return xs
+    return np.array(xs)
 
 
 def solve(us, ts, a, b, x, mode, h, err) -> np.array:
