@@ -66,7 +66,9 @@ begin
 			end if;
 
 			-- positive flag
-			posv_flag := not out64(size - 1) and zero_flag = '0' and not divide_by_zero_error = '0' and ovfl_flag = '0';
+			if (out64(size - 1) = '0'and zero_flag = '0' and divide_by_zero_error = '0' and ovfl_flag = '0') then
+				posv_flag := '1';			
+			end if;
 			ready     := '1';
 		end if;
 		err   <= divide_by_zero_error or ovfl_flag;
