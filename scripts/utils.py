@@ -97,31 +97,35 @@ def decompress_rle(s: str):
 
 # testing
 if __name__ == "__main__":
-    for n in [0, 1, 2, .5, 0.00001, 0.004999999888241291, 12423421, 23414.123026175,
-              121243.546875, -10, -1241.3309423828125001, -0, -1]:
-        n32 = py_float_to_float32(n)
-        assert bits_to_float(float_to_bits(n32)) == n32,\
-            f'bits_to_float(float_to_bits({n32}))={bits_to_float(float_to_bits(n32))}'
 
-        n64 = py_float_to_float64(n)
-        assert bits_to_double(double_to_bits(n64)) == n64,\
-            f'bits_to_double(double_to_bits({n64}))={bits_to_double(double_to_bits(n64))}'
+    print (fixed_to_bits (38))
+    print (fixed_to_bits (84))
+    print (fixed_to_bits (130))
+    # for n in [0, 1, 2, .5, 0.00001, 0.004999999888241291, 12423421, 23414.123026175,
+    #           121243.546875, -10, -1241.3309423828125001, -0, -1]:
+    #     n32 = py_float_to_float32(n)
+    #     assert bits_to_float(float_to_bits(n32)) == n32,\
+    #         f'bits_to_float(float_to_bits({n32}))={bits_to_float(float_to_bits(n32))}'
 
-    for n in range(1, 64):
-        for i in range(-500, 5000):
-            r = int_to_n_binary(i, n)
+    #     n64 = py_float_to_float64(n)
+    #     assert bits_to_double(double_to_bits(n64)) == n64,\
+    #         f'bits_to_double(double_to_bits({n64}))={bits_to_double(double_to_bits(n64))}'
 
-            assert int('0b'+r, 2) == (i % 2**n),\
-                'int("0b"+{r}, 2) 1= ({i} % 2**n)'
+    # for n in range(1, 64):
+    #     for i in range(-500, 5000):
+    #         r = int_to_n_binary(i, n)
 
-            assert len(r) == n,\
-                f'len({r})={len(r)}'
+    #         assert int('0b'+r, 2) == (i % 2**n),\
+    #             'int("0b"+{r}, 2) 1= ({i} % 2**n)'
 
-    test_str = '1010101000000000101011111110110100011011110101010000'
-    assert decompress_rle(compress_rle(test_str)) == test_str,\
-        f'compress_rle({test_str})={compress_rle(test_str)}, \
-            decompress={decompress_rle(compress_rle(test_str))}'
+    #         assert len(r) == n,\
+    #             f'len({r})={len(r)}'
 
-    test_arr = [[i for i in range(100)] for _ in range(10)]
-    flattened = [x for x in flatten(test_arr)]
-    assert unflatten(flattened, 100) == test_arr
+    # test_str = '1010101000000000101011111110110100011011110101010000'
+    # assert decompress_rle(compress_rle(test_str)) == test_str,\
+    #     f'compress_rle({test_str})={compress_rle(test_str)}, \
+    #         decompress={decompress_rle(compress_rle(test_str))}'
+
+    # test_arr = [[i for i in range(100)] for _ in range(10)]
+    # flattened = [x for x in flatten(test_arr)]
+    # assert unflatten(flattened, 100) == test_arr

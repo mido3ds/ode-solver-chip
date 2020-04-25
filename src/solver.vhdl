@@ -260,51 +260,7 @@ begin
             posv      => posv_div_1
         );
     
-    --Integer operators:
-    address_inc_1 : entity work.incrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_inc_1_in,
-            c      => address_inc_1_out,
-            enbl   => address_inc_1_enbl
-        );
-
-    address_dec_1 : entity work.decrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_dec_1_in,
-            c      => address_dec_1_out,
-            enbl   => address_dec_1_enbl
-        );
-
-    address_inc_2 : entity work.incrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_inc_2_in,
-            c      => address_inc_2_out,
-            enbl   => address_inc_2_enbl
-        );
-
-    address_dec_2 : entity work.decrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_dec_2_in,
-            c      => address_dec_2_out,
-            enbl   => address_dec_2_enbl
-        );
-
-    int_adder_1 : entity work.int_adder generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_adder_1_in_1,
-            b       =>  int_adder_1_in_2,
-            enbl    =>  int_adder_1_enbl,
-            cin     =>  int_adder_1_cin,
-            c       =>  int_adder_1_out,
-            cout    =>  int_adder_1_cout
-        );
-    int_mul_1 : entity work.int_multiplier generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_mul_1_in_1,
-            b       =>  int_mul_1_in_2,
-            enbl    =>  int_mul_1_enbl,
-            c       =>  int_mul_1_out
-        );
+    
 
     --MEMORIES:
     -- U_main
@@ -855,33 +811,61 @@ begin
             end case ;
         end procedure;
 
-    --calculates X+BU
-    procedure proc_run_x_b_u is
-        begin
+
+    --calculates X_i = X_i + B*U
+    procedure proc_run_x_b_u (
+        signal fsm_read_b, fsm_read_x,fsm_read_u, fsm_write_x : inout std_logic_vector(1 downto 0);
+        signal N_M_counter : inout std_logic_vector(15 downto 0);
+        signal M_counter : inout std_logic_vector(5 downto 0)
+
+        )is
+        begin 
             case(fsm_run_x_b_u) is
                 when "1111" =>
                     -- initialization
                     N_M_counter <= N_M;
-                    M_Counter <= M_U_B_vec;
+                    M_counter <= M_U_B_vec;
                     new_entry <= (others => '0');
-                    to_write <= (others => '0');
-                    fsm_run_x_b_u <= "0001";
-                when "0001" =>
-                    --read B coeff nad U_main
-                    read_b_coeff <='1';
-                    read_u_main <= '1';
+                    
+                    fsm_read_b <= "11";
+                    fsm_read_u <= "11";
+
+                    X_intm_address <= (others => '0');
+                    b_coeff_address <= (others => '0');
+                    u_main_address <= (others => '0');
+                    
                     fsm_run_x_b_u <= "0010";
                 when "0010" =>
-                    if read_b_coeff = '0' and read_u_main = '0' then --check for read completion
-                        --multiply b with u
+                    
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_2,
+                        reg_data_out=>u_main_data_out,
+                        reg_adrs => u_main_address,
+                        read_enbl => U_main_rd,
+                        write_enbl => u_main_wr,
+                        fsm => fsm_read_u -->place ones (11) and wait for (00)
+                        );
+
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_1,
+                        reg_data_out=> b_coeff_data_out,
+                        reg_adrs => b_coeff_address,
+                        read_enbl => b_coeff_rd,
+                        write_enbl => b_coeff_wr,
+                        fsm => fsm_read_b -->place ones (11) and wait for (00)
+                        );
+
+                    if fsm_read_b = "00" and fsm_read_u = "00" then --check for read completion
                         enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= b_temp;
-                        fpu_mul_1_in_2 <= u_main_temp;
+                        thisIsAdder_1 <= '0';
                         fsm_run_x_b_u <= "0011";
                     end if;
+
                 when "0011" =>
                     if done_mul_1 = '1' then --check for multiply completion
-                        --add bu to the current entry
+                        --add ax to the current entry
                         enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= new_entry;
@@ -889,56 +873,71 @@ begin
                         thisIsAdder_1 <= '0';
                         fsm_run_x_b_u <= "0100";
                     end if;
+
                 when "0100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_M_counter and M_Counter
                         enable_add_1 <= '0';
                         new_entry <= fpu_add_1_out;
-                        address_dec_1_in <= N_M_counter;
-                        address_dec_1_enbl <= '1';
-                        address_dec_2_in <= M_Counter;
-                        address_dec_2_enbl <= '1';
+                        N_M_counter <= to_vec(to_int(N_M_counter) -1, N_M_counter'length);
+                        M_counter <= to_vec(to_int(M_counter) -1, M_counter'length);
+                        --it may be it may not...
+                        fsm_read_x <= "11";
                         fsm_run_x_b_u <= "0101";
                     end if;
+
                 when "0101" =>
-                    --update counters
-                    N_M_counter <= address_dec_1_out;
-                    M_Counter <= address_dec_2_out;
-                    --check if the end of the column is reached
-                    if M_Counter = X"0000" then
-                        M_Counter <= M_U_B_vec; --reset M
-                        read_x_i <= '1'; --read corresponding X_i
-                        fsm_run_x_b_u <= "0110";
+                    if M_counter = "000000" then
+                        --read x_i
+                        --add the value at new_entry
+                        --store at x_intm
+                        u_main_address <= (others => '0');
+                        read_before_write_reg(
+                            data_out => fpu_add_1_in_1,
+                            reg_data_out=>X_intm_data_out,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_read_x -->place ones (11) and wait for (00)
+                            );
+                        if fsm_read_x = "00" then
+                            fpu_add_1_in_2 <= new_entry;
+                            enable_add_1 <= '1';
+                            fsm_write_x <= "11";
+                            fsm_run_x_b_u <= "0111";
+                        end if;
                     else
-                        fsm_run_x_b_u <= "1000"; --else move to the final state directly
-                    end if;
-                when "0110" =>
-                    if read_x_i = '0' then --check X_i read completion
-                        --add X_i to new entry
-                        fpu_add_2_in_1 <= x_temp;
-                        fpu_add_2_in_2 <= new_entry;
-                        enable_add_2 <= '1';
-                        fsm_run_x_b_u <= "0111";
+                        fsm_run_x_b_u <= "0110";
                     end if;
                 when "0111" =>
-                    if done_add_2 = '1' then --check for add completion
-                        enable_add_2 <= '0';
-                        to_write <= fpu_add_2_out;
-                        result_x_temp <= to_write; --write the current entry
-                        write_x <= '1';
-                        new_entry <= (others => '0'); --reset the new entry
-                        fsm_run_x_b_u <= "1000";
+                    if done_add_1 = '1' then
+                        write_after_read_reg(
+                            data_in => fpu_add_1_out,
+                            reg_data_in => X_intm_data_in,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_write_x
+                            );
+                        if fsm_write_x = "00" then
+                            M_counter <= M_U_B_vec; --reset N
+                            new_entry <= (others => '0');
+                            fsm_run_x_b_u <= "0110";
+                        end if;
                     end if;
-                when "1000" =>
+                        
+                when "0110" =>
                     if N_M_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_x_b_u <= "0000"; --return to the NOP state
                     else
-                        fsm_run_x_b_u <= "0001"; --return to the loop start
+                        fsm_read_b <= "11";
+                        fsm_read_u <= "11";
+
+                        fsm_run_x_b_u <= "0010"; --return to the loop start
                     end if;
                 when others =>
-                    --NOP
+                    --NOP state
                     null;
-            end case;
+            end case ;
         end procedure;
 
     --calculates X_w[c] = X_w[c] + B * U
