@@ -66,7 +66,7 @@ def solve_var(us, ts, a, b, x, h, err) -> np.array:
 
     for tk in np.arange(0, ts.max(), h):
         e = math.inf
-        while e > err:
+        while true:
             x0 = one_step_euler(us, ts, tk, a, b, x, h)
 
             x1 = one_step_euler(us, ts, tk, a, b, x, h/2)
@@ -74,7 +74,12 @@ def solve_var(us, ts, a, b, x, h, err) -> np.array:
             x = x1
 
             e = np.sum(np.abs(x1-x0))
-            h = (0.9*(h**2)*err)/(e)
+
+            if e <= err:
+                out_pts = ts[1:] - h
+                break
+            else:
+                h = (0.9*(h**2)*err)/(e)
 
         if tk in out_pts:
             xs[i] = x
