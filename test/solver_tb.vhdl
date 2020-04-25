@@ -25,7 +25,7 @@ architecture tb of solver_tb is
     signal interrupt     : std_logic;
     signal error_success : std_logic;
 
-    signal timeout       : std_Logic;
+    -- signal timeout       : std_Logic;
 begin
     test_runner_watchdog(runner, 10 ms);
 
@@ -33,12 +33,12 @@ begin
     begin
         clk <= not clk after CLK_PERD/2;
     end process;
-    process
-
-    begin
-        timeout <= '0';
-        wait for CLK_PERD * 500;
-    end process;
+    
+    -- process
+    -- begin
+        -- timeout <= '0';
+    --     wait for CLK_PERD * 500;
+    -- end process;
 
     solver : entity work.solver
         port map(
@@ -56,7 +56,7 @@ begin
         variable temp_adr : std_logic_vector(15 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
-        set_stop_level(failure);
+        set_stop_level(error);
 
         if run("all") then
             -- Reset all signal and stats
@@ -123,8 +123,8 @@ begin
                 temp_adr := std_logic_vector(unsigned(adr) + 1);
             end loop;
 
-            --wait for timeout for h_new
-            wait on timeout until timeout = '1';
+            -- wait for timeout for h_new
+            -- -- wait on timeout until timeout = '1';
 
             if adr = X"2C33" then
                 assert(in_data = std_logic_vector(to_unsigned(16#0001#, 16))) report "wrong upper part for next step in test 1" severity error;
@@ -143,8 +143,8 @@ begin
                 temp_adr := std_logic_vector(unsigned(adr) + 1);
             end loop;
 
-            --wait for timeout for h_new
-            wait on timeout until timeout = '1';
+            -- wait for timeout for h_new
+            -- -- wait on timeout until timeout = '1';
 
             if adr = X"2C33" then
                 assert(in_data = std_logic_vector(to_unsigned(16#0002#, 16))) report "wrong upper part for next step in test 1" severity error;
@@ -163,8 +163,8 @@ begin
                 temp_adr := std_logic_vector(unsigned(adr) + 1);
             end loop;
 
-            --wait for timeout for output
-            wait on timeout until timeout = '1';
+            -- wait for timeout for output
+            -- -- wait on timeout until timeout = '1';
 
             --Check output is ready
             if interrupt = '1' then
