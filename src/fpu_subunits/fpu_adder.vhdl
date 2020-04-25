@@ -39,10 +39,10 @@ begin
     process (in_a, in_b, rst, enbl, out_c_signal, error_signal, zero_signal)
     begin
         if (rst = '1') then
-            zero_signal  <= '1';
-            posv         <= '0'; -- reset signal
-            error_signal <= '0';
-            out_c_signal <= (others => '0');
+            zero <= '1';
+            posv <= '0'; -- reset signal
+            err <= '0';
+            out_c <= (others => '0');
         elsif (enbl = '1' and rst = '0') then
             if add_sub = '1' then
                 in_b_signal <= std_logic_vector(unsigned(not(in_b)) + 1);
@@ -52,12 +52,11 @@ begin
             out_c_signal <= std_logic_vector(signed(in_a) + signed(in_b_signal));
             zero_signal  <= (not CheckZero(out_c_signal));
             posv         <= (not out_c_signal(63)) and (not zero_signal);
-            error_signal <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
+            err <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
+            zero  <= zero_signal;
+            out_c <= out_c_signal;
+            done  <= '1';
         end if;
-        err   <= error_signal;
-        zero  <= zero_signal;
-        out_c <= out_c_signal;
-        done  <= enbl or rst;
     end process;
 end architecture;
 
@@ -106,9 +105,10 @@ begin
     process (in_a, in_b, rst, enbl, sum_signal, out_c_signal, error_signal, zero_signal, in_b_signal)
     begin
         if (rst = '1') then -- reset signal
-            error_signal <= '0';
-            zero_signal  <= '1';
-            posv         <= '0';
+            err   <= '0';
+            zero  <= '1';
+            posv  <= '0';
+            out_c <=(others => '0');
         elsif (enbl = '1'and rst = '0') then
             if add_sub = '1' then
                 in_b_signal <= std_logic_vector(unsigned(not(in_b)) + 1);
@@ -118,13 +118,12 @@ begin
             in_a_signal  <= in_a;
             out_c_signal <= sum_signal;
             zero_signal  <= (not CheckZero(out_c_signal));
-            error_signal <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
+            err <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
             posv         <= (not out_c_signal(63)) and (not zero_signal);
+            zero  <= zero_signal;
+            out_c <= out_c_signal;
+            done  <= '1';
         end if;
-        zero  <= zero_signal;
-        err   <= error_signal;
-        out_c <= out_c_signal;
-        done  <= enbl or rst;
     end process;
 end architecture;
 
@@ -183,7 +182,7 @@ begin
         if (rst = '1') then
             zero_signal  <= '1';
             posv         <= '0'; -- reset signal
-            error_signal <= '0';
+            err <= '0';
             out_c        <= (others => '0');
         elsif (enbl = '1' and rst = '0') then
             if add_sub = '1' then
@@ -194,11 +193,10 @@ begin
             out_c_signal <= sum_signal;
             zero_signal  <= (not CheckZero(out_c_signal));
             posv         <= (not out_c_signal(63)) and (not zero_signal);
-            error_signal <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
+            err <= ((not(in_a(63)) and not(in_b_signal(63)) and out_c_signal(63)) or ((in_a(63)) and (in_b_signal(63)) and not(out_c_signal(63))));
+            zero  <= zero_signal;
+            out_c <= out_c_signal;
+            done  <= '1';
         end if;
-        zero  <= zero_signal;
-        err   <= error_signal;
-        out_c <= out_c_signal;
-        done  <= enbl or rst;
     end process;
 end architecture;
