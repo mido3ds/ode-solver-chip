@@ -365,3 +365,5 @@ if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]or done != 1 or err!=0
 out,done,err,zero,posv=a.sec_algo(-82, -60, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
     print("Error test 10")
+
+print("passed all")
