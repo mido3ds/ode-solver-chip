@@ -30,14 +30,14 @@
     [ ] post-synthesize simulation.
     [ ] Record the Different Area/power/time for each adder in a Table form.
 
-[ ] RAM: 
+[x] RAM: 
 
     [x] implement your memory, and make it generic (widths and height) with the correct number of ports and address buses as required by your design.
     [x] Implement testbench to test the above circuit .
     [x] Make sure to test your corner cases, for example if your design reads and writes in the same cycle you need to test it.
-    [ ] synth (produce verilog files)
-    [ ] post-synthesize simulation.
-    [ ] Record the Different Area/power/time for each adder in a Table form.
+    [x] synth (produce verilog files)
+    [x] post-synthesize simulation.
+    [x] Record the Different Area/power/time for each adder in a Table form.
 
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
@@ -64,7 +64,7 @@
 [ ] Solver
 
     [x] Design  
-    [ ] Implementation
+    [x] Implementation
     [ ] synth (produce verilog files) 
     [ ] post-synthesize simulation
     [x] Testbench 
