@@ -165,7 +165,7 @@ architecture rtl of solver is
     signal fsm_run_L_nine : std_logic_vector(1 downto 0) := (others => '0');
     signal fsm_run_mul_n_m : std_logic_vector(1 downto 0) := "00";
     signal fsm_run_err_h_L : std_logic_vector(1 downto 0) := "00";
-    signal fsm_run_h_2 : std_logic_vector(1 downto 0) := "00";
+    signal fsm_run_h_2 : std_logic := '0';
     signal fsm_run_sum_err : std_logic_vector(3 downto 0) := "0000";
     signal fsm_h_sent_U_recv : std_logic_vector(2 downto 0) := "000";     
     signal fsm_send_h_init :  std_logic_vector(1 downto 0) := "00";
@@ -173,7 +173,7 @@ architecture rtl of solver is
     signal fsm_run_x_b_u: std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_run_a_x_2: std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_b_u_2: std_logic_vector(3 downto 0) := (others => '0');
-    signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(1 downto 0) := (others => '0');
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     signal fsm_terminate: std_logic_vector(1 downto 0) := (others => '0');
     signal fsm_outing: std_logic_vector(3 downto 0) := (others => '0');
@@ -260,51 +260,7 @@ begin
             posv      => posv_div_1
         );
     
-    --Integer operators:
-    address_inc_1 : entity work.incrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_inc_1_in,
-            c      => address_inc_1_out,
-            enbl   => address_inc_1_enbl
-        );
-
-    address_dec_1 : entity work.decrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_dec_1_in,
-            c      => address_dec_1_out,
-            enbl   => address_dec_1_enbl
-        );
-
-    address_inc_2 : entity work.incrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_inc_2_in,
-            c      => address_inc_2_out,
-            enbl   => address_inc_2_enbl
-        );
-
-    address_dec_2 : entity work.decrementor generic map (N => ADDR_LENGTH)
-        port map(
-            a      => address_dec_2_in,
-            c      => address_dec_2_out,
-            enbl   => address_dec_2_enbl
-        );
-
-    int_adder_1 : entity work.int_adder generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_adder_1_in_1,
-            b       =>  int_adder_1_in_2,
-            enbl    =>  int_adder_1_enbl,
-            cin     =>  int_adder_1_cin,
-            c       =>  int_adder_1_out,
-            cout    =>  int_adder_1_cout
-        );
-    int_mul_1 : entity work.int_multiplier generic map (N => ADDR_LENGTH, M => ADDR_LENGTH)
-        port map(
-            a       =>  int_mul_1_in_1,
-            b       =>  int_mul_1_in_2,
-            enbl    =>  int_mul_1_enbl,
-            c       =>  int_mul_1_out
-        );
+    
 
     --MEMORIES:
     -- U_main
@@ -406,77 +362,7 @@ begin
     --YA SHAWKY, replaced interp_done_sig with interp_done_op...
     --variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
 
-    --Variable Step Size
-    -- LOOP:
-    -- 0- START:
-    --      h_adapt = h_main
-    
-    -- 1- calc two steps equations:
-            --h_sent = 0 (n), U_recv = U0 (n)
-            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
-            --h_sent = h_adapt/2, U_recv is interpolated
-            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
-    -- 2- calc one step equation: (fsm_main_eq)
-    --        h_sent = h_adapt, U_recv is interpolated,
-    --          not every time actually.. 
-    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
-    -- 3- calc error
-    -- 4.1- error is bad (err > L_tol):
-    --      h_adapt = h_adapt * h_adapt * L_nine / err
-    --      jump back to 1
-    -- 4.2- error is good (err <= L_tol):
-    --      run fsm main eq
-    -- 5- check for termination
 
-    --NOTES:
-    -- You can use h_div as h_doubler...
-    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
-
-    --Useful tools:
-    --div_or_zero
-    --div_or_adapt
-    --from_i_to_c
-
-    --STATES:
-    -- 00000: nop or done
-    -- 11111: start at a new point
-    -- 00001: first equation
-    -- 00010: inc c_Ware
-    -- 00011: second equation
-    -- 00100: dec c_ware
-    -- 00101: when decremented go to 00110
-    -- 00110: third equation
-    -- 00111: run error calculator
-    -- 01000: if error is bad, repeat: 00001,
-    --                          with h_adapt updated
-    --                          with c_ware decremented (the same)
-    --                          with x_w[c] holds x0 (not updated)
-    --          if it is good, go to: 10001
-    --------break-----------------------------
-    -- 01001: inc c_ware
-    -- 01010: place x_w[c] at x_i
-    -- 01011: dec c_ware
-    -- 01100: place x_w[c] at x_i
-    -- 01101: h_div = h_adapt and start main equation at: 01110
-    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
-    -- 01111: when it is finished go to 10000
-    -- 10000: navigates you to 10011
-    ---------break-------------------------------
-    -- REMEMBER we are here cuz error is good!
-    -- 10001: send h_adapt to interpolator at the unique address for it to store it
-    -- 10010: when it is sent, proceed with the main equation at 01001
-    --------break-------------------------------
-    -- REMEMBER we are here cuz 10000 navigates us
-    -- 10011: place what's inside x_i at x_w
-    -- 10100: when done, if x_w[c] is an output point: go to: 10110
-    --                                                  if not: 10101
-    -- 10101: h_div = h_div + h_adapt then go to 11000
-    -- 11000: go to 01110 to start main equation
-
-    -- 10110: inc c_Ware
-    -- 10111: go to 11001 to check for termination..
-
-    -- 11001: terminate (00000) or move to next point (00001)
 
     --proc_run_x_h is called only from var_step_proc
     --and we need to define:
@@ -497,15 +383,7 @@ begin
     --this proc is only called within variable step size
     --so we know for sure that it is a variable step size operation
 
-    --proc_h_sent_U_recv
-    --A copy of the main equation, used to calculate:
-    --Steps:
-    --1- send h_high at 2C33
-    --2- send h_low at 2C34
-    --3- wait for done signal...
-    --   when recevied, store U at U_main
-    --4- end :D
-    --NOTE: this proc sends zero or h_div, depending on a signal called div_or_zero
+    
 
     process(clk, rst, in_data, adr, in_state, fixed_or_var, fixed_point_state, fsm_var_step_main, err_mul_1, err_add_1, err_add_2, err_div_1) 
     
@@ -745,28 +623,61 @@ begin
             end case ;
         end procedure;
 
+-------------------------------------------done and tested
     --calculates X_w[c] = A * X_i
-    procedure proc_run_a_x_2 is
-        begin
+    --read X_i
+    --read A
+    --write X_w[c]
+    procedure proc_run_a_x_2 (
+        signal fsm_read_a, fsm_read_x, fsm_write_x : inout std_logic_vector(1 downto 0);
+        signal N_N_counter : inout std_logic_vector(15 downto 0);
+        signal N_counter : inout std_logic_vector(5 downto 0)
+
+        )is
+        begin 
             case(fsm_run_a_x_2) is
                 when "111" =>
                     -- initialization
                     N_N_counter <= N_N;
                     N_counter <= N_X_A_B_vec;
                     new_entry <= (others => '0');
-                    to_write <= (others => '0');
-                    fsm_run_a_x_2 <= "001";
-                when "001" =>
-                    --read A coeff nad X_c
-                    read_a_coeff <='1';
-                    read_x_i <= '1';
+                    
+                    fsm_read_a <= "11";
+                    fsm_read_X <= "11";
+
+                    X_intm_address <= (others => '0');
+                    a_coeff_address <= (others => '0');
+                    x_ware_find_address
+                        (c_ware => c_ware,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     fsm_run_a_x_2 <= "010";
                 when "010" =>
-                    if read_a_coeff = '0' and read_x_i = '0' then --check for read completion
-                        --multiply a with x
+                    
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_2,
+                        reg_data_out=>X_intm_data_out,
+                        reg_adrs => X_intm_address,
+                        read_enbl => X_intm_rd,
+                        write_enbl => X_intm_wr,
+                        fsm => fsm_read_x -->place ones (11) and wait for (00)
+                        );
+
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_1,
+                        reg_data_out=>a_coeff_data_out,
+                        reg_adrs => a_coeff_address,
+                        read_enbl => a_coeff_rd,
+                        write_enbl => a_coeff_wr,
+                        fsm => fsm_read_a -->place ones (11) and wait for (00)
+                        );
+
+                    if fsm_read_a = "00" and fsm_read_x = "00" then --check for read completion
+                       
                         enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= a_temp;
-                        fpu_mul_1_in_2 <= x_i_temp;
+                        thisIsAdder_1 <= '0';
                         fsm_run_a_x_2 <= "011";
                     end if;
                 when "011" =>
@@ -781,67 +692,102 @@ begin
                     end if;
                 when "100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_N_counter and N_counter
                         enable_add_1 <= '0';
                         new_entry <= fpu_add_1_out;
-                        address_dec_1_in <= N_N_counter;
-                        address_dec_1_enbl <= '1';
-                        address_dec_2_in <= N_counter;
-                        address_dec_2_enbl <= '1';
+                        N_N_counter <= to_vec(to_int(N_N_counter) -1, N_N_counter'length);
+                        N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
+                        fsm_write_x <= "11";
                         fsm_run_a_x_2 <= "101";
                     end if;
                 when "101" =>
-                    --update counters
-                    N_N_counter <= address_dec_1_out;
-                    N_counter <= address_dec_2_out;
-                    --check if the end of the column is reached
-                    if N_counter = X"0000" then
-                        to_write <= new_entry;
-                        result_x_temp <= to_write; --write the current entry
-                        write_x <= '1';
-                        N_counter <= N_X_A_B_vec; --reset N
-                        new_entry <= (others => '0');
+                    if N_counter = "000000" then
+                        write_after_read_reg(
+                            data_in => new_entry,
+                            reg_data_in => X_ware_data_in,
+                            reg_adrs => x_ware_address,
+                            read_enbl => X_ware_rd,
+                            write_enbl => X_ware_wr,
+                            fsm => fsm_write_x
+                            );
+                        if fsm_write_x = "00" then
+                            N_counter <= N_X_A_B_vec; --reset N
+                            new_entry <= (others => '0');
+                            X_intm_address <= (others => '0');
+                            fsm_run_a_x_2 <= "110";
+                        end if;
+                    else
+                        fsm_run_a_x_2 <= "110";
                     end if;
-                    fsm_run_a_x_2 <= "110";
+                    
                 when "110" =>
                     if N_N_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_a_x_2 <= "000"; --return to the NOP state
                     else
-                        fsm_run_a_x_2 <= "001"; --return to the loop start
+                        fsm_read_a <= "11";
+                        fsm_read_X <= "11";
+                        fsm_run_a_x_2 <= "010"; --return to the loop start
                     end if;
                 when others =>
                     --NOP state
                     null;
-            end case;
+            end case ;
         end procedure;
 
-    --calculates X+BU
-    procedure proc_run_x_b_u is
-        begin
+------------------------------------------------------done and tested
+    --calculates X_i = X_i + B*U
+    procedure proc_run_x_b_u (
+        signal fsm_read_b, fsm_read_x,fsm_read_u, fsm_write_x : inout std_logic_vector(1 downto 0);
+        signal N_M_counter : inout std_logic_vector(15 downto 0);
+        signal M_counter : inout std_logic_vector(5 downto 0)
+
+        )is
+        begin 
             case(fsm_run_x_b_u) is
                 when "1111" =>
                     -- initialization
                     N_M_counter <= N_M;
-                    M_Counter <= M_U_B_vec;
+                    M_counter <= M_U_B_vec;
                     new_entry <= (others => '0');
-                    to_write <= (others => '0');
-                    fsm_run_x_b_u <= "0001";
-                when "0001" =>
-                    --read B coeff nad U_main
-                    read_b_coeff <='1';
-                    read_u_main <= '1';
+                    
+                    fsm_read_b <= "11";
+                    fsm_read_u <= "11";
+
+                    X_intm_address <= (others => '0');
+                    b_coeff_address <= (others => '0');
+                    u_main_address <= (others => '0');
+                    
                     fsm_run_x_b_u <= "0010";
                 when "0010" =>
-                    if read_b_coeff = '0' and read_u_main = '0' then --check for read completion
-                        --multiply b with u
+                    
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_2,
+                        reg_data_out=>u_main_data_out,
+                        reg_adrs => u_main_address,
+                        read_enbl => U_main_rd,
+                        write_enbl => u_main_wr,
+                        fsm => fsm_read_u -->place ones (11) and wait for (00)
+                        );
+
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_1,
+                        reg_data_out=> b_coeff_data_out,
+                        reg_adrs => b_coeff_address,
+                        read_enbl => b_coeff_rd,
+                        write_enbl => b_coeff_wr,
+                        fsm => fsm_read_b -->place ones (11) and wait for (00)
+                        );
+
+                    if fsm_read_b = "00" and fsm_read_u = "00" then --check for read completion
                         enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= b_temp;
-                        fpu_mul_1_in_2 <= u_main_temp;
+                        thisIsAdder_1 <= '0';
                         fsm_run_x_b_u <= "0011";
                     end if;
+
                 when "0011" =>
                     if done_mul_1 = '1' then --check for multiply completion
-                        --add bu to the current entry
+                        --add ax to the current entry
                         enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= new_entry;
@@ -849,85 +795,132 @@ begin
                         thisIsAdder_1 <= '0';
                         fsm_run_x_b_u <= "0100";
                     end if;
+
                 when "0100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_M_counter and M_Counter
                         enable_add_1 <= '0';
                         new_entry <= fpu_add_1_out;
-                        address_dec_1_in <= N_M_counter;
-                        address_dec_1_enbl <= '1';
-                        address_dec_2_in <= M_Counter;
-                        address_dec_2_enbl <= '1';
+                        N_M_counter <= to_vec(to_int(N_M_counter) -1, N_M_counter'length);
+                        M_counter <= to_vec(to_int(M_counter) -1, M_counter'length);
+                        --it may be it may not...
+                        fsm_read_x <= "11";
                         fsm_run_x_b_u <= "0101";
                     end if;
+
                 when "0101" =>
-                    --update counters
-                    N_M_counter <= address_dec_1_out;
-                    M_Counter <= address_dec_2_out;
-                    --check if the end of the column is reached
-                    if M_Counter = X"0000" then
-                        M_Counter <= M_U_B_vec; --reset M
-                        read_x_i <= '1'; --read corresponding X_i
-                        fsm_run_x_b_u <= "0110";
+                    if M_counter = "000000" then
+                        --read x_i
+                        --add the value at new_entry
+                        --store at x_intm
+                        u_main_address <= (others => '0');
+                        read_before_write_reg(
+                            data_out => fpu_add_1_in_1,
+                            reg_data_out=>X_intm_data_out,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_read_x -->place ones (11) and wait for (00)
+                            );
+                        if fsm_read_x = "00" then
+                            fpu_add_1_in_2 <= new_entry;
+                            enable_add_1 <= '1';
+                            fsm_write_x <= "11";
+                            fsm_run_x_b_u <= "0111";
+                        end if;
                     else
-                        fsm_run_x_b_u <= "1000"; --else move to the final state directly
-                    end if;
-                when "0110" =>
-                    if read_x_i = '0' then --check X_i read completion
-                        --add X_i to new entry
-                        fpu_add_2_in_1 <= x_temp;
-                        fpu_add_2_in_2 <= new_entry;
-                        enable_add_2 <= '1';
-                        fsm_run_x_b_u <= "0111";
+                        fsm_run_x_b_u <= "0110";
                     end if;
                 when "0111" =>
-                    if done_add_2 = '1' then --check for add completion
-                        enable_add_2 <= '0';
-                        to_write <= fpu_add_2_out;
-                        result_x_temp <= to_write; --write the current entry
-                        write_x <= '1';
-                        new_entry <= (others => '0'); --reset the new entry
-                        fsm_run_x_b_u <= "1000";
+                    if done_add_1 = '1' then
+                        write_after_read_reg(
+                            data_in => fpu_add_1_out,
+                            reg_data_in => X_intm_data_in,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_write_x
+                            );
+                        if fsm_write_x = "00" then
+                            M_counter <= M_U_B_vec; --reset N
+                            new_entry <= (others => '0');
+                            fsm_run_x_b_u <= "0110";
+                        end if;
                     end if;
-                when "1000" =>
+                        
+                when "0110" =>
                     if N_M_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_x_b_u <= "0000"; --return to the NOP state
                     else
-                        fsm_run_x_b_u <= "0001"; --return to the loop start
+                        fsm_read_b <= "11";
+                        fsm_read_u <= "11";
+
+                        fsm_run_x_b_u <= "0010"; --return to the loop start
                     end if;
                 when others =>
-                    --NOP
+                    --NOP state
                     null;
-            end case;
+            end case ;
         end procedure;
 
+
+------------------------------------------------------done and tested
     --calculates X_w[c] = X_w[c] + B * U
-    procedure proc_run_x_b_u_2 is
-        begin
+    procedure proc_run_x_b_u_2 (
+        signal fsm_read_b, fsm_read_x,fsm_read_u, fsm_write_x : inout std_logic_vector(1 downto 0);
+        signal N_M_counter : inout std_logic_vector(15 downto 0);
+        signal M_counter : inout std_logic_vector(5 downto 0)
+
+        )is
+        begin 
             case(fsm_run_x_b_u_2) is
                 when "1111" =>
                     -- initialization
                     N_M_counter <= N_M;
-                    M_Counter <= M_U_B_vec;
+                    M_counter <= M_U_B_vec;
                     new_entry <= (others => '0');
-                    to_write <= (others => '0');
-                    fsm_run_x_b_u_2 <= "0001";
-                when "0001" =>
-                    --read B coeff nad U_main
-                    read_b_coeff <='1';
-                    read_u_main <= '1';
+                    
+                    fsm_read_b <= "11";
+                    fsm_read_u <= "11";
+                    x_ware_find_address
+                        (c_ware => c_ware,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
+                    --X_intm_address <= (others => '0');
+                    b_coeff_address <= (others => '0');
+                    u_main_address <= (others => '0');
+                    
                     fsm_run_x_b_u_2 <= "0010";
                 when "0010" =>
-                    if read_b_coeff = '0' and read_u_main = '0' then --check for read completion
-                        --multiply b with u
+                    
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_2,
+                        reg_data_out=>u_main_data_out,
+                        reg_adrs => u_main_address,
+                        read_enbl => U_main_rd,
+                        write_enbl => u_main_wr,
+                        fsm => fsm_read_u -->place ones (11) and wait for (00)
+                        );
+
+                    read_reg_inc_adrs_once_64
+                        (
+                        data_out => fpu_mul_1_in_1,
+                        reg_data_out=> b_coeff_data_out,
+                        reg_adrs => b_coeff_address,
+                        read_enbl => b_coeff_rd,
+                        write_enbl => b_coeff_wr,
+                        fsm => fsm_read_b -->place ones (11) and wait for (00)
+                        );
+
+                    if fsm_read_b = "00" and fsm_read_u = "00" then --check for read completion
                         enable_mul_1 <= '1';
-                        fpu_mul_1_in_1 <= b_temp;
-                        fpu_mul_1_in_2 <= u_main_temp;
+                        thisIsAdder_1 <= '0';
                         fsm_run_x_b_u_2 <= "0011";
                     end if;
+
                 when "0011" =>
                     if done_mul_1 = '1' then --check for multiply completion
-                        --add bu to the current entry
+                        --add ax to the current entry
                         enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         fpu_add_1_in_2 <= new_entry;
@@ -935,56 +928,70 @@ begin
                         thisIsAdder_1 <= '0';
                         fsm_run_x_b_u_2 <= "0100";
                     end if;
+
                 when "0100" =>
                     if done_add_1 = '1' then --check for add completion
-                        --get output and decrement N_M_counter and M_Counter
                         enable_add_1 <= '0';
                         new_entry <= fpu_add_1_out;
-                        address_dec_1_in <= N_M_counter;
-                        address_dec_1_enbl <= '1';
-                        address_dec_2_in <= M_Counter;
-                        address_dec_2_enbl <= '1';
+                        N_M_counter <= to_vec(to_int(N_M_counter) -1, N_M_counter'length);
+                        M_counter <= to_vec(to_int(M_counter) -1, M_counter'length);
+                        --it may be it may not...
+                        fsm_read_x <= "11";
                         fsm_run_x_b_u_2 <= "0101";
                     end if;
+
                 when "0101" =>
-                    --update counters
-                    N_M_counter <= address_dec_1_out;
-                    M_Counter <= address_dec_2_out;
-                    --check if the end of the column is reached
-                    if M_Counter = X"0000" then
-                        M_Counter <= M_U_B_vec; --reset M
-                        read_x <= '1'; --read corresponding X
-                        fsm_run_x_b_u_2 <= "0110";
+                    if M_counter = "000000" then
+                        --read x_i
+                        --add the value at new_entry
+                        --store at x_intm
+                        u_main_address <= (others => '0');
+                        read_before_write_reg(
+                            data_out => fpu_add_1_in_1,
+                            reg_data_out=>X_ware_data_out,
+                            reg_adrs => X_ware_address,
+                            read_enbl => X_ware_rd,
+                            write_enbl => X_ware_wr,
+                            fsm => fsm_read_x -->place ones (11) and wait for (00)
+                            );
+                        if fsm_read_x = "00" then
+                            fpu_add_1_in_2 <= new_entry;
+                            enable_add_1 <= '1';
+                            fsm_write_x <= "11";
+                            fsm_run_x_b_u_2 <= "0111";
+                        end if;
                     else
-                        fsm_run_x_b_u_2 <= "1000"; --else move to the final state directly
-                    end if;
-                when "0110" =>
-                    if read_x = '0' then --check X read completion
-                        --add X_i to new entry
-                        fpu_add_2_in_1 <= x_i_temp;
-                        fpu_add_2_in_2 <= new_entry;
-                        enable_add_2 <= '1';
-                        fsm_run_x_b_u_2 <= "0111";
+                        fsm_run_x_b_u_2 <= "0110";
                     end if;
                 when "0111" =>
-                    if done_add_2 = '1' then --check for add completion
-                        enable_add_2 <= '0';
-                        to_write <= fpu_add_2_out;
-                        result_x_i_temp <= to_write; --write the current entry
-                        write_x_i <= '1';
-                        new_entry <= (others => '0'); --reset the new entry
-                        fsm_run_x_b_u_2 <= "1000";
+                    if done_add_1 = '1' then
+                        write_after_read_reg(
+                            data_in => fpu_add_1_out,
+                            reg_data_in => X_ware_data_in,
+                            reg_adrs => X_ware_address,
+                            read_enbl => X_ware_rd,
+                            write_enbl => X_ware_wr,
+                            fsm => fsm_write_x
+                            );
+                        if fsm_write_x = "00" then
+                            M_counter <= M_U_B_vec; --reset N
+                            new_entry <= (others => '0');
+                            fsm_run_x_b_u_2 <= "0110";
+                        end if;
                     end if;
-                when "1000" =>
+                        
+                when "0110" =>
                     if N_M_counter = X"0000" then --check if the end of the loop is reached
                         fsm_run_x_b_u_2 <= "0000"; --return to the NOP state
                     else
-                        fsm_run_x_b_u_2 <= "0001"; --return to the loop start
+                        fsm_read_b <= "11";
+                        fsm_read_u <= "11";
+                        fsm_run_x_b_u_2 <= "0010"; --return to the loop start
                     end if;
                 when others =>
-                    --NOP
+                    --NOP state
                     null;
-            end case;
+            end case ;
         end procedure;
 
     
@@ -1393,7 +1400,7 @@ begin
                         end if;
                     end if;
                 when "101" =>
-                    if fsm_run_x_b_u = "0000" and fsm_run_x_b_u_2 = "0000" and fsm_run_h_2 = "00" then
+                    if fsm_run_x_b_u = "0000" and fsm_run_x_b_u_2 = "0000" and fsm_run_h_2 = '0' then
                         x_ware_find_address
                             (c_ware => c_ware,
                             --adr: could be any dummy. I don't need it...
@@ -1530,93 +1537,94 @@ begin
             end case;
         end procedure;
 
-    
-
-
-
-
-
-
-
+-----------------------------------------------------------------done not tested
     --sends h and receives U
-    procedure proc_h_sent_U_recv is
+    --NOTE: write_high_low is a global signal, make sure it equals 0 
+    procedure proc_h_sent_U_recv (
+        signal N_counter_2 : std_logic_vector (5 downto 0)
+        )is
         begin
             case(fsm_h_sent_U_recv) is
                 when "111" =>
                     -- we may use h_div, so we need to wait until its counted...
-                    if fsm_run_h_2 = "00" then
+                    if fsm_run_h_2 = '0' then
                         if write_high_low = '0' then
                             adr <= X"2C33";
-                            if div_or_zero = '0' then
-                                --div
-                                in_data <= h_div(63 downto 32);
+                            if fixed_or_var = '0' then
+                                in_data <= h_doubler(63 downto 32);
                                 write_high_low <= '1';
                             else
-                                --zeros
-                                in_data <= (others => '0');
-                                write_high_low <= '1';
+                                if div_or_zero = '0' then
+                                    --div
+                                    in_data <= h_div(63 downto 32);
+                                    write_high_low <= '1';
+                                else
+                                    --zeros
+                                    in_data <= (others => '0');
+                                    write_high_low <= '1';
+                                end if;
                             end if;
                         else
                             adr <= X"2C34";
-                            if div_or_zero = '0' then
-                                --div
-                                in_data <= h_div(31 downto 0);
+                            if fixed_or_var = '0' then
+                                in_data <= h_doubler(31 downto 0);
                                 write_high_low <= '0';
                                 u_main_address <= (others =>'0');
                                 fsm_h_sent_U_recv <= "001";
                             else
-                                --zero
-                                in_data <= (others => '0');
-                                U_main_address <= (others => '0');
-                                write_high_low <= '0';
-                                fsm_h_sent_U_recv <= "001";
+                                if div_or_zero = '0' then
+                                    --div
+                                    in_data <= h_div(31 downto 0);
+                                    write_high_low <= '0';
+                                    u_main_address <= (others =>'0');
+                                    fsm_h_sent_U_recv <= "001";
+                                else
+                                    --zero
+                                    in_data <= (others => '0');
+                                    U_main_address <= (others => '0');
+                                    write_high_low <= '0';
+                                    fsm_h_sent_U_recv <= "001";
+                                end if;
                             end if;
                         end if;
                     end if;
                 when "001" =>
                     --start the reading loop
                     N_counter_2 <= N_X_A_B_vec;
-                    fsm_h_sent_U_recv <= "010";
+                    u_main_address <= (others => '0');
+                    --this will compensate the clock delay
+                    if (interp_done_op = "01" or interp_done_op = "10") then
+                        fsm_h_sent_U_recv <= "010";
+                    end if;
+
                 when "010" =>
                     if (interp_done_op = "01" or interp_done_op = "10") then
-                        if write_u_main = '0' and increment_u_main_address = '0' then --no one else is writing at U
-                            --here we write the high part at even addresses
-                            u_main_wr <= '1';
-                            u_main_data_in <= in_data;
-                            u_main_high <= '1';
-                            increment_u_main_address <= '1';
-                            fsm_h_sent_U_recv <= "011";
-                        end if;
+                        u_main_wr <= '1';
+                        u_main_data_in <= in_data;
+                        U_main_rd <= '0';
+                        fsm_h_sent_U_recv <= "011";
                     end if;
+                    
                     --if interp_done_op = "00" or 
                 when "011" =>  
                     if (interp_done_op = "01" or interp_done_op = "10") then
-                        if write_u_main = '0' and increment_u_main_address = '0' then --no one else is writing at U 
-                            u_main_wr <= '1';
-                            u_main_data_in <= in_data ;
-                            u_main_high <= '0';
-                            increment_u_main_address <= '1';
-                            fsm_h_sent_U_recv <= "100";--switch back
-                        end if;
+                        u_main_address <= to_vec(to_int(u_main_address) + 1,u_main_address'length);
+                        u_main_wr <= '1';
+                        u_main_data_in <= in_data;
+                        U_main_rd <= '0';
+                        N_counter_2 <= to_vec(to_int(N_counter_2) - 1,N_counter_2'length);
+                        fsm_h_sent_U_recv <= "100";
                     end if;
                 when "100" =>
-                    -- decrement the counter
-                    address_dec_1_in <= N_counter_2;
-                    address_dec_1_enbl <= '1';
-                    fsm_h_sent_U_recv <= "101";
-                when "101" =>
-                    --decrement the counter
-                    address_dec_1_enbl <= '0';
-                    N_counter_2 <= address_dec_1_out;
-                    if N_counter_2 = X"0000" then
-                        --end loop
-                        u_main_high <= '0';
+                    u_main_address <= to_vec(to_int(u_main_address) + 1,u_main_address'length);
+                    if N_counter_2 = N_X_A_B_vec then
                         u_main_address <= (others => '0');
                         fsm_h_sent_U_recv <= "000";
+                        u_main_wr <= '0';
                     else
-                        --LOOP AGAIN
                         fsm_h_sent_U_recv <= "010";
                     end if;
+                    
                 when others =>
                     null;
             end case;
@@ -1624,6 +1632,7 @@ begin
 
 
 
+----------------------------------------------------------------------done, no need to test
     --sends h_new (or h_init) to interpolator (for variable step)
     procedure proc_send_h_init is
         begin
@@ -1633,6 +1642,8 @@ begin
                     in_data <= h_adapt (63 downto 32);
                     fsm_send_h_init <= "01";
                 when "01" =>
+                    fsm_send_h_init <= "10";
+                when "10" =>
                     adr <= X"2C36";
                     in_data <= h_adapt (31 downto 0);
                     fsm_send_h_init <= "00";
@@ -1787,7 +1798,7 @@ begin
             fsm_run_L_nine <= (others => '0');
             fsm_run_mul_n_m <= "00";
             fsm_run_err_h_L <= "00";
-            fsm_run_h_2 <= "00";
+            fsm_run_h_2 <= '0';
             fsm_run_sum_err <= "0000";
             fsm_h_sent_U_recv <= "000";     
             fsm_send_h_init <= "00";
@@ -1982,6 +1993,83 @@ begin
                     null;
             end case;
 
+
+
+
+
+        --Variable Step Size
+    -- LOOP:
+    -- 0- START:
+    --      h_adapt = h_main
+    
+    -- 1- calc two steps equations:
+            --h_sent = 0 (n), U_recv = U0 (n)
+            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
+            --h_sent = h_adapt/2, U_recv is interpolated
+            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
+    -- 2- calc one step equation: (fsm_main_eq)
+    --        h_sent = h_adapt, U_recv is interpolated,
+    --          not every time actually.. 
+    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
+    -- 3- calc error
+    -- 4.1- error is bad (err > L_tol):
+    --      h_adapt = h_adapt * h_adapt * L_nine / err
+    --      jump back to 1
+    -- 4.2- error is good (err <= L_tol):
+    --      run fsm main eq
+    -- 5- check for termination
+
+    --NOTES:
+    -- You can use h_div as h_doubler...
+    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
+
+    --Useful tools:
+    --div_or_zero
+    --div_or_adapt
+    --from_i_to_c
+
+    --STATES:
+    -- 00000: nop or done
+    -- 11111: start at a new point
+    -- 00001: first equation
+    -- 00010: inc c_Ware
+    -- 00011: second equation
+    -- 00100: dec c_ware
+    -- 00101: when decremented go to 00110
+    -- 00110: third equation
+    -- 00111: run error calculator
+    -- 01000: if error is bad, repeat: 00001,
+    --                          with h_adapt updated
+    --                          with c_ware decremented (the same)
+    --                          with x_w[c] holds x0 (not updated)
+    --          if it is good, go to: 10001
+    --------break-----------------------------
+    -- 01001: inc c_ware
+    -- 01010: place x_w[c] at x_i
+    -- 01011: dec c_ware
+    -- 01100: place x_w[c] at x_i
+    -- 01101: h_div = h_adapt and start main equation at: 01110
+    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
+    -- 01111: when it is finished go to 10000
+    -- 10000: navigates you to 10011
+    ---------break-------------------------------
+    -- REMEMBER we are here cuz error is good!
+    -- 10001: send h_adapt to interpolator at the unique address for it to store it
+    -- 10010: when it is sent, proceed with the main equation at 01001
+    --------break-------------------------------
+    -- REMEMBER we are here cuz 10000 navigates us
+    -- 10011: place what's inside x_i at x_w
+    -- 10100: when done, if x_w[c] is an output point: go to: 10110
+    --                                                  if not: 10101
+    -- 10101: h_div = h_div + h_adapt then go to 11000
+    -- 11000: go to 01110 to start main equation
+
+    -- 10110: inc c_Ware
+    -- 10111: go to 11001 to check for termination..
+
+    -- 11001: terminate (00000) or move to next point (00001)
+    
+
         --VARIABLE STEP FSM
         elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '1' then
             case( fsm_var_step_main ) is
@@ -1995,25 +2083,45 @@ begin
                     div_or_zero <= '1'; --h_sent: zerp
                     div_or_adapt <= '0'; --h_mul: h_div
                     from_i_to_c <= '0'; --no, from c to i
-                    fsm_run_h_2 <= (others =>'1');
+                    fsm_run_h_2 <= '1';
                     fsm_main_eq <= (others =>'1');
-                    fsm_var_step_main <= "00010";
                 when "00010" =>
-                    if fsm_main_eq = "000" then
-                        --NOW: calculate the irregular equation
-                        --only when you're finished, increment c_ware
-                        address_inc_1_in <= (others => '0');
-                        address_inc_1_in(2 downto 0) <= c_ware;
-                        address_inc_1_enbl <= '1';
+                    div_h_2 (
+                        mode => mode_sig,
+                        h_adapt => h_adapt,
+                        h_div => h_div,
+                        fpu_div_1_in_1 => fpu_div_1_in_1,
+                        fpu_div_1_in_2 => fpu_div_1_in_2,
+                        fpu_div_1_out => fpu_div_1_out,
+                        enable_div_1 => enable_div_1,
+                        done_div_1 => done_div_1,
+                        fsm => fsm_run_h_2
+                        );
+                    if fsm_run_h_2 = '0' and fsm_main_eq = "000" then
+                        c_ware <= to_vec (to_int(c_ware) + 1, c_ware'length);
                         fsm_var_step_main <= "00011";
                     end if;
+                --when "00010" =>
+                --    if fsm_main_eq = "000" then
+                --        --NOW: calculate the irregular equation
+                --        --only when you're finished, increment c_ware
+                --        address_inc_1_in <= (others => '0');
+                --        address_inc_1_in(2 downto 0) <= c_ware;
+                --        address_inc_1_enbl <= '1';
+                --        fsm_var_step_main <= "00011";
+                --    end if;
                 when "00011" =>
                     --we know for sure that address_inc_1 is already incremented
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+
                     --Now X_Ware_address is updated...
                     --let's run the irregular equation
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     div_or_zero <= '0'; --h_sent: div
                     div_or_adapt <= '0'; --h_mul: h_div
                     from_i_to_c <= '1'; --yes, from i to c
@@ -2021,15 +2129,21 @@ begin
                     fsm_var_step_main <= "00100";
                 when "00100" =>
                     if fsm_main_eq = "000" then
-                        --Decrement C_ware first
-                        address_dec_1_enbl <= '1';
-                        address_dec_1_in <= (others => '0');
-                        address_dec_1_in(2 downto 0) <= c_ware;
+                        ----Decrement C_ware first
+                        --address_dec_1_enbl <= '1';
+                        --address_dec_1_in <= (others => '0');
+                        --address_dec_1_in(2 downto 0) <= c_ware;
+                        c_ware <= to_vec (to_int(c_ware) - 1, c_ware'length);
+
                         fsm_var_step_main <= "00101";
                     end if;
                 when "00101" =>
-                    c_ware <= address_dec_1_out;
-                    address_dec_1_enbl <= '0';
+                    --c_ware <= address_dec_1_out;
+                    --address_dec_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     fsm_var_step_main <= "00110"; 
                 when "00110" =>
                     div_or_zero <= '1'; --h_sent: zero
@@ -2061,37 +2175,58 @@ begin
                     --Place what's inside X_w[c+] at X_i
                     --then place what's inside X_i at X_w[c]
                     --but first increment c_ware
-                    address_inc_1_in <= (others => '0');
-                    address_inc_1_in(2 downto 0) <= c_ware;
-                    address_inc_1_enbl <= '1';
+                    --address_inc_1_in <= (others => '0');
+                    --address_inc_1_in(2 downto 0) <= c_ware;
+                    --address_inc_1_enbl <= '1';
+                    c_ware <=  to_vec (to_int(c_ware) + 1, c_ware'length);
                     fsm_var_step_main <= "01010";
                 when "01010" =>
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     from_i_to_c <= '0'; --no, from c to i
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "01011";
                 when "01011" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         --decrement c_ware
-                        address_dec_1_enbl <= '1';
-                        address_dec_1_in <= (others => '0');
-                        address_dec_1_in(2 downto 0) <= c_ware;
+                        --address_dec_1_enbl <= '1';
+                        --address_dec_1_in <= (others => '0');
+                        --address_dec_1_in(2 downto 0) <= c_ware;
+                        c_ware <=  to_vec (to_int(c_ware) - 1, c_ware'length);
                         fsm_var_step_main <= "01100";
                     end if;
                 when "01100" =>
-                    c_ware <= address_dec_1_out;
-                    address_dec_1_enbl <= '0';
+                    --c_ware <= address_dec_1_out;
+                    --address_dec_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     from_i_to_c <= '1'; --yes, from i to c
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "01101";
                 when "01101" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         --Now we are ready to proceed with our main equation
                         h_div <= h_adapt;
                         fsm_var_step_main <= "01110";
                     end if;
+
                 when "01110" =>
                     --from now on, we'll treat h_div as h_doubler
                     --  and h_adapt as h_main
@@ -2105,25 +2240,32 @@ begin
                 when "01111" =>
                     if fsm_main_eq = "000" then
                         --listen to outpur or not
-                        fsm_var_step_main <= "10000";
+                        fsm_var_step_main <= "10011";
                     end if;
-                when "10000" =>
-                    --Replace X_w[c+] -> X_w[c]
-                    fsm_var_step_main <= "10011";
+                --when "10000" =>
+                --    --Replace X_w[c+] -> X_w[c]
+                --    fsm_var_step_main <= "10011";
                 when "10001" =>
                     fsm_send_h_init <= "11";
+
                     fsm_var_step_main <= "10010";
                 when "10010" =>
+                    proc_send_h_init ;
                     if fsm_send_h_init = "00" then
                         fsm_var_step_main <= "01001"; 
                     end if;
                 when "10011" =>
                     --just place X_i at X_c
                     from_i_to_c <= '1'; --yes, place X-i at X-w[c]
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "10100"; 
                 when "10100" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         if interp_done_op = "01" then
                             --it is not an output point
                             --start all over again
@@ -2142,14 +2284,16 @@ begin
                     thisIsAdder_1 <= '0';
                     fsm_var_step_main <= "11000";
                 when "10110" =>
-                    address_inc_1_in <= (others => '0');
-                    address_inc_1_in(2 downto 0) <= c_ware;
-                    address_inc_1_enbl <= '1';
+                    c_ware <=  to_vec (to_int(c_ware) + 1, c_ware'length);
                     fsm_var_step_main <= "10111";
                 when "10111" =>
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     --we incremented c_ware...
                     --check for termination..
                     fsm_var_step_main <= "11001";
