@@ -331,4 +331,4 @@ run
 
 force sim:/interp/adr zzzzzzzzzzzzzzzz 0
 force sim:/interp/in_data zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz 0
-run 10000
+run 50000
