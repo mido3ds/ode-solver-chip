@@ -484,53 +484,6 @@ begin
 			assert(Uout(i) = x"00000000000001E0" and interp_done_op = "10" and interrupt = '0') report "wrong output in test 6" severity error;
 		end loop ANS72;
 		-----------------------------------------------------------------check and assert here-------------------------------------------------
-		in_data <= (others => 'Z');
-		adr <= (others => 'Z');
-		wait for CLKPERIOD;
-
-		-- test with intermediate time step 8.5
-		current_adr := x"29DB";
-		in_state <= "10";
-		adr     <= x"2C33";
-		in_data <= x"00000000";	
-		wait for CLKPERIOD;
-		adr     <= x"2C34";
-		in_data <= x"00000440";	-- 8.5
-		wait for CLKPERIOD;
-		-- data has been inserted. just wait until it computes the answer
-		adr <= (others => 'Z');
-		in_data <= (others => 'Z');
-		wait until (interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11");
-		wait for CLKPERIOD;
-		--------------------------------------------------------------------------wait--------------------------------------------------------
-		RECV8 : for i in 0 to 4 loop
-			adr <= current_adr;
-			in_data <= (others => 'Z');
-			wait for CLKPERIOD;
-			Uout(i)(63 downto 32) <= in_data;
-			current_adr := current_adr + 1;
-			adr <= current_adr;
-			in_data <= (others => 'Z');
-			wait for CLKPERIOD;
-			Uout(i)(31 downto 0) <= in_data;
-			current_adr := current_adr + 1;
-		end loop RECV8;
-		
-		in_data <= (others => 'Z');
-		adr <= (others => 'Z');
-		wait for CLKPERIOD;
-		
-		ANS81 : for i in 0 to 2 loop	-- -2218.25
-			assert(Uout(i) = x"FFFFFFFFFFFBAB20" and interp_done_op = "11" and interrupt = '0') report "wrong output in test 7" severity error;
-		end loop ANS81;
-		ANS82 : for i in 3 to 4 loop	-- -600
-			assert(Uout(i) = x"FFFFFFFFFFFED400" and interp_done_op = "11" and interrupt = '0') report "wrong output in test 7" severity error;
-		end loop ANS82;
-		-----------------------------------------------------------------check and assert here-------------------------------------------------
-		in_data <= (others => 'Z');
-		adr <= (others => 'Z');
-		wait for CLKPERIOD;
-
 		wait;
 	end process;
 end arch;
