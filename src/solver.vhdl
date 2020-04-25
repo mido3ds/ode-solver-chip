@@ -1616,15 +1616,11 @@ begin
         end procedure;
 
     
-
-
-
-
-
-
-
     --sends h and receives U
-    procedure proc_h_sent_U_recv is
+    --NOTE: write_high_low is a global signal, make sure it equals 0 
+    procedure proc_h_sent_U_recv (
+        signal N_counter_2 : std_logic_vector (5 downto 0)
+        )is
         begin
             case(fsm_h_sent_U_recv) is
                 when "111" =>
@@ -1632,76 +1628,81 @@ begin
                     if fsm_run_h_2 = "00" then
                         if write_high_low = '0' then
                             adr <= X"2C33";
-                            if div_or_zero = '0' then
-                                --div
-                                in_data <= h_div(63 downto 32);
+                            if fixed_or_var = '0' then
+                                in_data <= h_doubler(63 downto 32);
                                 write_high_low <= '1';
                             else
-                                --zeros
-                                in_data <= (others => '0');
-                                write_high_low <= '1';
+                                if div_or_zero = '0' then
+                                    --div
+                                    in_data <= h_div(63 downto 32);
+                                    write_high_low <= '1';
+                                else
+                                    --zeros
+                                    in_data <= (others => '0');
+                                    write_high_low <= '1';
+                                end if;
                             end if;
                         else
                             adr <= X"2C34";
-                            if div_or_zero = '0' then
-                                --div
-                                in_data <= h_div(31 downto 0);
+                            if fixed_or_var = '0' then
+                                in_data <= h_doubler(31 downto 0);
                                 write_high_low <= '0';
                                 u_main_address <= (others =>'0');
                                 fsm_h_sent_U_recv <= "001";
                             else
-                                --zero
-                                in_data <= (others => '0');
-                                U_main_address <= (others => '0');
-                                write_high_low <= '0';
-                                fsm_h_sent_U_recv <= "001";
+                                if div_or_zero = '0' then
+                                    --div
+                                    in_data <= h_div(31 downto 0);
+                                    write_high_low <= '0';
+                                    u_main_address <= (others =>'0');
+                                    fsm_h_sent_U_recv <= "001";
+                                else
+                                    --zero
+                                    in_data <= (others => '0');
+                                    U_main_address <= (others => '0');
+                                    write_high_low <= '0';
+                                    fsm_h_sent_U_recv <= "001";
+                                end if;
                             end if;
                         end if;
                     end if;
                 when "001" =>
                     --start the reading loop
                     N_counter_2 <= N_X_A_B_vec;
-                    fsm_h_sent_U_recv <= "010";
+                    u_main_address <= (others => '0');
+                    --this will compensate the clock delay
+                    if (interp_done_op = "01" or interp_done_op = "10") then
+                        fsm_h_sent_U_recv <= "010";
+                    end if;
+
                 when "010" =>
                     if (interp_done_op = "01" or interp_done_op = "10") then
-                        if write_u_main = '0' and increment_u_main_address = '0' then --no one else is writing at U
-                            --here we write the high part at even addresses
-                            u_main_wr <= '1';
-                            u_main_data_in <= in_data;
-                            u_main_high <= '1';
-                            increment_u_main_address <= '1';
-                            fsm_h_sent_U_recv <= "011";
-                        end if;
+                        u_main_wr <= '1';
+                        u_main_data_in <= in_data;
+                        U_main_rd <= '0';
+                        fsm_h_sent_U_recv <= "011";
                     end if;
+                    
                     --if interp_done_op = "00" or 
                 when "011" =>  
                     if (interp_done_op = "01" or interp_done_op = "10") then
-                        if write_u_main = '0' and increment_u_main_address = '0' then --no one else is writing at U 
-                            u_main_wr <= '1';
-                            u_main_data_in <= in_data ;
-                            u_main_high <= '0';
-                            increment_u_main_address <= '1';
-                            fsm_h_sent_U_recv <= "100";--switch back
-                        end if;
+                        u_main_address <= to_vec(to_int(u_main_address) + 1,u_main_address'length);
+                        u_main_wr <= '1';
+                        u_main_data_in <= in_data;
+                        U_main_rd <= '0';
+                        N_counter_2 <= to_vec(to_int(N_counter_2) - 1,N_counter_2'length);
+                        fsm_h_sent_U_recv <= "100";
                     end if;
                 when "100" =>
-                    -- decrement the counter
-                    address_dec_1_in <= N_counter_2;
-                    address_dec_1_enbl <= '1';
-                    fsm_h_sent_U_recv <= "101";
-                when "101" =>
-                    --decrement the counter
-                    address_dec_1_enbl <= '0';
-                    N_counter_2 <= address_dec_1_out;
-                    if N_counter_2 = X"0000" then
-                        --end loop
-                        u_main_high <= '0';
+                    u_main_address <= to_vec(to_int(u_main_address) + 1,u_main_address'length);
+                    if N_counter_2 = N_X_A_B_vec then
                         u_main_address <= (others => '0');
                         fsm_h_sent_U_recv <= "000";
+                        u_main_wr <= '0';
                     else
-                        --LOOP AGAIN
                         fsm_h_sent_U_recv <= "010";
                     end if;
+                    
                 when others =>
                     null;
             end case;
@@ -1709,6 +1710,7 @@ begin
 
 
 
+----------------------------------------------------------------------done, no need to test
     --sends h_new (or h_init) to interpolator (for variable step)
     procedure proc_send_h_init is
         begin
@@ -1718,6 +1720,8 @@ begin
                     in_data <= h_adapt (63 downto 32);
                     fsm_send_h_init <= "01";
                 when "01" =>
+                    fsm_send_h_init <= "10";
+                when "10" =>
                     adr <= X"2C36";
                     in_data <= h_adapt (31 downto 0);
                     fsm_send_h_init <= "00";
