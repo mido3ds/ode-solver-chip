@@ -100,6 +100,7 @@ package solver_pkg is
 		signal done_div_1 : in std_logic ;
 		
 		signal err_sum : inout  std_logic_vector(63 downto 0);
+		signal ev : inout  std_logic_vector(63 downto 0);
 		signal fsm : inout std_logic_vector(1 downto 0)
 		);
 
@@ -463,6 +464,7 @@ package body solver_pkg is
 		signal done_div_1 : in std_logic ;
 		
 		signal err_sum : inout  std_logic_vector(63 downto 0);
+		signal ev : inout  std_logic_vector(63 downto 0);
 		signal fsm : inout std_logic_vector(1 downto 0)
 		)is
 
@@ -474,29 +476,39 @@ package body solver_pkg is
 					enable_mul_1<='1';
                     fpu_mul_1_in_1 <= h_adapt;
                     fpu_mul_1_in_2 <= h_adapt;
-
+                    
+                    ev <= to_vec ( to_int(ev) + 1 ,ev'length);
+                    
                     enable_div_1 <= '1';
                     fpu_div_1_in_1 <= L_nine;
                     fpu_div_1_in_2 <= err_sum;
+                    
+                    
 
                     if done_mul_1 = '1' and done_div_1 = '1' then
+                    	fpu_mul_1_in_1 <= fpu_div_1_out;
+                    	fpu_mul_1_in_2 <= fpu_mul_1_out;
                     	enable_div_1 <= '0';
-                    	enable_mul_1<='0';
+                    	enable_mul_1 <='0';
                     	fsm <= "01";
                     end if;
 
+                    --if done_div_1 = '1' then
+                    --	enable_div_1 <= '0';
+                    	
+                    --end if;
+                    
                 when "01" =>
-                	fpu_mul_1_in_1 <= fpu_div_1_out;
-                    fpu_mul_1_in_2 <= fpu_mul_1_out;
-                    enable_mul_1<= '1';
-                    if done_mul_1 = '1' then
-                    	--enable_mul_1<= '0';
-                    	fsm <= "10";
-                    end if;
+                	enable_mul_1 <='1';
+                	fsm <= "10";
+                		
+                    
                 when "10" =>
-                	err_sum <= fpu_mul_1_out;
-                    enable_mul_1<= '0';
-                    fsm <= "00";
+                	if done_mul_1 = '1' then
+	                	err_sum <= fpu_mul_1_out;
+	                    enable_mul_1 <= '0';
+	                    fsm <= "00";
+                    end if;
  				when others =>
 					--00
 					null;

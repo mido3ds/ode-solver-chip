@@ -76,8 +76,10 @@ architecture rtl of solver_test is
     signal from_i_to_c : std_logic    := '1';
     signal fsm_run_sum_err :  std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_L_nine : std_logic    := '1';
-    signal err_sum  :  std_logic_vector(63 downto 0) := (others => '0');
+    signal err_sum,ev  :  std_logic_vector(63 downto 0) := (others => '0');
     signal error_tolerance_is_good : std_logic    := '0';
+    signal fsm_run_h_L : std_logic_vector (1 downto 0);
+
     begin
     X_i : entity work.ram generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
@@ -153,8 +155,8 @@ architecture rtl of solver_test is
         --dummies..
         signal N_counter : inout std_logic_vector(5 downto 0);
         signal fsm_read_1, fsm_read_2 : inout std_logic_vector (1 downto 0);
-        signal error_check :  inout std_logic_vector (63 downto 0);
-        signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
+        signal error_check :  inout std_logic_vector (63 downto 0)
+        --signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
 
         )is
         begin
@@ -266,7 +268,6 @@ architecture rtl of solver_test is
                             fpu_add_1_in_1 <= err_sum;
                             fpu_add_1_in_2 <= L_tol;
                             --init here, won't be affective until we reach the procedure call
-                            fsm_run_err_h_L <= (others => '1');
                             fsm_run_sum_err <= "0110";
                         else
                             --keep looping
@@ -276,38 +277,46 @@ architecture rtl of solver_test is
                         end if;
 
                     when "0110" =>
-                        if done_add_1 = '0' then
+                        if done_add_1 = '1' then
                             if posv_add_1 = '0' or zero_add_1 = '1' then
                                 --negative or zero means err_sum <= L
+                                enable_add_1 <= '0';
                                 error_tolerance_is_good <= '1';
                                 fsm_run_sum_err <= "0000";
                             else
                                 --positive and non-zero means err_sum > L
                                 error_tolerance_is_good <= '0';
-                                proc_run_err_h_L(
-                                    mode => mode_sig,
-                                    h_adapt => h_adapt,
-                                    L_nine => L_nine,
-                                    fpu_mul_1_in_1 => fpu_mul_1_in_1,
-                                    fpu_mul_1_in_2 => fpu_mul_1_in_2,
-                                    fpu_mul_1_out => fpu_mul_1_out,
-                                    enable_mul_1 => enable_mul_1,
-                                    done_mul_1 => done_mul_1,
-                                    fpu_div_1_in_1 => fpu_div_1_in_1,
-                                    fpu_div_1_in_2 => fpu_div_1_in_2,
-                                    fpu_div_1_out => fpu_div_1_out,
-                                    enable_div_1 => enable_div_1,
-                                    done_div_1 => done_div_1,
-                                    err_sum => err_sum,
-                                    fsm => fsm_run_err_h_L
-                                    );
-                                if fsm_run_err_h_L =  "00" then
-                                    fsm_run_sum_err <= "0000";
-                                end if;
-                                fsm_run_sum_err <= "0000";
+                                enable_add_1 <= '0';
+                                fsm_run_h_L <= "11";
+                                fsm_run_sum_err <= "1000";
+
                             end if;
                         end if;
 
+                    when "1000" =>
+                        proc_run_err_h_L(
+                            mode => mode_sig,
+                            h_adapt => h_adapt,
+                            L_nine => L_nine,
+                            fpu_mul_1_in_1 => fpu_mul_1_in_1,
+                            fpu_mul_1_in_2 => fpu_mul_1_in_2,
+                            fpu_mul_1_out => fpu_mul_1_out,
+                            enable_mul_1 => enable_mul_1,
+                            done_mul_1 => done_mul_1,
+                            fpu_div_1_in_1 => fpu_div_1_in_1,
+                            fpu_div_1_in_2 => fpu_div_1_in_2,
+                            fpu_div_1_out => fpu_div_1_out,
+                            enable_div_1 => enable_div_1,
+                            done_div_1 => done_div_1,
+                            err_sum => err_sum,
+                            --for testing
+                            ev => ev,
+                            fsm => fsm_run_h_L
+                            );
+                        if fsm_run_h_L =  "00" then
+                            fsm_run_sum_err <= "0000";
+                        end if;
+                        
                     when others => 
                         null;
             end case ;
@@ -383,8 +392,8 @@ architecture rtl of solver_test is
                         N_counter => procedure_dumm (5 downto 0),
                         fsm_read_1 =>  procedure_dumm (7 downto 6),
                         fsm_read_2 =>  procedure_dumm (9 downto 8),
-                        error_check => x_temp,
-                        fsm_run_err_h_L => procedure_dumm (11 downto 10)
+                        error_check => x_temp
+                        --fsm_run_err_h_L => procedure_dumm (11 downto 10)
                         );
 
                     if fsm_run_sum_err = "0000" then

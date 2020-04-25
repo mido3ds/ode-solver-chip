@@ -1115,7 +1115,7 @@ begin
         end procedure;
 
 
--------------------------------------------------ready for test waiting on MAzen!
+-------------------------------------------------done, waiting on the sub_procedure that stucks at 01
     --calculates err_sum = sum(abs(Xi[i] - X_w[i]))
     --we just read from x_intm and x_Ware
     procedure proc_run_sum_err (
@@ -1123,8 +1123,8 @@ begin
         --dummies..
         signal N_counter : inout std_logic_vector(5 downto 0);
         signal fsm_read_1, fsm_read_2 : inout std_logic_vector (1 downto 0);
-        signal error_check :  inout std_logic_vector (63 downto 0);
-        signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
+        signal error_check :  inout std_logic_vector (63 downto 0)
+        --signal fsm_run_err_h_L : inout std_logic_vector (1 downto 0)
 
         )is
         begin
@@ -1246,14 +1246,16 @@ begin
                         end if;
 
                     when "0110" =>
-                        if done_add_1 = '0' then
+                        if done_add_1 = '1' then
                             if posv_add_1 = '0' or zero_add_1 = '1' then
                                 --negative or zero means err_sum <= L
+                                enable_add_1 <= '0';
                                 error_tolerance_is_good <= '1';
                                 fsm_run_sum_err <= "0000";
                             else
                                 --positive and non-zero means err_sum > L
                                 error_tolerance_is_good <= '0';
+                                enable_add_1 <= '0';
                                 proc_run_err_h_L(
                                     mode => mode_sig,
                                     h_adapt => h_adapt,
@@ -1269,12 +1271,14 @@ begin
                                     enable_div_1 => enable_div_1,
                                     done_div_1 => done_div_1,
                                     err_sum => err_sum,
+                                    --for testing
+                                    ev => ev,
                                     fsm => fsm_run_err_h_L
                                     );
                                 if fsm_run_err_h_L =  "00" then
                                     fsm_run_sum_err <= "0000";
                                 end if;
-                                fsm_run_sum_err <= "0000";
+                                
                             end if;
                         end if;
 
@@ -1283,9 +1287,8 @@ begin
             end case ;
         end procedure;
 
-
+------------------------------------------------------------done
     --PROCEDs, that main_eq uses:
-
     --fsm_h_sent_U_recv
     --fsm_run_a_x
     --fsm_run_a_x_2
@@ -1293,9 +1296,7 @@ begin
     --fsm_run_x_b_u_2
     --fsm_run_x_h --- done and tested
     --fsm_run_x_i_c --- done and tested
-
     --NOTE: the behaviour of the procedure depends in from_i_to_c signal..
-
     --calculates main equation (for variable step)
     procedure proc_run_main_eq is
         begin
@@ -1483,6 +1484,8 @@ begin
                     null;
             end case;
         end procedure;
+
+    
 
     --sends h and receives U
     procedure proc_h_sent_U_recv is
