@@ -12,9 +12,12 @@ requirements: $ pip3 install --user numpy
 e.g. to use sample-f16 and calculate Uk at T=1.5:
 $ ./interpolator.py 1.5 <input/sample-f16.json
 '''
-import numpy as np
 import json
 import sys
+
+import numpy as np
+
+import utils
 
 
 def read_inputs():
@@ -22,11 +25,14 @@ def read_inputs():
         print('usage: $ ./interpolator.py Tk </path/to/input.json')
         sys.exit(1)
 
-    inp = json.loads(sys.stdin.read())
-    ts = np.array([0, *inp['T']])
-    us = np.array([inp['U0'], *inp['Us']])
+    inp = json.load(sys.stdin)
 
-    tk = float(sys.argv[1])
+    cast, vcast = utils.get_float_caster(inp)
+
+    ts = vcast(np.array([0, *inp['T']]))
+    us = vcast(np.array([inp['U0'], *inp['Us']]))
+
+    tk = cast(float(sys.argv[1]))
     assert tk >= 0 and tk <= np.max(ts)
     assert ts.size == us.shape[0]
 
@@ -42,7 +48,7 @@ def get_range(us, ts, tk):
 
 def interpolate(us, ts, tk):
     if tk in ts:
-        return us[np.where(ts == tk)]
+        return us[np.where(ts == tk)][0]
     else:
         n, z = get_range(us, ts, tk)
         return us[n] + (tk - ts[n]) / (ts[z] - ts[n]) * (us[z] - us[n])

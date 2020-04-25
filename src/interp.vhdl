@@ -5,18 +5,12 @@ use work.common.all;
 
 -----------------------------------------------------------------ENTITY-----------------------------------------------------------------------------------
 entity interp is
-    generic (
-        WORD_LENGTH : integer := 32;
-        ADDR_LENGTH : integer := 16;
-        MAX_LENGTH  : integer := 64
-    );
-
     port (
         in_state       : in std_logic_vector(1 downto 0); --state signal sent from CPU
         clk            : in std_logic;
         rst            : in std_logic;
-        adr            : in std_logic_vector(ADDR_LENGTH - 1 downto 0);
-        in_data        : inout std_logic_vector(WORD_LENGTH - 1 downto 0);
+        adr            : in std_logic_vector(15 downto 0);
+        in_data        : inout std_logic_vector(31 downto 0);
         interp_done_op : out std_logic_vector(1 downto 0);
         interrupt      : out std_logic;
         error_success  : out std_logic
@@ -40,55 +34,55 @@ signal fixed_or_var : std_logic := '0';
 signal t_size : std_logic_vector(2 downto 0) := "000";
 
 --Output Times Signals
-signal out_time_1, out_time_2, out_time_3, out_time_4, out_time_5 : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal out_time_1, out_time_2, out_time_3, out_time_4, out_time_5 : std_logic_vector(63 downto 0) := (others => '0');
 signal t_count : integer range 0 to 10;
 
 --Received H Signal
-signal h_step : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --main step size (read in init and updated in variable step)
-signal h_new : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --current received time
+signal h_step : std_logic_vector(63 downto 0) := (others => '0'); --main step size (read in init and updated in variable step)
+signal h_new : std_logic_vector(63 downto 0) := (others => '0'); --current received time
 
 --FPUs Signals
 --FPU MUL 1
-signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal fpu_mul_1_in_1, fpu_mul_1_in_2, fpu_mul_1_out : std_logic_vector(63 downto 0) := (others => '0');
 signal done_mul_1, err_mul_1, zero_mul_1, posv_mul_1, enable_mul_1 : std_logic := '0';  
 --FPU DIV 1
-signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal fpu_div_1_in_1, fpu_div_1_in_2, fpu_div_1_out : std_logic_vector(63 downto 0) := (others => '0');
 signal done_div_1, err_div_1, zero_div_1, posv_div_1, enable_div_1 : std_logic := '0';
 --FPU ADD 1
-signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal fpu_add_1_in_1, fpu_add_1_in_2, fpu_add_1_out : std_logic_vector(63 downto 0) := (others => '0');
 signal done_add_1, err_add_1, zero_add_1, posv_add_1, enable_add_1 : std_logic := '0';
 signal this_is_add : std_logic := '0';
 --FPU SUB 1
-signal fpu_sub_1_in_1, fpu_sub_1_in_2, fpu_sub_1_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal fpu_sub_1_in_1, fpu_sub_1_in_2, fpu_sub_1_out : std_logic_vector(63 downto 0) := (others => '0');
 signal done_sub_1, err_sub_1, zero_sub_1, posv_sub_1, enable_sub_1 : std_logic := '0';
 signal this_is_sub : std_logic := '1';
 --FPU SUB 2
-signal fpu_sub_2_in_1, fpu_sub_2_in_2, fpu_sub_2_out : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0');
+signal fpu_sub_2_in_1, fpu_sub_2_in_2, fpu_sub_2_out : std_logic_vector(63 downto 0) := (others => '0');
 signal done_sub_2, err_sub_2, zero_sub_2, posv_sub_2, enable_sub_2 : std_logic := '0'; 
 
 --Memory Signals
 --U0 Memory
 signal U_0_rd, U_0_wr : std_logic := '0';
 signal U_0_address : std_logic_vector(6 downto 0) := (others => '0');
-signal U_0_data_in, U_0_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+signal U_0_data_in, U_0_data_out : std_logic_vector(31 downto 0) := (others => '0');
 --Us Memory
 signal U_s_rd, U_s_wr : std_logic := '0';
 signal U_s_address : std_logic_vector(8 downto 0) := (others => '0');
-signal U_s_data_in, U_s_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+signal U_s_data_in, U_s_data_out : std_logic_vector(31 downto 0) := (others => '0');
 --U_out Memory
 signal U_out_rd, U_out_wr : std_logic := '0';
 signal U_out_address : std_logic_vector(6 downto 0) := (others => '0');
-signal U_out_data_in, U_out_data_out : std_logic_vector(WORD_LENGTH - 1 downto 0) := (others => '0');
+signal U_out_data_in, U_out_data_out : std_logic_vector(31 downto 0) := (others => '0');
 
 --Processes Signals
 --Main FSM Signals
 signal interp_state : std_logic_vector(4 downto 0) := "11111";
-signal t_low, t_high : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --range boundaries
-signal t_const : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
+signal t_low, t_high : std_logic_vector(63 downto 0) := (others => '0'); --range boundaries
+signal t_const : std_logic_vector(63 downto 0) := (others => '0'); --(Tk-Tn)/(Tz-Tn)
 signal u_low_adr, u_high_adr : std_logic_vector(8 downto 0) := (others => '0'); --boundary Us addresses
 signal u_0_adr, u_out_adr : std_logic_vector(6 downto 0) := (others => '0'); --initial and output U addresses
-signal u_0_temp, u_low_temp, u_high_temp, u_out_temp : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --boundary Us values
-signal u_out_result : std_logic_vector(MAX_LENGTH - 1 downto 0) := (others => '0'); --result of Uout
+signal u_0_temp, u_low_temp, u_high_temp, u_out_temp : std_logic_vector(63 downto 0) := (others => '0'); --boundary Us values
+signal u_out_result : std_logic_vector(63 downto 0) := (others => '0'); --result of Uout
 
 --Range Finder Signals
 signal range_finder_enable : std_logic := '0';
@@ -99,14 +93,16 @@ signal out_low_from : std_logic := '0'; --determines which memory to out from in
 signal send_output_enable, send_u_0_enable, send_u_s_enable : std_logic := '0';
 
 --U0 IO Signals
-signal read_u_0, u_0_high : std_logic := '0';
+signal read_u_0 : std_logic := '0';
+signal u_0_state : std_logic_vector(1 downto 0) := "00";
 
 --Us IO Signals
-signal read_u_s_low, u_s_low_high : std_logic := '0';
-signal read_u_s_high, u_s_high_high : std_logic := '0';
+signal read_u_s_low, read_u_s_high : std_logic := '0';
+signal u_s_low_state, u_s_high_state : std_logic_vector(1 downto 0) := "00";
 
 --Uout IO Signals
-signal write_u_out, u_out_high : std_logic := '0';
+signal write_u_out : std_logic := '0';
+signal u_out_state : std_logic := '0';
 
 begin
 -----------------------------------------------------------------PORT MAPS-----------------------------------------------------------------------------------
@@ -187,7 +183,7 @@ begin
 
     --Memories:
     --Holding initial U
-    U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    U_0 : entity work.ram(rtl) generic map (WORD_LENGTH => 32, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rst      => rst,
@@ -198,7 +194,7 @@ begin
             data_out => U_0_data_out
         );
     --Holding all given Us
-    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 500, ADR_LENGTH=>9)
+    U_s : entity work.ram(rtl) generic map (WORD_LENGTH => 32, NUM_WORDS => 500, ADR_LENGTH=>9)
         port map(
             clk      => clk,
             rd       => U_s_rd,
@@ -210,7 +206,7 @@ begin
         );
     
     --Holding result output U
-    U_out : entity work.ram(rtl) generic map (WORD_LENGTH => WORD_LENGTH, NUM_WORDS => 100, ADR_LENGTH=>7)
+    U_out : entity work.ram(rtl) generic map (WORD_LENGTH => 32, NUM_WORDS => 100, ADR_LENGTH=>7)
         port map(
             clk      => clk,
             rst      => rst,
@@ -420,20 +416,22 @@ begin
     --reads U0 entry
     procedure read_u0 is
     begin
-        if u_0_high = '0' then
+        if u_0_state = "00" then
             U_0_address <= u_0_adr;
             U_0_wr <= '0';
             U_0_rd <= '1';
-            u_0_temp(MAX_LENGTH-1 downto 32) <= U_0_data_out;
-            u_0_high <= '1';
+            u_0_state <= "01";
+            u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+        elsif u_0_state = "01" then
+            u_0_temp(63 downto 32) <= U_0_data_out;
+            U_0_address <= u_0_adr;
+            U_0_wr <= '0';
+            U_0_rd <= '1';
+            u_0_state <= "10";
             u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
         else
-            U_0_address <= u_0_adr;
-            U_0_wr <= '0';
-            U_0_rd <= '1';
             u_0_temp(31 downto 0) <= U_0_data_out;
-            u_0_high <= '0';
-            u_0_adr <= std_logic_vector(unsigned(u_0_adr) + 1);
+            u_0_state <= "00";
             read_u_0 <= '0';
         end if;
     end procedure; 
@@ -441,20 +439,22 @@ begin
     --reads low Us entry
     procedure read_low_us is
     begin
-        if u_s_low_high = '0' then
+        if u_s_low_state = "00" then
             U_s_address <= u_low_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
-            u_low_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-            u_s_low_high <= '1';
+            u_s_low_state <= "01";
+            u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+        elsif u_s_low_state = "01" then
+            u_low_temp(63 downto 32) <= U_s_data_out;
+            U_s_address <= u_low_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_s_low_state <= "10";
             u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
         else
-            U_s_address <= u_low_adr;
-            U_s_wr <= '0';
-            U_s_rd <= '1';
             u_low_temp(31 downto 0) <= U_s_data_out;
-            u_s_low_high <= '0';
-            u_low_adr <= std_logic_vector(unsigned(u_low_adr) + 1);
+            u_s_low_state <= "00";
             read_u_s_low <= '0';
         end if;
     end procedure; 
@@ -462,20 +462,22 @@ begin
     --reads high Us entry
     procedure read_high_us is
     begin
-        if u_s_high_high = '0' then
+        if u_s_high_state = "00" then
             U_s_address <= u_high_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
-            u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
-            u_s_high_high <= '1';
+            u_s_high_state <= "01";
+            u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+        elsif u_s_high_state = "01" then
+            u_high_temp(63 downto 32) <= U_s_data_out;
+            U_s_address <= u_high_adr;
+            U_s_wr <= '0';
+            U_s_rd <= '1';
+            u_s_high_state <= "10";
             u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
         else
-            U_s_address <= u_high_adr;
-            U_s_wr <= '0';
-            U_s_rd <= '1';
             u_high_temp(31 downto 0) <= U_s_data_out;
-            u_s_high_high <= '0';
-            u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
+            u_s_high_state <= "00";
             read_u_s_high <= '0';
         end if;
     end procedure; 
@@ -483,19 +485,19 @@ begin
     --writes Uout entry
     procedure write_uout is
     begin
-        if u_out_high = '0' then
+        if u_out_state = '0' then
             U_out_address <= u_out_adr;
-            U_out_data_in <= u_out_result(MAX_LENGTH-1 downto 32);
+            U_out_data_in <= u_out_result(63 downto 32);
             U_out_rd <= '0';
             U_out_wr <= '1';
-            u_out_high <= '1';
+            u_out_state <= '1';
             u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
         else
             U_out_address <= u_out_adr;
             U_out_data_in <= u_out_result(31 downto 0);
             U_out_rd <= '0';
             U_out_wr <= '1';
-            u_out_high <= '0';
+            u_out_state <= '0';
             u_out_adr <= std_logic_vector(unsigned(u_out_adr) + 1); 
             write_u_out <= '0';
         end if;
@@ -562,13 +564,13 @@ begin
             send_u_0_enable <= '0';
             send_u_s_enable <= '0';
             read_u_0 <= '0';
-            u_0_high <= '0';
+            u_0_state <= "00";
             read_u_s_low <= '0';
-            u_s_low_high <= '0';
+            u_s_low_state <= "00";
             read_u_s_high <= '0';
-            u_s_high_high <= '0';
+            u_s_high_state <= "00";
             write_u_out <= '0';
-            u_out_high <= '0';
+            u_out_state <= '0';
         
         --ERROR HANDLING    
         elsif rising_edge(clk) and (err_mul_1 = '1' or err_div_1 = '1' or err_add_1 = '1' or err_sub_1 = '1' or err_sub_2 = '1') then
@@ -593,7 +595,7 @@ begin
                 t_size <= in_data(16 downto 14);
             --read time step (h)
             elsif adr = MM_H_0 then
-                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+                h_step(63 downto 32) <= in_data;
             elsif adr = MM_H_1 then
                 h_step(31 downto 0) <= in_data;
             --read U_0
@@ -606,23 +608,23 @@ begin
             --read output times           
             elsif adr >= MM_T_0 and adr <= MM_T_9 then
                 if adr = MM_T_0 then
-                    out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
+                    out_time_1(63 downto 32) <= in_data;
                 elsif adr = MM_T_1 then
                     out_time_1(31 downto 0) <= in_data;
                 elsif adr = MM_T_2 then
-                    out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
+                    out_time_2(63 downto 32) <= in_data;
                 elsif adr = MM_T_3 then
                     out_time_2(31 downto 0) <= in_data;
                 elsif adr = MM_T_4 then
-                    out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
+                    out_time_3(63 downto 32) <= in_data;
                 elsif adr = MM_T_5 then
                     out_time_3(31 downto 0) <= in_data;
                 elsif adr = MM_T_6 then
-                    out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
+                    out_time_4(63 downto 32) <= in_data;
                 elsif adr = MM_T_7 then
                     out_time_4(31 downto 0) <= in_data;
                 elsif adr = MM_T_8 then
-                    out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
+                    out_time_5(63 downto 32) <= in_data;
                 elsif adr = MM_T_9 then
                     out_time_5(31 downto 0) <= in_data;
                 end if;
@@ -637,7 +639,7 @@ begin
         
         --TIMESTEP HIGHER PART UPDATE
         elsif rising_edge(clk) and rst = '0' and adr = MM_H_ADA_0 then
-                h_step(MAX_LENGTH-1 downto 32) <= in_data;
+                h_step(63 downto 32) <= in_data;
         --TIMESTEP LOWER PART UPDATE
         elsif adr = MM_H_ADA_1 then
                 h_step(31 downto 0) <= in_data;
@@ -653,7 +655,7 @@ begin
                     if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
-                        h_new(MAX_LENGTH-1 downto 32) <= in_data;
+                        h_new(63 downto 32) <= in_data;
                         interp_state <= "00001";
                     end if;
                 when "00001" =>
@@ -700,19 +702,10 @@ begin
                     end if;
                 when "00100" =>
                     --check division completion
-                    --read lower U
                     if done_div_1 = '1' then
                         enable_div_1 <= '0';
                         t_const <= fpu_div_1_out;
-                        if out_low_from = '0' then
-                            read_u_0 <= '1';
-                            read_u0;
-                            interp_state <= "10010";
-                        else
-                            read_u_s_low <= '1';
-                            read_low_us;
-                            interp_state <= "01110";
-                        end if;
+                        interp_state <= "10100";
                     end if;
                 when "00101" =>
                     --read higher U
@@ -775,7 +768,7 @@ begin
                         enable_add_1 <= '1';
                         interp_state <= "01011";
                     else
-                        interp_state <= "00100";
+                        interp_state <= "10100";
                     end if;
                 when "01011" =>
                     --check addition comletion
@@ -857,6 +850,17 @@ begin
                     range_finder_enable <= '1';
                     range_finder;
                     interp_state <= "00010";
+                when "10100" =>
+                    --read lower U
+                    if out_low_from = '0' then
+                        read_u_0 <= '1';
+                        read_u0;
+                        interp_state <= "10010";
+                    else
+                        read_u_s_low <= '1';
+                        read_low_us;
+                        interp_state <= "01110";
+                    end if;
                 when others =>
                     --NOP
                     null;
