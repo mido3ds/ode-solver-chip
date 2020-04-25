@@ -100,21 +100,7 @@ architecture rtl of solver_test is
             rst      => rst
         );
 
-        fpu_add_1 : entity work.fpu_adder(with_operators)
-        port map(
-            clk       => clk,
-            rst       => rst,
-            mode      => mode_sig,
-            enbl      => enable_add_1,
-            in_a      => fpu_add_1_in_1,
-            in_b      => fpu_add_1_in_2,
-            out_c     => fpu_add_1_out,
-            done      => done_add_1,
-            err       => err_add_1,
-            zero      => zero_add_1,
-            posv      => posv_add_1,
-            add_sub   => thisIsAdder_1
-        );
+        
         fpu_mul_1 : entity work.fpu_multiplier(first_algo)
         port map(
             clk       => clk,
@@ -130,6 +116,22 @@ architecture rtl of solver_test is
             posv      => posv_mul_1
         );
 
+        fpu_add_1 : entity work.fpu_adder(first_algo)
+        port map(
+            clk       => clk,
+            rst       => rst,
+            mode      => mode_sig,
+            enbl      => enable_add_1,
+            in_a      => fpu_add_1_in_1,
+            in_b      => fpu_add_1_in_2,
+            out_c     => fpu_add_1_out,
+            done      => done_add_1,
+            err       => err_add_1,
+            zero      => zero_add_1,
+            posv      => posv_add_1,
+            add_sub   => thisIsAdder_1
+        );
+        
         fpu_div_1 : entity work.fpu_divider(first_algo)
         port map(
             clk       => clk,
