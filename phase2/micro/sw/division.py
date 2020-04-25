@@ -234,6 +234,8 @@ class Divider():
         if self.reverse(out) != "0000000000000000" or done != 1 or err != 0 or zero != 1 or posv != 0:
             print("with operators: zero / number test failed")
 
+        print("test with operators finished")
+
     def test_with_first_algo(self):
         self.err = 0
 
@@ -278,6 +280,8 @@ class Divider():
         out , done , err , zero , posv = self.first_algo(self.reverse(a),self.reverse(b),0,1)
         if self.reverse(out) != "0000000000000000" or done != 1 or err != 0 or zero != 1 or posv != 0:
             print("first algo: zero / number test failed")
+
+        print("test first algo finished")
 
     def test(self):
         self.test_with_operator()

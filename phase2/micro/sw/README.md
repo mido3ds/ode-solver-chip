@@ -5,7 +5,7 @@
 `$ python3 multiplication.py`
 
 # Division
-TODO
+`$ python3 division.py`
 
 # Addition
 TODO
