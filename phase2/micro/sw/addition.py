@@ -105,7 +105,7 @@ class Adder():
                 carry_in_internal = [0] * 15
                 carry_in_internal[14] = carry_generate[15] | (carry_propagate[15] & carry_in)
                 for i in range(13, -1,-1):
-                    carry_in_internal[i] = carry_generate[i+1] | (carry_propagate[i+1] & carry_in_internal[i-1])
+                    carry_in_internal[i] = carry_generate[i+1] | (carry_propagate[i+1] & carry_in_internal[i+1])
                 carry_out = carry_generate[0] | (carry_propagate[0] & carry_in_internal[0])
                 sum = [0] * 16
                 sum[15] = carry_in ^ initial_sum[15]
@@ -123,7 +123,7 @@ class Adder():
                     self.zero=1
                 else:
                     self.zero=0
-                if sum[0]==0:
+                if sum[0]==0 and not(self.zero):
                    self.posv=1
                 else:
                     self.posv=0
@@ -140,7 +140,7 @@ class Adder():
                 carry_in_internal = [0] * 15
                 carry_in_internal[14] = carry_generate[15] | (carry_propagate[15] & carry_in)
                 for i in range(13, -1, -1):
-                    carry_in_internal[i] = carry_generate[i + 1] | (carry_propagate[i + 1] & carry_in_internal[i - 1])
+                    carry_in_internal[i] = carry_generate[i + 1] | (carry_propagate[i + 1] & carry_in_internal[i + 1])
                 carry_out = carry_generate[0] | (carry_propagate[0] & carry_in_internal[0])
                 sum = [0] * 16
                 sum[15] = carry_in ^ initial_sum[15]
@@ -157,7 +157,7 @@ class Adder():
                     self.zero = 1
                 else:
                     self.zero = 0
-                if sum[0] == 0:
+                if sum[0] == 0 and not(self.zero):
                     self.posv = 1
                 else:
                     self.posv = 0
@@ -265,63 +265,39 @@ out,done,err,zero,posv=a.with_operator(-82, -60, 0, 1, 0)
 if out != '11111111111111111111111101110010' or done != 1 or err!=0 or zero!=0 or posv!=0:
     print("Error test 6")
     
-out,done,err,zero,posv=a.with_operator(52, 44, 0, 1, 1)
-if out != '00000000000000000000000000001000' or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 7")
-    
-out,done,err,zero,posv=a.with_operator(-18, 56, 0, 1, 1)
-if out != '11111111111111111111111110110110' or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 8")
-    
-out,done,err,zero,posv=a.with_operator(8, 2, 0, 1, 1)
-if out != '00000000000000000000000000000110' or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 9")
-
 out,done,err,zero,posv=a.with_operator(-82, -60, 0, 1, 0)
 if out != '11111111111111111111111101110010' or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 10")  
+    print("Error test 7")  
     
 
 # first algo
-out,done,err,zero,posv=a.sec_algo(52, 44, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(52, 44, 0, 1, 0,0)
 if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0] or done != 1 or err!=0 or zero!=0 or posv!=1:
     print("Error test 1")
 
-out,done,err,zero,posv=a.sec_algo(-18, 56, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(-18, 56, 0, 1, 0,0)
 if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=1:
     print("Error test 2")
     
-out,done,err,zero,posv=a.sec_algo(8, 2, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(8, 2, 0, 1, 0,0)
 if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0]or done != 1 or err!=0 or zero!=0 or posv!=1:
     print("Error test 3")
     
-out,done,err,zero,posv=a.sec_algo(172, -196, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(172, -196, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
     print("Error test 4")
     
-out,done,err,zero,posv=a.sec_algo(322, -322, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(322, -322, 0, 1, 0,0)
 if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] or done != 1 or err!=0 or zero!=1 or posv!=0:
     print("Error test 5")
 
-out,done,err,zero,posv=a.sec_algo(-82, -60, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(-82, -60, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
     print("Error test 6")
     
-out,done,err,zero,posv=a.sec_algo(52, 44, 0, 1, 1,0)
-if out !=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 7")
-    
-out,done,err,zero,posv=a.sec_algo(-18, 56, 0, 1, 1,0)
-if out != [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0]or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 8")
-    
-out,done,err,zero,posv=a.sec_algo(8, 2, 0, 1, 1,0)
-if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 9")
-
-out,done,err,zero,posv=a.sec_algo(-82, -60, 0, 1, 0,0)
+out,done,err,zero,posv=a.first_algo(-82, -60, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 10")
+    print("Error test 7")
 
 
 
@@ -350,20 +326,6 @@ out,done,err,zero,posv=a.sec_algo(-82, -60, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
     print("Error test 6")
     
-out,done,err,zero,posv=a.sec_algo(52, 44, 0, 1, 1,0)
-if out !=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 7")
-    
-out,done,err,zero,posv=a.sec_algo(-18, 56, 0, 1, 1,0)
-if out != [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0]or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 8")
-    
-out,done,err,zero,posv=a.sec_algo(8, 2, 0, 1, 1,0)
-if out != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]or done != 1 or err!=0 or zero!=0 or posv!=1:
-    print("Error test 9")
-
 out,done,err,zero,posv=a.sec_algo(-82, -60, 0, 1, 0,0)
 if out != [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0] or done != 1 or err!=0 or zero!=0 or posv!=0:
-    print("Error test 10")
-
-print("passed all")
+    print("Error test 7")
