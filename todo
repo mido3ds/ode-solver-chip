@@ -42,14 +42,14 @@
 [x] cpu_tb should pass by commenting lines of integration
 [x] CPU: Implement the CPU software (parsing and compressing data)
 
-[ ] IO 
+[x] IO 
 
     [x] Design  
     [x] Implementation
     [x] synth (produce verilog files) 
     [x] post-synthesize simulation
     [x] Testbench (use output of the CPU software to test and simulate IO)
-    [ ] Record the Different Area/power/time for each adder in a Table form.
+    [x] Record the Different Area/power/time for each adder in a Table form.
 
 [ ] Interpolator
 
