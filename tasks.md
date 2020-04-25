@@ -28,7 +28,7 @@ problems: TODO
 
 tasks: fpu multiplication second algorithm + its tests, io testbench
 time: 5
-problems: iplementing Multiblication algorithm twice as it's attached steps in first phase didnt work, i/o depugging
+problems: implementing Multiblication algorithm twice as it's attached steps in first phase didnt work, i/o depugging
 
 # Mazen Amr , SEC:2, BN:8
 
