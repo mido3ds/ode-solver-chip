@@ -20,6 +20,8 @@ architecture tb of solver_tb is
     signal adr           : std_logic_vector(15 downto 0);
     signal interrupt     : std_logic;
     signal error_success : std_logic;
+
+    signal timeout       : std_Logic;
 begin
     solver : entity work.solver(rtl)
         port map(
@@ -34,14 +36,24 @@ begin
         );
 
     generateClock : process (clk)
+
     begin
         clk <= not clk after CLK_PERD/2;
     end process;
     process
+
+	begin
+		timeout <= '0';
+		wait for CLKPERIOD * 500;
+    end process;
+    
+    process
+    variable temp_adr : std_logic_vector(15 downto 0);
+
     begin
         -- Reset all signal and stats
         rst <= ('1');
-        wait for CLK_PERD;
+        wait for CLK_PERD * 2;
 
         -- Intialize Header
 
@@ -65,48 +77,70 @@ begin
         adr     <= std_logic_vector(to_unsigned(16#0001#, 16));
         in_data <= std_logic_vector(to_unsigned(16#0001#, 32));
         wait for CLK_PERD;
+        adr     <= std_logic_vector(to_unsigned(16#0002#, 16));
+        in_data <= std_logic_vector(to_unsigned(16#0001#, 32));
+        wait for CLK_PERD;
 
         -- Initalize Matrix A
-        adr <= std_logic_vector(to_unsigned(16#0005#, 16));
+        temp_adr := std_logic_vector(to_unsigned(16#0005#, 16));
         for i in 0 to 49 loop -- for every row  
             for j in 0 to 49 loop -- for every element in each row
+                adr <= temp_adr;
                 in_data(31 downto 16) <= (others => '0');
                 in_data(15 downto 0)  <= std_logic_vector(to_unsigned(16#0006#, 16));
                 wait for CLK_PERD;
+                temp_adr := std_logic_vector(unsigned(adr)+1);
             end loop;
         end loop;
 
         -- Initialize Matrix B
-        adr <= std_logic_vector(to_unsigned(16#138D#, 16));
+        temp_adr := std_logic_vector(to_unsigned(16#138D#, 16));
         for i in 0 to 49 loop -- for every row  
             for j in 0 to 49 loop -- for every element in each row
+                adr <= temp_adr;
                 in_data(31 downto 16) <= (others => '0');
                 in_data(15 downto 0)  <= std_logic_vector(to_unsigned(10#3#, 16));
                 wait for CLK_PERD;
+                temp_adr := std_logic_vector(unsigned(adr)+1);
             end loop;
         end loop;
 
-        -- Initialize U
-        adr <= std_logic_vector(to_unsigned(16#296D#, 16));
-        for i in 0 to 49 loop
-            in_data(31 downto 0) <= (others => '0');
-            in_data(15 downto 0) <= std_logic_vector(to_unsigned(10#5#, 16));
-            wait for CLK_PERD;
-        end loop;
-
         -- Initialize X
-        adr <= std_logic_vector(to_unsigned(16#2715#, 16));
+        temp_adr := std_logic_vector(to_unsigned(16#2715#, 16));
         for i in 0 to 49 loop
+            adr <= temp_adr;
             in_data(31 downto 0) <= (others => '0');
             in_data(15 downto 0) <= std_logic_vector(to_unsigned(10#2#, 16));
             wait for CLK_PERD;
+            temp_adr := std_logic_vector(unsigned(adr)+1);
         end loop;
 
-        -- define U state in interp_done
+        --wait for timeout for h_new
+        wait on timeout until timeout = '1';
+
+        if adr = X"2C33" then
+            assert(in_data = std_logic_vector(to_unsigned(16#0001#, 16)) report "wrong upper part for next step in test 1" severity error;
+        elsif adr = X"2C34" then
+            assert(in_data = std_logic_vector(to_unsigned(16#0001#, 16)) report "wrong lower part for next step in test 1" severity error;
+        end if;
+
+        --define U state in interp_done
         interp_done <= ("10");
+        temp_adr := std_logic_vector(to_unsigned(16#2715#, 16));
+        for i in 0 to 49 loop
+            adr <= temp_adr;
+            in_data(31 downto 0) <= (others => '0');
+            in_data(15 downto 0) <= std_logic_vector(to_unsigned(10#2#, 16));
+            wait for CLK_PERD;
+            temp_adr := std_logic_vector(unsigned(adr)+1);
+        end loop;
+
+        --wait for timeout for output
+        wait on timeout until timeout = '1';
+
         --Check output
         for i in 0 to 49 loop
-            assert(in_data = std_logic_vector(to_unsigned(10#1352#, 16)));
+            assert(in_data = std_logic_vector(to_unsigned(10#1352#, 16))) report "wrong output in test 1" severity error;
             wait for CLK_PERD;
         end loop;
         
