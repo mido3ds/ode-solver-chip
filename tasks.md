@@ -8,19 +8,19 @@ problems: conflicts in signals when filling and flushing the decompressor buffer
 
 # Mohamed Shawky, SEC:2, BN:16
 
-tasks: solver (fixed step)
-time: 6 days
-problems: Main process design, Debugging through simulation and logs.
+tasks: solver (fixed step), interpolator integration and component test
+time: 1 week
+problems: Main process design and integration, debugging through simulation and logs.
 
 # Remonda Talaat, SEC:1, BN:20
 
-tasks: interpolator
-time: TODO
-problems: TODO
+tasks: interpolator components, solver memory IO
+time: 5 days
+problems: components design and test.
 
 # Evram Youssef, SEC:1, BN:9
 
-tasks: solver (variable step)
+tasks: solver (variable step), solver sub-procedures
 time: 8 days
 problems: Solver became a huge file with a lot of conflicting signals.
 
@@ -28,7 +28,7 @@ problems: Solver became a huge file with a lot of conflicting signals.
 
 tasks: fpu multiplication second algorithm + its tests, io testbench
 time: 5 days
-problems: implementing Multiblication algorithm twice as it's attached steps in first phase didnt work, i/o depugging
+problems: implementing multiplication algorithm twice as it's attached steps in first phase didn't work, i/o debugging
 
 # Mazen Amr , SEC:2, BN:8
 
