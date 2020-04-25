@@ -27,7 +27,7 @@ problems: TODO
 # Reham Gamal , SEC:1, BN:21
 
 tasks: fpu multiplication second algorithm + its tests, io testbench
-time: 5
+time: 5 days
 problems: implementing Multiblication algorithm twice as it's attached steps in first phase didnt work, i/o depugging
 
 # Mazen Amr , SEC:2, BN:8
