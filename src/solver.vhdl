@@ -1551,6 +1551,8 @@ procedure proc_run_x_b_u_fixed (
                         if fsm_run_a_x = "000" and fsm_h_sent_U_recv = "000" then
                             --then X_i = A * X_w and U_main is prepared
                             fsm_run_x_b_u <= (others => '1');
+                            fsm_run_x_b_u_2 <= (others => '0');
+                            
                             fsm_main_eq <= "101";
                         end if;
                     else
@@ -1574,6 +1576,8 @@ procedure proc_run_x_b_u_fixed (
                                 x_address_out => adr,
                                 x_ware_address => x_ware_address);
                             fsm_run_x_b_u_2 <= (others => '1');
+                            fsm_run_x_b_u <= (others => '0');
+                            
                             fsm_main_eq <= "101";
                         end if;
                     end if;
@@ -1921,7 +1925,7 @@ procedure proc_run_x_b_u_fixed (
                 interrupt <= '1';
         
         --DATA LOADER
-        elsif rising_edge(clk) and rst = '0' and (in_state = STATE_LOAD or in_state = STATE_WAIT) then
+        elsif rising_edge(clk) and rst = '0' and (in_state = "00" or in_state = "01") then
             a_coeff_wr <= '0';
             b_coeff_wr <= '0';
             X_ware_wr <= '0';
@@ -1997,7 +2001,7 @@ procedure proc_run_x_b_u_fixed (
             end if;
 
         --FIXED SETP FSM
-        elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '0' then
+        elsif rising_edge(clk) and rst = '0' and in_state = "10" and fixed_or_var = '0' then
             case fixed_point_state is
                 when "0000" => 
                     --wait for loop a and loop b 
@@ -2184,20 +2188,23 @@ procedure proc_run_x_b_u_fixed (
     
 
         --VARIABLE STEP FSM
-        elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '1' then
+        elsif rising_edge(clk) and rst = '0' and in_state = "10" and fixed_or_var = '1' then
             case( fsm_var_step_main ) is
-                when "11111" =>
+                when "00000" =>
                     --START babyyy
                     -- we reach here when output is produced and c_ware is incremented
                     --h_adapt always starts with the initial fixed value of h, h_main
                     h_adapt <= h_main;
                     fsm_var_step_main <= "00001";
                 when "00001" => 
+                    --eq : 1
+                    -- Xi = X_w[c] +  h_div (X_w[c],  U_main)
                     div_or_zero <= '1'; --h_sent: zerp
                     div_or_adapt <= '0'; --h_mul: h_div
                     from_i_to_c <= '0'; --no, from c to i
                     fsm_run_h_2 <= '1';
                     fsm_main_eq <= (others =>'1');
+                    fsm_var_step_main <= "00010";
                 when "00010" =>
                     div_h_2 (
                         mode => mode_sig,
@@ -2210,27 +2217,13 @@ procedure proc_run_x_b_u_fixed (
                         done_div_1 => done_div_1,
                         fsm => fsm_run_h_2
                         );
+                    proc_run_main_eq;
                     if fsm_run_h_2 = '0' and fsm_main_eq = "000" then
                         c_ware <= to_vec (to_int(c_ware) + 1, c_ware'length);
                         fsm_var_step_main <= "00011";
                     end if;
-                --when "00010" =>
-                --    if fsm_main_eq = "000" then
-                --        --NOW: calculate the irregular equation
-                --        --only when you're finished, increment c_ware
-                --        address_inc_1_in <= (others => '0');
-                --        address_inc_1_in(2 downto 0) <= c_ware;
-                --        address_inc_1_enbl <= '1';
-                --        fsm_var_step_main <= "00011";
-                --    end if;
+                
                 when "00011" =>
-                    --we know for sure that address_inc_1 is already incremented
-                    --c_ware <= address_inc_1_out;
-                    --listen_to_me <= not listen_to_me; --just to make sure :D
-                    --address_inc_1_enbl <= '0';
-
-                    --Now X_Ware_address is updated...
-                    --let's run the irregular equation
                     x_ware_find_address
                         (c_ware => c_ware,
                         x_address_out => adr,
@@ -2241,11 +2234,9 @@ procedure proc_run_x_b_u_fixed (
                     fsm_main_eq <= (others =>'1');
                     fsm_var_step_main <= "00100";
                 when "00100" =>
+                    proc_run_main_eq;
                     if fsm_main_eq = "000" then
-                        ----Decrement C_ware first
-                        --address_dec_1_enbl <= '1';
-                        --address_dec_1_in <= (others => '0');
-                        --address_dec_1_in(2 downto 0) <= c_ware;
+                       
                         c_ware <= to_vec (to_int(c_ware) - 1, c_ware'length);
 
                         fsm_var_step_main <= "00101";
@@ -2265,12 +2256,20 @@ procedure proc_run_x_b_u_fixed (
                     fsm_main_eq <= (others =>'1');
                     fsm_var_step_main <= "00111"; 
                 when "00111" =>
+                    proc_run_main_eq;
                     if fsm_main_eq = "000" then
                         error_tolerance_is_good <= '0';
                         fsm_run_sum_err <= (others => '1');
                         fsm_var_step_main <= "01000"; 
                     end if;
                 when "01000" =>
+                    proc_run_sum_err (
+                        N_counter => procedure_dumm (5 downto 0),
+                        fsm_read_1 =>procedure_dumm (7 downto 6),
+                        fsm_read_2 =>procedure_dumm (9 downto 8),
+                        error_check => x_temp
+                        );
+
                     if fsm_run_sum_err = "0000" then
                         if error_tolerance_is_good = '1' then
                             --yes it is good
@@ -2351,6 +2350,7 @@ procedure proc_run_x_b_u_fixed (
                     fsm_main_eq <= (others =>'1');
                     fsm_var_step_main <= "01111";
                 when "01111" =>
+                    proc_run_main_eq;
                     if fsm_main_eq = "000" then
                         --listen to outpur or not
                         fsm_var_step_main <= "10011";
@@ -2425,7 +2425,7 @@ procedure proc_run_x_b_u_fixed (
                         interrupt <= '1';
                         error_success <= '1';
                         fsm_outing <= (others => '1');
-                        fsm_var_step_main <= "00000";
+                        fsm_var_step_main <= "11111";
                     else
                         --go to 00001
                         fsm_var_step_main <= "00001";
@@ -2438,7 +2438,7 @@ procedure proc_run_x_b_u_fixed (
             end case;
         
         --RESULTS OUTPUT
-        elsif rising_edge(clk) and rst = '0' and in_state = STATE_OUT then
+        elsif rising_edge(clk) and rst = '0' and in_state = "11" then
             outing(
                 mode => mode_sig,
                 main_adr => adr,

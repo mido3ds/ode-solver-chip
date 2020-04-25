@@ -641,7 +641,7 @@ begin
         elsif rising_edge(clk) and rst = '0' and adr = MM_H_ADA_0 then
                 h_step(63 downto 32) <= in_data;
         --TIMESTEP LOWER PART UPDATE
-        elsif adr = MM_H_ADA_1 then
+        elsif rising_edge(clk) and rst = '0' and adr = MM_H_ADA_1 then
                 h_step(31 downto 0) <= in_data;
         
         --MAIN FSM DRIVER
