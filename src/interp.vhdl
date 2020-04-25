@@ -469,15 +469,12 @@ begin
     procedure read_high_us is
     begin
         if u_s_high_state = "00" then
-            report to_str(u_high_adr);
             U_s_address <= u_high_adr;
             U_s_wr <= '0';
             U_s_rd <= '1';
             u_s_high_state <= "01";
             u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
         elsif u_s_high_state = "01" then
-            report to_str(u_high_adr);
-            report to_str(U_s_data_out);
             u_high_temp(MAX_LENGTH-1 downto 32) <= U_s_data_out;
             U_s_address <= u_high_adr;
             U_s_wr <= '0';
@@ -485,8 +482,6 @@ begin
             u_s_high_state <= "10";
             u_high_adr <= std_logic_vector(unsigned(u_high_adr) + 1);
         else
-            report to_str(u_high_adr);
-            report to_str(U_s_data_out);
             u_high_temp(31 downto 0) <= U_s_data_out;
             u_s_high_state <= "00";
             read_u_s_high <= '0';
@@ -713,19 +708,10 @@ begin
                     end if;
                 when "00100" =>
                     --check division completion
-                    --read lower U
                     if done_div_1 = '1' then
                         enable_div_1 <= '0';
                         t_const <= fpu_div_1_out;
-                        if out_low_from = '0' then
-                            read_u_0 <= '1';
-                            read_u0;
-                            interp_state <= "10010";
-                        else
-                            read_u_s_low <= '1';
-                            read_low_us;
-                            interp_state <= "01110";
-                        end if;
+                        interp_state <= "10100";
                     end if;
                 when "00101" =>
                     --read higher U
@@ -736,13 +722,8 @@ begin
                     --subtract two Us
                     fpu_sub_1_in_1 <= u_high_temp;
                     if out_low_from = '0' then
-                        report "sub u0";
-                        report to_str(u_0_temp);
                         fpu_sub_1_in_2 <= u_0_temp;
                     else
-                        report "sub ulow";
-                        report to_str(u_high_temp);
-                        report to_str(u_low_temp);
                         fpu_sub_1_in_2 <= u_low_temp;
                     end if;
                     enable_sub_1 <= '1';
@@ -751,8 +732,6 @@ begin
                     --check subtraction completion
                     --multiply resultant T with subtraction result
                     if done_sub_1 = '1' then
-                        report "sub done";
-                        report to_str(fpu_sub_1_out);
                         enable_sub_1 <= '0';
                         fpu_mul_1_in_1 <= fpu_sub_1_out;
                         fpu_mul_1_in_2 <= t_const;
@@ -763,7 +742,6 @@ begin
                     --check multiplication completion
                     --add multiplication result to U low
                     if done_mul_1 = '1' then
-                        report "multiplication done";
                         enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         if out_low_from = '0' then
@@ -796,7 +774,7 @@ begin
                         enable_add_1 <= '1';
                         interp_state <= "01011";
                     else
-                        interp_state <= "00100";
+                        interp_state <= "10100";
                     end if;
                 when "01011" =>
                     --check addition comletion
@@ -878,6 +856,17 @@ begin
                     range_finder_enable <= '1';
                     range_finder;
                     interp_state <= "00010";
+                when "10100" =>
+                    --read lower U
+                    if out_low_from = '0' then
+                        read_u_0 <= '1';
+                        read_u0;
+                        interp_state <= "10010";
+                    else
+                        read_u_s_low <= '1';
+                        read_low_us;
+                        interp_state <= "01110";
+                    end if;
                 when others =>
                     --NOP
                     null;
