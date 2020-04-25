@@ -74,6 +74,7 @@
 [ ] all vunit tests pass
 [ ] vunit tests are up-to-date with non_vunit of tests
 [ ] use fastest architectures in all files
+[ ] test phase2 scripts
 
 [ ] Zipped Folder with your TeamNumber as its name that contains
 

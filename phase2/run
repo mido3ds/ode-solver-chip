@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+run-daemon() {
+    if [[ `docker ps|grep ghdld_vlsi|wc -l` = 0 ]]; then
+        echo running container daemon...
+        docker run --rm -it -d -v "`pwd`":"`pwd`" -w "`pwd`" -u 1000:1000 --name ghdld_vlsi ghdl/ext sleep 1h >/dev/null
+        echo daemon is up
+    fi
+}
+
+main() {
+    run-daemon
+
+    mkdir -p out/waves
+    cd out
+
+    docker exec -w "$PWD" ghdld_vlsi bash -c "
+        find ../micro/src/ | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
+        find ../micro/test/non_vunit | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit
+
+        find ../macro/src/ | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit || echo
+        find ../macro/test/non_vunit | grep .vhd | xargs -l ghdl -i --ieee=synopsys -fexplicit
+
+        set -e
+
+        ghdl --gen-makefile --ieee=synopsys -fexplicit ${UNIT} > Makefile.${UNIT}
+        sed -i 's/\$(GHDL) -r /timeout 30s .\//' Makefile.${UNIT}
+        
+        make -f Makefile.${UNIT} all GHDLFLAGS='-g -Wbinding -Wreserved -Wlibrary -Wvital-generic -Wdelayed-checks -Wbody -Wspecs -Wunused --mb-comments --std=08 --ieee=synopsys -fexplicit'
+        make -f Makefile.${UNIT} run GHDLRUNFLAGS+=--vcd=waves/${UNIT}.vcd GHDLRUNFLAGS+=--stop-time=300ms GHDLRUNFLAGS+=--assert-level=failure # if in test mode, assert-level=error
+    "
+}
+
+
+if [[ "$#" -lt "1" ]]; then
+    echo "Usage: run unit-name"
+    exit 1
+fi
+
+UNIT=$1
+main
