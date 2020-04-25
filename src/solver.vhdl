@@ -637,6 +637,7 @@ begin
     -------------------------------------------------------------------------------------------------------
     --calculates AX
     -- X_i = A` * X_w[c]
+    --------------------------------------done and tested :D---------------------
     procedure proc_run_a_x (
         signal fsm_read_a, fsm_read_x, fsm_write_x : inout std_logic_vector(1 downto 0);
         signal N_N_counter : inout std_logic_vector(15 downto 0);
@@ -650,14 +651,13 @@ begin
                     N_N_counter <= N_N;
                     N_counter <= N_X_A_B_vec;
                     new_entry <= (others => '0');
-                    to_write <= (others => '0');
-
+                    
                     fsm_read_a <= "11";
                     fsm_read_X <= "11";
-                    X_intm_address <= (others => '1');
-
+                    X_intm_address <= (others => '0');
+                    a_coeff_address <= (others => '0');
                     x_ware_find_address
-                        (c_ware => c_ware_vec,
+                        (c_ware => c_ware,
                         x_address_out => adr,
                         x_ware_address => x_ware_address);
                     fsm_run_a_x <= "010";
@@ -722,7 +722,7 @@ begin
                             N_counter <= N_X_A_B_vec; --reset N
                             new_entry <= (others => '0');
                             x_ware_find_address
-                                (c_ware => c_ware_vec,
+                                (c_ware => c_ware,
                                 x_address_out => adr,
                                 x_ware_address => x_ware_address);
                             fsm_run_a_x <= "110";
