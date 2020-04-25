@@ -42,7 +42,13 @@ They are used in multiple units accross the project.
 
 # Solver
 
-Implemented in `src/solver.vhdl` and has some of its procedures defined in `src/solver_pkg.vhdl` . 
+Implemented in `src/solver.vhdl` and has some of its procedures defined in `src/solver_pkg.vhdl` .
+
+* `src/solver.vhdl` : holds solver main process, which includes fixed and variable step orchestration FSMs, main data loading and reset/error handling. Also, the file contains some matrix manipulation procedures that aid the solver functionalities.
+
+* `src/solver_pkg.vhdl` : holds packages containing sub-procedures of solver. Procedures are divided into: Memory IO procedures, Matrix Manipulation procedures and Utils for sending data on output bus and address calculation.
+
+* The directory `solver_subtest` holds files for individual components test and integration.
 
 All design details of solver are in subsection `0.14.2 Solver` in main document. 
 
@@ -55,6 +61,8 @@ All design details of solver are in subsection `0.14.2 Solver` in main document.
 # Interpolator
 
 Implemented in `src/interp.vhdl` . 
+
+* `src/interp.vhdl` : contains the whole implementation of the interpolator. The implementation is basically a main process that handles data loading, reset, errors and main orchestration FSM. The sub-functionalities are done through a set of procedures for: Memory IO, data outage on bus and range finding of t_s.
 
 All design details of solver are in subsection `0.14.2 Interpolator` in main document. 
 
