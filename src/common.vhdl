@@ -52,7 +52,15 @@ package common is
     constant MM_U0_1            : std_logic_vector(15 downto 0) := other_adr(MM_U0_0, 100);
 
     constant MM_T_0             : std_logic_vector(15 downto 0) := X"29D1";
-    constant MM_T_1             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 10);
+    constant MM_T_1             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 2);
+    constant MM_T_2             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 3);
+    constant MM_T_3             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 4);
+    constant MM_T_4             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 5);
+    constant MM_T_5             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 6);
+    constant MM_T_6             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 7);
+    constant MM_T_7             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 8);
+    constant MM_T_8             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 9);
+    constant MM_T_9             : std_logic_vector(15 downto 0) := other_adr(MM_T_0, 10);
 
     constant MM_U_S_0           : std_logic_vector(15 downto 0) := X"29DB";
     constant MM_U_S_1           : std_logic_vector(15 downto 0) := other_adr(MM_U_S_0, 500);

@@ -130,7 +130,143 @@ architecture rtl of solver_test is
         --);
 
     main_proc : process(clk, rst)
-    
+    procedure proc_run_x_i_c (
+        --both have the same length, this is the iterator
+        signal N_counter : inout std_logic_vector(5 downto 0);
+        --no need for that
+        --signal c_ware_vec : std_logic_vector (2 downto 0);
+        -- incremented address for x_intm
+        --signal reg_address: std_logic_vector (9 downto 0);
+        --to enable/disable read for both x_ware and x_intm
+        signal fsm_read_1, fsm_read_2, fsm_write_1 : inout std_logic_vector (1 downto 0);
+        --my dummies
+        signal dumm : inout std_logic_vector (15 downto 0)
+        
+
+        )is
+
+        begin
+            case(fsm_run_x_i_c) is
+                when "111" =>
+                    X_intm_address <= (others => '0');
+                    --decrement first m3l4 :D
+                    --N_counter = N - 1
+                    --if N = 5, loops when N_counter = 4,3,2,1,0 (loop then exit)
+                    N_counter <= to_vec(to_int(N_X_A_B_vec) -1, N_counter'length);
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => dumm,
+                        x_ware_address => x_ware_address);
+
+                    fsm_read_1 <= "11";
+                    fsm_read_2 <= "11";
+                    fsm_run_x_i_c <= "001";
+
+
+                when "001" =>
+                --depending on from_i_to_c 
+                -- from_i_to_c = 1 --> x_w = X_i + x_w --> read_x_i_normal, read_befire_write x_w
+                --             = 0 --> x_i = x_i + x_w --> read_x_w_normal, read_befire_write x_i
+                    if from_i_to_c = '0' then
+                        --No, from c to i, then i will be overwritten
+                        read_before_write_reg(
+                            data_out => x_i_temp,
+                            reg_data_out=>X_intm_data_out,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_read_2 -->place ones (11) and wait for (00)
+                            );
+
+                        read_reg_inc_adrs_once_64(
+                            data_out => x_temp,
+                            reg_data_out=>X_ware_data_out,
+                            reg_adrs => x_ware_address,
+                            read_enbl => X_ware_rd,
+                            write_enbl => X_ware_wr,
+                            fsm => fsm_read_1 -->place ones (11) and wait for (00)
+                            );
+                    else
+                        --yes, from i to c
+                        read_before_write_reg
+                            (
+                            data_out => x_temp,
+                            reg_data_out=>X_ware_data_out,
+                            reg_adrs => x_ware_address,
+                            read_enbl => X_ware_rd,
+                            write_enbl => X_ware_wr,
+                            fsm => fsm_read_1 -->place ones (11) and wait for (00)
+                            ); 
+
+                        read_reg_inc_adrs_once_64(
+                            data_out => x_i_temp,
+                            reg_data_out=>X_intm_data_out,
+                            reg_adrs => X_intm_address,
+                            read_enbl => X_intm_rd,
+                            write_enbl => X_intm_wr,
+                            fsm => fsm_read_2 -->place ones (11) and wait for (00)
+                            );
+                    end if;
+                    
+                    if fsm_read_1 = "00" and fsm_read_2 = "00" then
+                        enable_add_1 <= '1';
+                        thisIsAdder_1 <= '0';
+                        fpu_add_1_in_1 <= x_temp;
+                        fpu_add_1_in_2 <= x_i_temp;
+                        fsm_write_1 <= "11";
+
+                        fsm_run_x_i_c <= "010";
+                    end if;
+                    
+                when "010" =>
+                   if done_add_1 = '1' then
+                        --where to write at ?????
+
+                        if from_i_to_c = '0' then
+                            --no, from c to i, we will write at i
+                            write_after_read_reg(
+                                data_in => fpu_add_1_out,
+                                reg_data_in => X_intm_data_in,
+                                reg_adrs => X_intm_address,
+                                read_enbl => X_intm_rd,
+                                write_enbl => X_intm_wr,
+                                fsm => fsm_write_1
+                                );
+
+                        else
+                            write_after_read_reg(
+                                data_in => fpu_add_1_out,
+                                reg_data_in => X_ware_data_in,
+                                reg_adrs => x_ware_address,
+                                read_enbl => X_ware_rd,
+                                write_enbl => X_ware_wr,
+                                fsm => fsm_write_1
+                                );
+                        end if;
+
+                        if fsm_write_1 = "00" then
+                            enable_add_1 <= '0';
+                            if N_counter = "000000" then
+                                --end loop
+                                --This trick to make sure that adress of X_ware is updated
+                                --without updating c_ware
+                                X_intm_address <= (others => '0');
+                                fsm_run_x_i_c <= "000";
+                            else
+                                --LOOP AGAIN
+                                N_counter <= to_vec(to_int(N_counter) -1, N_counter'length);
+                                fsm_read_1 <= "11";
+                                fsm_read_2 <= "11";
+                                fsm_run_x_i_c <= "001";
+                            end if;
+                        end if;
+                    end if;
+             
+                when others =>
+                        null;
+            end case;
+        end procedure;
+
     
     begin
         if rst = '0' and rising_edge(clk) then

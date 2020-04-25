@@ -139,7 +139,7 @@ begin
             zero      => zero_div_1,
             posv      => posv_div_1
         );
-    fpu_add_1 : entity work.fpu_adder(sec_algo)
+    fpu_add_1 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -154,7 +154,7 @@ begin
             posv      => posv_add_1,
             add_sub   => this_is_add
         );
-    fpu_sub_1 : entity work.fpu_adder(sec_algo)
+    fpu_sub_1 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -169,7 +169,7 @@ begin
             posv      => posv_sub_1,
             add_sub   => this_is_sub
         );
-    fpu_sub_2 : entity work.fpu_adder(sec_algo)
+    fpu_sub_2 : entity work.fpu_adder(with_operators)
         port map(
             clk       => clk,
             rst       => rst,
@@ -604,32 +604,28 @@ begin
                 adr_temp := std_logic_vector(unsigned(adr) - unsigned(MM_U0_0));
                 U_0_address <= adr_temp(6 downto 0);     
             --read output times           
-            elsif adr >= MM_T_0 and adr <= MM_T_1 then
+            elsif adr >= MM_T_0 and adr <= MM_T_9 then
                 if adr = MM_T_0 then
-                    t_count <= 0;
-                end if;
-                t_count <= t_count + 1;
-                if t_count = 1 then
                     out_time_1(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 2 then
+                elsif adr = MM_T_1 then
                     out_time_1(31 downto 0) <= in_data;
-                elsif t_count = 3 then
+                elsif adr = MM_T_2 then
                     out_time_2(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 4 then
+                elsif adr = MM_T_3 then
                     out_time_2(31 downto 0) <= in_data;
-                elsif t_count = 5 then
+                elsif adr = MM_T_4 then
                     out_time_3(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 6 then
+                elsif adr = MM_T_5 then
                     out_time_3(31 downto 0) <= in_data;
-                elsif t_count = 7 then
+                elsif adr = MM_T_6 then
                     out_time_4(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 8 then
+                elsif adr = MM_T_7 then
                     out_time_4(31 downto 0) <= in_data;
-                elsif t_count = 9 then
+                elsif adr = MM_T_8 then
                     out_time_5(MAX_LENGTH-1 downto 32) <= in_data;
-                elsif t_count = 10 then
+                elsif adr = MM_T_9 then
                     out_time_5(31 downto 0) <= in_data;
-                end if;    
+                end if;
             --read U_s
             elsif adr >= MM_U_S_0 and adr <= MM_U_S_1 then
                 U_s_data_in <= in_data;
@@ -652,6 +648,8 @@ begin
                 when "00000" => 
                     --check input address
                     --read lower part of h_new
+                    in_data <= (others => 'Z');
+                    interp_done_op <= "00";
                     if adr = MM_H_NEW_0 then
                         M <= to_int(M_vec);
                         u_out_adr <= (others => '0');
@@ -661,12 +659,9 @@ begin
                 when "00001" =>
                     --check input address
                     --read higher part of h_new
-                    --start range finder process
                     if adr = MM_H_NEW_1 then
                         h_new(31 downto 0) <= in_data;
-                        range_finder_enable <= '1';
-                        range_finder;
-                        interp_state <= "00010";
+                        interp_state <= "10011";
                     end if;
                 when "00010" =>
                     --check range finder completion
@@ -696,6 +691,8 @@ begin
                     --check subtraction completion
                     --divide the resultant Ts
                     if done_sub_1 = '1' and done_sub_2 = '1' then
+                        enable_sub_1 <= '0';
+                        enable_sub_2 <= '0';
                         fpu_div_1_in_1 <= fpu_sub_2_out;
                         fpu_div_1_in_2 <= fpu_sub_1_out;
                         enable_div_1 <= '1';
@@ -705,6 +702,7 @@ begin
                     --check division completion
                     --read lower U
                     if done_div_1 = '1' then
+                        enable_div_1 <= '0';
                         t_const <= fpu_div_1_out;
                         if out_low_from = '0' then
                             read_u_0 <= '1';
@@ -735,6 +733,7 @@ begin
                     --check subtraction completion
                     --multiply resultant T with subtraction result
                     if done_sub_1 = '1' then
+                        enable_sub_1 <= '0';
                         fpu_mul_1_in_1 <= fpu_sub_1_out;
                         fpu_mul_1_in_2 <= t_const;
                         enable_mul_1 <= '1';
@@ -744,6 +743,7 @@ begin
                     --check multiplication completion
                     --add multiplication result to U low
                     if done_mul_1 = '1' then
+                        enable_mul_1 <= '0';
                         fpu_add_1_in_1 <= fpu_mul_1_out;
                         if out_low_from = '0' then
                             fpu_add_1_in_2 <= u_0_temp;
@@ -758,6 +758,7 @@ begin
                     --write current U out
                     --decrement M counter
                     if done_add_1 = '1' then
+                        enable_add_1 <= '0';
                         u_out_result <= fpu_add_1_out;
                         write_u_out <= '1';
                         write_uout;
@@ -780,6 +781,7 @@ begin
                     --check addition comletion
                     --generate corresponding output signal
                     if done_add_1 = '1' then
+                        enable_add_1 <= '0';
                         if fpu_add_1_out = t_high and t_high = out_time_5 then
                             interp_done_op <= "11";
                             interrupt <= '0';
@@ -850,6 +852,11 @@ begin
                     else
                         interp_state <= "00101";
                     end if;
+                when "10011" =>
+                    --start range finder process
+                    range_finder_enable <= '1';
+                    range_finder;
+                    interp_state <= "00010";
                 when others =>
                     --NOP
                     null;
