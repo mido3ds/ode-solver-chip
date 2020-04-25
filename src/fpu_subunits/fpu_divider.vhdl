@@ -89,7 +89,7 @@ architecture first_algo of fpu_divider is
 	signal state, state_next                                         : state_type;
 	signal z, z_next, quotient, a, b                                 : std_logic_vector(4 * size - 1 downto 0);
 	signal out64, out_neg, out_sig                                   : std_logic_vector(4 * size - 1 downto 0) := "0000000000000000000000000000000000000000000000000000000000000000";
-	signal i, i_next                                                 : integer;
+	signal  i, i_next                                                 : integer;
 	signal zero_flag, posv_flag, ovfl_flag, done_flag, div_by_zero 	 : std_logic := '0';
 	-- Signals to keep flags until enable becomes zero
 	signal	done_sig, div_by_zero_sig, ovfl_sig, posv_sig, zero_sig  : std_logic := '0';											
@@ -129,7 +129,7 @@ begin
 	end process;
 
 	--FSM next state calculation
-	process (state, enbl, i_next, out64, done_flag, posv_flag, ovfl_flag, div_by_zero)
+	process (state, enbl, i_next, out64, done_flag, posv_flag, zero_flag, ovfl_flag, div_by_zero)
 	begin
 		case state is
 			when idle =>
@@ -143,7 +143,7 @@ begin
 					done_sig <= '0';
 					posv_sig <= '0';
 					zero_sig <= '0';
-					ovfl_flag <= '0';
+					ovfl_sig <= '0';
 					div_by_zero_sig <= '0';
 				end if;
 
@@ -157,7 +157,7 @@ begin
 					done_sig <= done_flag;
 					posv_sig <= posv_flag;
 					zero_sig <= zero_flag;
-					ovfl_flag <= ovfl_sig;
+					ovfl_sig <= ovfl_flag;
 					div_by_zero_sig <= div_by_zero;
 				else
 					state_next <= shift;
@@ -222,21 +222,21 @@ begin
 	--output and control signals
 	out64 	<= 	out_neg  when ((i_next = 23 )and (in_a(size - 1) = '1' xor in_b(size - 1) = '1')) else 
 				quotient when (i_next = 23) else 
-				out_sig  when (enbl = '1') else
+				out_sig  when (i_next /= 23 and enbl = '1') else
 				"0000000000000000000000000000000000000000000000000000000000000000";
 	out_c <= out64;
 	
 	div_by_zero <= '1' when ((i_next = 23) and in_b = "0000000000000000000000000000000000000000000000000000000000000000" ) else 
-				   div_by_zero_sig  when (enbl = '1') else '0';
+				   div_by_zero_sig  when (i_next /= 23 and enbl = '1') else '0';
 	ovfl_flag 	<= '1' when ((i_next = 23) and (quotient(22) = '1' or quotient(21) = '1' or quotient(20) = '1' or quotient(19) = '1'
 							or quotient(18) = '1' or quotient(17) = '1' or quotient(16) = '1')) else 
-				   ovfl_sig  when (enbl = '1') else '0';
+				   ovfl_sig  when (i_next /= 23 and enbl = '1') else '0';
 	zero_flag 	<= '1' when (i_next = 23 and unsigned(out64) = 0) else 
-				   zero_sig  when (enbl = '1') else '0';
+				   zero_sig  when (i_next /= 23 and enbl = '1') else '0';
 	posv_flag  	<= '1' when (i_next = 23 and out64(size - 1) = '0' and unsigned(out64) /= 0) else
-				   posv_sig  when (enbl = '1') else '0';
+				   posv_sig  when (i_next /= 23 and enbl = '1') else '0';
 	done_flag  	<= '1' when (i_next = 23) else
-				   done_sig  when (enbl = '1') else	'0';
+				   done_sig  when (i_next /= 23 and enbl = '1') else	'0';
 				   
 	zero		<= zero_flag;
 	posv		<= posv_flag;
