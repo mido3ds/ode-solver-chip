@@ -98,4 +98,4 @@ def solve(us, ts, a, b, x, mode, h, err) -> np.array:
 
 
 if __name__ == "__main__":
-    print(solve(*read_inputs()).tolist())
+    print(solve(*read_inputs()))
