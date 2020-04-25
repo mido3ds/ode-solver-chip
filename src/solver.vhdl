@@ -1551,6 +1551,8 @@ procedure proc_run_x_b_u_fixed (
                         if fsm_run_a_x = "000" and fsm_h_sent_U_recv = "000" then
                             --then X_i = A * X_w and U_main is prepared
                             fsm_run_x_b_u <= (others => '1');
+                            fsm_run_x_b_u_2 <= (others => '0');
+                            
                             fsm_main_eq <= "101";
                         end if;
                     else
@@ -1574,6 +1576,8 @@ procedure proc_run_x_b_u_fixed (
                                 x_address_out => adr,
                                 x_ware_address => x_ware_address);
                             fsm_run_x_b_u_2 <= (others => '1');
+                            fsm_run_x_b_u <= (others => '0');
+                            
                             fsm_main_eq <= "101";
                         end if;
                     end if;
