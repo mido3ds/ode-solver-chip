@@ -36,9 +36,9 @@ They are used in multiple units accross the project.
 
 ## Synthesis Statistics
 
-| Area | Power | Time |
-|------|-------|------|
-| TODO | TODO  | TODO |
+| Area                          | Power   | Time |
+|-------------------------------|---------|------|
+| cell=271 Area per cell =12357 | 1013.76 | 242  |
 
 # Solver
 
