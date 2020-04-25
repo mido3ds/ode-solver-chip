@@ -1236,7 +1236,6 @@ begin
                             fpu_add_1_in_1 <= err_sum;
                             fpu_add_1_in_2 <= L_tol;
                             --init here, won't be affective until we reach the procedure call
-                            fsm_run_err_h_L <= (others => '1');
                             fsm_run_sum_err <= "0110";
                         else
                             --keep looping
@@ -1256,32 +1255,36 @@ begin
                                 --positive and non-zero means err_sum > L
                                 error_tolerance_is_good <= '0';
                                 enable_add_1 <= '0';
-                                proc_run_err_h_L(
-                                    mode => mode_sig,
-                                    h_adapt => h_adapt,
-                                    L_nine => L_nine,
-                                    fpu_mul_1_in_1 => fpu_mul_1_in_1,
-                                    fpu_mul_1_in_2 => fpu_mul_1_in_2,
-                                    fpu_mul_1_out => fpu_mul_1_out,
-                                    enable_mul_1 => enable_mul_1,
-                                    done_mul_1 => done_mul_1,
-                                    fpu_div_1_in_1 => fpu_div_1_in_1,
-                                    fpu_div_1_in_2 => fpu_div_1_in_2,
-                                    fpu_div_1_out => fpu_div_1_out,
-                                    enable_div_1 => enable_div_1,
-                                    done_div_1 => done_div_1,
-                                    err_sum => err_sum,
-                                    --for testing
-                                    ev => ev,
-                                    fsm => fsm_run_err_h_L
-                                    );
-                                if fsm_run_err_h_L =  "00" then
-                                    fsm_run_sum_err <= "0000";
-                                end if;
-                                
+                                fsm_run_h_L <= "11";
+                                fsm_run_sum_err <= "1000";
+
                             end if;
                         end if;
 
+                    when "1000" =>
+                        proc_run_err_h_L(
+                            mode => mode_sig,
+                            h_adapt => h_adapt,
+                            L_nine => L_nine,
+                            fpu_mul_1_in_1 => fpu_mul_1_in_1,
+                            fpu_mul_1_in_2 => fpu_mul_1_in_2,
+                            fpu_mul_1_out => fpu_mul_1_out,
+                            enable_mul_1 => enable_mul_1,
+                            done_mul_1 => done_mul_1,
+                            fpu_div_1_in_1 => fpu_div_1_in_1,
+                            fpu_div_1_in_2 => fpu_div_1_in_2,
+                            fpu_div_1_out => fpu_div_1_out,
+                            enable_div_1 => enable_div_1,
+                            done_div_1 => done_div_1,
+                            err_sum => err_sum,
+                            --for testing
+                            ev => ev,
+                            fsm => fsm_run_h_L
+                            );
+                        if fsm_run_h_L =  "00" then
+                            fsm_run_sum_err <= "0000";
+                        end if;
+                        
                     when others => 
                         null;
             end case ;
