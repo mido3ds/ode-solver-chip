@@ -100,7 +100,6 @@ package solver_pkg is
 		signal done_div_1 : in std_logic ;
 		
 		signal err_sum : inout  std_logic_vector(63 downto 0);
-		signal ev : inout  std_logic_vector(63 downto 0);
 		signal fsm : inout std_logic_vector(1 downto 0)
 		);
 
@@ -464,7 +463,6 @@ package body solver_pkg is
 		signal done_div_1 : in std_logic ;
 		
 		signal err_sum : inout  std_logic_vector(63 downto 0);
-		signal ev : inout  std_logic_vector(63 downto 0);
 		signal fsm : inout std_logic_vector(1 downto 0)
 		)is
 
@@ -477,7 +475,6 @@ package body solver_pkg is
                     fpu_mul_1_in_1 <= h_adapt;
                     fpu_mul_1_in_2 <= h_adapt;
                     
-                    ev <= to_vec ( to_int(ev) + 1 ,ev'length);
                     
                     enable_div_1 <= '1';
                     fpu_div_1_in_1 <= L_nine;
