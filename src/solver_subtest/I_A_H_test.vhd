@@ -58,7 +58,7 @@ architecture rtl of solver_test is
     --signal N_M_vec : std_logic_vector(11 downto 0) := (others => '0');
     
     --signal N_counter_2: std_logic_vector(5 downto 0) := (others => '0');
-    signal mode_sig : std_logic_vector(1 downto 0) := "10";
+    signal mode_sig : std_logic_vector(1 downto 0) := "00";
     --signal wares : std_logic_vector(2 downto 0) := "001";
     signal procedure_dumm : std_logic_vector(11 downto 0) := (others => '0');
     
@@ -151,7 +151,7 @@ architecture rtl of solver_test is
         --    zero      => zero_div_1,
         --    posv      => posv_div_1
         --);
-
+    
     main_proc : process(clk, rst)
     procedure proc_run_h_a (
         --dummies...
