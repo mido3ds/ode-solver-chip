@@ -60,7 +60,6 @@ begin
             zero <= '1';
             posv <= '0'; -- reset signal
             err <= '0';
-            out_c <= (others => '0');
             done <='0';
         end if;
     end process;
@@ -133,7 +132,6 @@ begin
                 zero <= '1';
                 posv <= '0'; -- reset signal
                 err <= '0';
-                out_c <= (others => '0');
                 done <='0';
         end if;
     end process;
@@ -213,7 +211,6 @@ begin
             zero <= '1';
             posv <= '0'; -- reset signal
             err <= '0';
-            out_c <= (others => '0');
             done <='0';
         end if;
     end process;
