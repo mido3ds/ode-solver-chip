@@ -98,6 +98,12 @@ This report documents some of the implementation details in the macro modules, p
     \section{Solver}
     Implemented in `src/solver.vhdl` and has some of its procedures defined in `src/solver\_pkg.vhdl` . 
 
+    \begin{itemize}
+        \item `src/solver.vhdl` : holds solver main process, which includes fixed and variable step orchestration FSMs, main data loading and reset/error handling. Also, the file contains some matrix manipulation procedures that aid the solver functionalities.
+        \item `src/solver\_pkg.vhdl` : holds packages containing sub-procedures of solver. Procedures are divided into: Memory IO procedures, Matrix Manipulation procedures and Utils for sending data on output bus and address calculation.
+        \item The directory `solver\_subtest` holds files for individual components test and integration.
+    \end{itemize}
+
     All design details of solver are in subsection `0.14.2` in main document. 
     \subsection{Synthesis Statistics}
     \begin{tabular}{||c|c|c||}
@@ -108,6 +114,8 @@ This report documents some of the implementation details in the macro modules, p
 
     \section{Interpolator}
     Implemented in `src/interp.vhdl` . 
+
+    `src/interp.vhdl` : contains the whole implementation of the interpolator. The implementation is basically a main process that handles data loading, reset, errors and main orchestration FSM. The sub-functionalities are done through a set of procedures for: Memory IO, data outage on bus and range finding of t\_s.
 
     All design details of solver are in subsection `0.14.2` in main document. 
     \subsection{Synthesis Statistics}
