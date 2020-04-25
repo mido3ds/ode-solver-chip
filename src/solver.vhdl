@@ -1965,7 +1965,7 @@ procedure proc_run_x_b_u_fixed (
                 a_coeff_data_in <= in_data;
                 a_coeff_wr <= '1';
                 -- shift adr from [MM_A_0:MM_A_1] to [0:MM_A_1-MM_A_0]
-                a_coeff_address <= std_logic_vector(unsigned(adr) - unsigned(MM_A_0));                
+                a_coeff_address <= std_logic_vector(resize(unsigned(adr) - unsigned(MM_A_0), 13));                
             elsif adr >= MM_B_0 and adr <= MM_B_1 then
                 --b coefficient
                 b_coeff_data_in <= in_data;

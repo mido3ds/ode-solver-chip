@@ -27,8 +27,9 @@ architecture tb of solver_tb is
 
     signal timeout       : std_Logic;
 begin
-    generateClock : process (clk)
+    test_runner_watchdog(runner, 10 ms);
 
+    generateClock : process (clk)
     begin
         clk <= not clk after CLK_PERD/2;
     end process;
