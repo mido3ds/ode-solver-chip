@@ -21,8 +21,8 @@ problems: TODO
 # Evram Youssef, SEC:1, BN:9
 
 tasks: solver (variable step)
-time: TODO
-problems: TODO
+time: 8 days
+problems: Solver became a huge file with a lot of conflicting signals.
 
 # Reham Gamal , SEC:1, BN:21
 
