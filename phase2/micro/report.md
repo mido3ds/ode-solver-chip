@@ -21,10 +21,10 @@ They are:
 
 ### Synthesis Statistics
 
-| Architecture | Area | Power | Time |
-|--------------|------|-------|------|
-| first_algo   | TODO | TODO  | TODO |
-| sec_algo     | TODO | TODO  | TODO |
+| Architecture |             Area            |   Power  | Time |
+|--------------|-----------------------------|----------|------|
+| first_algo   | cell=255 Area per cell =322 |  1013.76 | 1201 |
+| sec_algo     | cell=321 Area per cell =376 |  830.51  | 1005 |
 
 ## FPU Multiplier
 
