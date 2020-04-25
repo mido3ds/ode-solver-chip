@@ -165,7 +165,7 @@ architecture rtl of solver is
     signal fsm_run_L_nine : std_logic_vector(1 downto 0) := (others => '0');
     signal fsm_run_mul_n_m : std_logic_vector(1 downto 0) := "00";
     signal fsm_run_err_h_L : std_logic_vector(1 downto 0) := "00";
-    signal fsm_run_h_2 : std_logic_vector(1 downto 0) := "00";
+    signal fsm_run_h_2 : std_logic := '0';
     signal fsm_run_sum_err : std_logic_vector(3 downto 0) := "0000";
     signal fsm_h_sent_U_recv : std_logic_vector(2 downto 0) := "000";     
     signal fsm_send_h_init :  std_logic_vector(1 downto 0) := "00";
@@ -173,7 +173,7 @@ architecture rtl of solver is
     signal fsm_run_x_b_u: std_logic_vector(3 downto 0) := (others => '0');
     signal fsm_run_a_x_2: std_logic_vector(2 downto 0) := (others => '0');
     signal fsm_run_x_b_u_2: std_logic_vector(3 downto 0) := (others => '0');
-    signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(2 downto 0) := (others => '0');
+    signal fsm_place_x_i_at_x_c_or_vv: std_logic_vector(1 downto 0) := (others => '0');
     signal fixed_point_state: std_logic_vector(3 downto 0) := (others => '0'); --fixed point FSM states
     signal fsm_terminate: std_logic_vector(1 downto 0) := (others => '0');
     signal fsm_outing: std_logic_vector(3 downto 0) := (others => '0');
@@ -362,77 +362,7 @@ begin
     --YA SHAWKY, replaced interp_done_sig with interp_done_op...
     --variable interp_done_sig : std_logic_vector(1 downto 0) := (others => '0');
 
-    --Variable Step Size
-    -- LOOP:
-    -- 0- START:
-    --      h_adapt = h_main
-    
-    -- 1- calc two steps equations:
-            --h_sent = 0 (n), U_recv = U0 (n)
-            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
-            --h_sent = h_adapt/2, U_recv is interpolated
-            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
-    -- 2- calc one step equation: (fsm_main_eq)
-    --        h_sent = h_adapt, U_recv is interpolated,
-    --          not every time actually.. 
-    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
-    -- 3- calc error
-    -- 4.1- error is bad (err > L_tol):
-    --      h_adapt = h_adapt * h_adapt * L_nine / err
-    --      jump back to 1
-    -- 4.2- error is good (err <= L_tol):
-    --      run fsm main eq
-    -- 5- check for termination
 
-    --NOTES:
-    -- You can use h_div as h_doubler...
-    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
-
-    --Useful tools:
-    --div_or_zero
-    --div_or_adapt
-    --from_i_to_c
-
-    --STATES:
-    -- 00000: nop or done
-    -- 11111: start at a new point
-    -- 00001: first equation
-    -- 00010: inc c_Ware
-    -- 00011: second equation
-    -- 00100: dec c_ware
-    -- 00101: when decremented go to 00110
-    -- 00110: third equation
-    -- 00111: run error calculator
-    -- 01000: if error is bad, repeat: 00001,
-    --                          with h_adapt updated
-    --                          with c_ware decremented (the same)
-    --                          with x_w[c] holds x0 (not updated)
-    --          if it is good, go to: 10001
-    --------break-----------------------------
-    -- 01001: inc c_ware
-    -- 01010: place x_w[c] at x_i
-    -- 01011: dec c_ware
-    -- 01100: place x_w[c] at x_i
-    -- 01101: h_div = h_adapt and start main equation at: 01110
-    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
-    -- 01111: when it is finished go to 10000
-    -- 10000: navigates you to 10011
-    ---------break-------------------------------
-    -- REMEMBER we are here cuz error is good!
-    -- 10001: send h_adapt to interpolator at the unique address for it to store it
-    -- 10010: when it is sent, proceed with the main equation at 01001
-    --------break-------------------------------
-    -- REMEMBER we are here cuz 10000 navigates us
-    -- 10011: place what's inside x_i at x_w
-    -- 10100: when done, if x_w[c] is an output point: go to: 10110
-    --                                                  if not: 10101
-    -- 10101: h_div = h_div + h_adapt then go to 11000
-    -- 11000: go to 01110 to start main equation
-
-    -- 10110: inc c_Ware
-    -- 10111: go to 11001 to check for termination..
-
-    -- 11001: terminate (00000) or move to next point (00001)
 
     --proc_run_x_h is called only from var_step_proc
     --and we need to define:
@@ -453,15 +383,7 @@ begin
     --this proc is only called within variable step size
     --so we know for sure that it is a variable step size operation
 
-    --proc_h_sent_U_recv
-    --A copy of the main equation, used to calculate:
-    --Steps:
-    --1- send h_high at 2C33
-    --2- send h_low at 2C34
-    --3- wait for done signal...
-    --   when recevied, store U at U_main
-    --4- end :D
-    --NOTE: this proc sends zero or h_div, depending on a signal called div_or_zero
+    
 
     process(clk, rst, in_data, adr, in_state, fixed_or_var, fixed_point_state, fsm_var_step_main, err_mul_1, err_add_1, err_add_2, err_div_1) 
     
@@ -1478,7 +1400,7 @@ begin
                         end if;
                     end if;
                 when "101" =>
-                    if fsm_run_x_b_u = "0000" and fsm_run_x_b_u_2 = "0000" and fsm_run_h_2 = "00" then
+                    if fsm_run_x_b_u = "0000" and fsm_run_x_b_u_2 = "0000" and fsm_run_h_2 = '0' then
                         x_ware_find_address
                             (c_ware => c_ware,
                             --adr: could be any dummy. I don't need it...
@@ -1615,7 +1537,7 @@ begin
             end case;
         end procedure;
 
-    
+-----------------------------------------------------------------done not tested
     --sends h and receives U
     --NOTE: write_high_low is a global signal, make sure it equals 0 
     procedure proc_h_sent_U_recv (
@@ -1625,7 +1547,7 @@ begin
             case(fsm_h_sent_U_recv) is
                 when "111" =>
                     -- we may use h_div, so we need to wait until its counted...
-                    if fsm_run_h_2 = "00" then
+                    if fsm_run_h_2 = '0' then
                         if write_high_low = '0' then
                             adr <= X"2C33";
                             if fixed_or_var = '0' then
@@ -1877,7 +1799,7 @@ begin
             fsm_run_L_nine <= (others => '0');
             fsm_run_mul_n_m <= "00";
             fsm_run_err_h_L <= "00";
-            fsm_run_h_2 <= "00";
+            fsm_run_h_2 <= '0';
             fsm_run_sum_err <= "0000";
             fsm_h_sent_U_recv <= "000";     
             fsm_send_h_init <= "00";
@@ -2087,6 +2009,83 @@ begin
                     null;
             end case;
 
+
+
+
+
+        --Variable Step Size
+    -- LOOP:
+    -- 0- START:
+    --      h_adapt = h_main
+    
+    -- 1- calc two steps equations:
+            --h_sent = 0 (n), U_recv = U0 (n)
+            --1.1- Xi       = X_w[c] +  h_div (X_w[c],  U_main)
+            --h_sent = h_adapt/2, U_recv is interpolated
+            --1.2- X_w[c+1] = Xi     +  h_div (Xi,      U_main) --irrecgular equation fsm :D
+    -- 2- calc one step equation: (fsm_main_eq)
+    --        h_sent = h_adapt, U_recv is interpolated,
+    --          not every time actually.. 
+    --             X_i      = X_w[c] +  h_adapt(X_w[c], U_main)
+    -- 3- calc error
+    -- 4.1- error is bad (err > L_tol):
+    --      h_adapt = h_adapt * h_adapt * L_nine / err
+    --      jump back to 1
+    -- 4.2- error is good (err <= L_tol):
+    --      run fsm main eq
+    -- 5- check for termination
+
+    --NOTES:
+    -- You can use h_div as h_doubler...
+    -- you have both L and L_nine = (0.9 * L) so as not to compute it every time
+
+    --Useful tools:
+    --div_or_zero
+    --div_or_adapt
+    --from_i_to_c
+
+    --STATES:
+    -- 00000: nop or done
+    -- 11111: start at a new point
+    -- 00001: first equation
+    -- 00010: inc c_Ware
+    -- 00011: second equation
+    -- 00100: dec c_ware
+    -- 00101: when decremented go to 00110
+    -- 00110: third equation
+    -- 00111: run error calculator
+    -- 01000: if error is bad, repeat: 00001,
+    --                          with h_adapt updated
+    --                          with c_ware decremented (the same)
+    --                          with x_w[c] holds x0 (not updated)
+    --          if it is good, go to: 10001
+    --------break-----------------------------
+    -- 01001: inc c_ware
+    -- 01010: place x_w[c] at x_i
+    -- 01011: dec c_ware
+    -- 01100: place x_w[c] at x_i
+    -- 01101: h_div = h_adapt and start main equation at: 01110
+    -- 01110: start: x_i = x_w[c] + h(X_w[c], U_h)
+    -- 01111: when it is finished go to 10000
+    -- 10000: navigates you to 10011
+    ---------break-------------------------------
+    -- REMEMBER we are here cuz error is good!
+    -- 10001: send h_adapt to interpolator at the unique address for it to store it
+    -- 10010: when it is sent, proceed with the main equation at 01001
+    --------break-------------------------------
+    -- REMEMBER we are here cuz 10000 navigates us
+    -- 10011: place what's inside x_i at x_w
+    -- 10100: when done, if x_w[c] is an output point: go to: 10110
+    --                                                  if not: 10101
+    -- 10101: h_div = h_div + h_adapt then go to 11000
+    -- 11000: go to 01110 to start main equation
+
+    -- 10110: inc c_Ware
+    -- 10111: go to 11001 to check for termination..
+
+    -- 11001: terminate (00000) or move to next point (00001)
+    
+
         --VARIABLE STEP FSM
         elsif rising_edge(clk) and rst = '0' and in_state = STATE_PROC and fixed_or_var = '1' then
             case( fsm_var_step_main ) is
@@ -2100,25 +2099,45 @@ begin
                     div_or_zero <= '1'; --h_sent: zerp
                     div_or_adapt <= '0'; --h_mul: h_div
                     from_i_to_c <= '0'; --no, from c to i
-                    fsm_run_h_2 <= (others =>'1');
+                    fsm_run_h_2 <= '1';
                     fsm_main_eq <= (others =>'1');
-                    fsm_var_step_main <= "00010";
                 when "00010" =>
-                    if fsm_main_eq = "000" then
-                        --NOW: calculate the irregular equation
-                        --only when you're finished, increment c_ware
-                        address_inc_1_in <= (others => '0');
-                        address_inc_1_in(2 downto 0) <= c_ware;
-                        address_inc_1_enbl <= '1';
+                    div_h_2 (
+                        mode => mode_sig,
+                        h_adapt => h_adapt,
+                        h_div => h_div,
+                        fpu_div_1_in_1 => fpu_div_1_in_1,
+                        fpu_div_1_in_2 => fpu_div_1_in_2,
+                        fpu_div_1_out => fpu_div_1_out,
+                        enable_div_1 => enable_div_1,
+                        done_div_1 => done_div_1,
+                        fsm => fsm_run_h_2
+                        );
+                    if fsm_run_h_2 = '0' and fsm_main_eq = "000" then
+                        c_ware <= to_vec (to_int(c_ware) + 1, c_ware'length);
                         fsm_var_step_main <= "00011";
                     end if;
+                --when "00010" =>
+                --    if fsm_main_eq = "000" then
+                --        --NOW: calculate the irregular equation
+                --        --only when you're finished, increment c_ware
+                --        address_inc_1_in <= (others => '0');
+                --        address_inc_1_in(2 downto 0) <= c_ware;
+                --        address_inc_1_enbl <= '1';
+                --        fsm_var_step_main <= "00011";
+                --    end if;
                 when "00011" =>
                     --we know for sure that address_inc_1 is already incremented
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+
                     --Now X_Ware_address is updated...
                     --let's run the irregular equation
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     div_or_zero <= '0'; --h_sent: div
                     div_or_adapt <= '0'; --h_mul: h_div
                     from_i_to_c <= '1'; --yes, from i to c
@@ -2126,15 +2145,21 @@ begin
                     fsm_var_step_main <= "00100";
                 when "00100" =>
                     if fsm_main_eq = "000" then
-                        --Decrement C_ware first
-                        address_dec_1_enbl <= '1';
-                        address_dec_1_in <= (others => '0');
-                        address_dec_1_in(2 downto 0) <= c_ware;
+                        ----Decrement C_ware first
+                        --address_dec_1_enbl <= '1';
+                        --address_dec_1_in <= (others => '0');
+                        --address_dec_1_in(2 downto 0) <= c_ware;
+                        c_ware <= to_vec (to_int(c_ware) - 1, c_ware'length);
+
                         fsm_var_step_main <= "00101";
                     end if;
                 when "00101" =>
-                    c_ware <= address_dec_1_out;
-                    address_dec_1_enbl <= '0';
+                    --c_ware <= address_dec_1_out;
+                    --address_dec_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     fsm_var_step_main <= "00110"; 
                 when "00110" =>
                     div_or_zero <= '1'; --h_sent: zero
@@ -2166,37 +2191,58 @@ begin
                     --Place what's inside X_w[c+] at X_i
                     --then place what's inside X_i at X_w[c]
                     --but first increment c_ware
-                    address_inc_1_in <= (others => '0');
-                    address_inc_1_in(2 downto 0) <= c_ware;
-                    address_inc_1_enbl <= '1';
+                    --address_inc_1_in <= (others => '0');
+                    --address_inc_1_in(2 downto 0) <= c_ware;
+                    --address_inc_1_enbl <= '1';
+                    c_ware <=  to_vec (to_int(c_ware) + 1, c_ware'length);
                     fsm_var_step_main <= "01010";
                 when "01010" =>
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     from_i_to_c <= '0'; --no, from c to i
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "01011";
                 when "01011" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         --decrement c_ware
-                        address_dec_1_enbl <= '1';
-                        address_dec_1_in <= (others => '0');
-                        address_dec_1_in(2 downto 0) <= c_ware;
+                        --address_dec_1_enbl <= '1';
+                        --address_dec_1_in <= (others => '0');
+                        --address_dec_1_in(2 downto 0) <= c_ware;
+                        c_ware <=  to_vec (to_int(c_ware) - 1, c_ware'length);
                         fsm_var_step_main <= "01100";
                     end if;
                 when "01100" =>
-                    c_ware <= address_dec_1_out;
-                    address_dec_1_enbl <= '0';
+                    --c_ware <= address_dec_1_out;
+                    --address_dec_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     from_i_to_c <= '1'; --yes, from i to c
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "01101";
                 when "01101" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         --Now we are ready to proceed with our main equation
                         h_div <= h_adapt;
                         fsm_var_step_main <= "01110";
                     end if;
+
                 when "01110" =>
                     --from now on, we'll treat h_div as h_doubler
                     --  and h_adapt as h_main
@@ -2210,25 +2256,32 @@ begin
                 when "01111" =>
                     if fsm_main_eq = "000" then
                         --listen to outpur or not
-                        fsm_var_step_main <= "10000";
+                        fsm_var_step_main <= "10011";
                     end if;
-                when "10000" =>
-                    --Replace X_w[c+] -> X_w[c]
-                    fsm_var_step_main <= "10011";
+                --when "10000" =>
+                --    --Replace X_w[c+] -> X_w[c]
+                --    fsm_var_step_main <= "10011";
                 when "10001" =>
                     fsm_send_h_init <= "11";
+
                     fsm_var_step_main <= "10010";
                 when "10010" =>
+                    proc_send_h_init ;
                     if fsm_send_h_init = "00" then
                         fsm_var_step_main <= "01001"; 
                     end if;
                 when "10011" =>
                     --just place X_i at X_c
                     from_i_to_c <= '1'; --yes, place X-i at X-w[c]
-                    fsm_place_x_i_at_x_c_or_vv <= "111";
+                    fsm_place_x_i_at_x_c_or_vv <= "11";
                     fsm_var_step_main <= "10100"; 
                 when "10100" =>
-                    if fsm_place_x_i_at_x_c_or_vv = "000" then
+                    proc_place_x_i_at_x_c_or_vv (
+                        N_counter => dumm1,
+                        fsm_read_1 => dumm2,
+                        fsm_write_1 => dumm3
+                        );
+                    if fsm_place_x_i_at_x_c_or_vv = "00" then
                         if interp_done_op = "01" then
                             --it is not an output point
                             --start all over again
@@ -2247,14 +2300,16 @@ begin
                     thisIsAdder_1 <= '0';
                     fsm_var_step_main <= "11000";
                 when "10110" =>
-                    address_inc_1_in <= (others => '0');
-                    address_inc_1_in(2 downto 0) <= c_ware;
-                    address_inc_1_enbl <= '1';
+                    c_ware <=  to_vec (to_int(c_ware) + 1, c_ware'length);
                     fsm_var_step_main <= "10111";
                 when "10111" =>
-                    c_ware <= address_inc_1_out;
-                    listen_to_me <= not listen_to_me; --just to make sure :D
-                    address_inc_1_enbl <= '0';
+                    --c_ware <= address_inc_1_out;
+                    --listen_to_me <= not listen_to_me; --just to make sure :D
+                    --address_inc_1_enbl <= '0';
+                    x_ware_find_address
+                        (c_ware => c_ware_vec,
+                        x_address_out => adr,
+                        x_ware_address => x_ware_address);
                     --we incremented c_ware...
                     --check for termination..
                     fsm_var_step_main <= "11001";
