@@ -1754,8 +1754,7 @@ begin
 -----------------------------------------------------------------MAIN FSM-----------------------------------------------------------------------------------
     --Fixed Step Size
     --Applied Function (X[n+1] = X[n](I+hA) + (hB)U[n])
-    --Let A = 1+hA and B = hB (computed once)
-    --Divided into multiple processes
+    --Let A = I+hA and B = hB (computed once)
 
     --main process implementation
     begin
@@ -1898,96 +1897,81 @@ begin
             case fixed_point_state is
                 when "0000" => 
                     --wait for loop a and loop b 
-                    --send lower half of new h to interpolater
+                    --initialize h send and U receive
                     if fsm_run_h_b = "000" and fsm_run_h_a = "000" then
-                        adr <= X"2C34";
-                        in_data <= h_doubler(31 downto 0);
+                        fsm_h_sent_U_recv <= "111";
                         fixed_point_state <= "0001";
                     end if;
                 when "0001" =>
-                    --send higher half of new h to interpolater
-                    --run AX calculation
-                    adr <= X"2C33";
-                    in_data <= h_doubler(63 downto 32);
-                    fsm_run_a_x <= "111";
-                    fixed_point_state <= "0010";
+                    --call proc_h_sent_U_recv until U is received from interpolator
+                    if fsm_h_sent_U_recv = "000" then
+                        fixed_point_state <= "0010";
+                    else
+                        proc_h_sent_U_recv;
+                    end if;
                 when "0010" =>
-                    --check AX and interpolator done signal
-                    --read first half of U_new
-                    --navigate to the suitable next state
+                    --initialize AX calculation
+                    fsm_run_a_x <= "111";
+                    fixed_point_state <= "0011";
+                when "0011" =>
+                    --call AX calculation until termination
+                    --initialize X+BU calculation
                     if fsm_run_a_x = "000" then
-                        --ERROR HERE YA SHAWKY
-                        --if interp_done_op = "01" or interp_done_op = "10" or interp_done_op = "11" then
-                        if interp_done_op = "01" or interp_done_op = "10" then
-                            interp_done_sig <= interp_done_op;
-                            result_u_main_temp(31 downto 0) <= in_data;
-                            fixed_point_state <= "0011";
-                        end if;
+                        fsm_run_x_b_u <= "1111";
+                        fixed_point_state <= "0011";
+                    else
+                        proc_run_a_x;
                     end if;
                 when "0011" =>
-                    --read higher part of U_new
-                    --enable U_new write
-                    result_u_main_temp(63 downto 32) <= in_data;
-                    write_u_main <= '1';
-                    fixed_point_state <= "0100";
-                when "0100" =>
-                    --check completion of U_new write
-                    --run X+BU calculation
-                    --navigate to the suitable state
-                    if write_u_main = '0' then
-                        fsm_run_x_b_u <= "1111";
-                        if interp_done_sig = "01" then
-                            fixed_point_state <= "0101";
+                    --call X+BU calculation until termination
+                        if fsm_run_x_b_u = "000" then
+                            if interp_done_op = "01" then
+                                fixed_point_state <= "0100";
+                            else
+                                fixed_point_state <= "0110";
+                            end if;
                         else
-                            fixed_point_state <= "0111";
+                            proc_run_x_b_u;
                         end if;
-                    end if;
-                when "0101" =>
+                when "0100" =>
                     --activated in case of no current output point
-                    --check X+BU completion
                     --increment h_doubler by h_main
-                    if fsm_run_x_b_u <= "0000" then
-                        fpu_add_1_in_1 <= h_doubler;
-                        fpu_add_1_in_2 <= h_main;
-                        enable_add_1 <= '1';
-                        thisIsAdder_1 <= '0';
-                        fixed_point_state <= "0110";
-                    end if;
-                when "0110" =>
+                    fpu_add_1_in_1 <= h_doubler;
+                    fpu_add_1_in_2 <= h_main;
+                    enable_add_1 <= '1';
+                    thisIsAdder_1 <= '0';
+                    fixed_point_state <= "0101";
+                when "0101" =>
                     --check increment completion 
                     --update h_doubler
                     if done_add_1 = '1' then
                         h_doubler <= fpu_add_1_out;
                         fixed_point_state <= "0000"; 
                     end if;
-                when "0111" =>
+                when "0110" =>
                     --activated in case of current output point
-                    --check X+BU completion
                     --increment h_doubler by h_main
-                    --increment x_ware address
-                    --output lower part of the current X on data bus
-                    if fsm_run_x_b_u = "0000" then
-                        fpu_add_1_in_1 <= h_doubler;
-                        fpu_add_1_in_2 <= h_main;
-                        enable_add_1 <= '1';
-                        thisIsAdder_1 <= '0';
-                        increment_x_address <= '1';
-                        in_data <= result_x_temp(31 downto 0);
-                        fixed_point_state <= "1000";
-                    end if;
-                when "1000" =>
+                    --increment c_ware pointer
+                    fpu_add_1_in_1 <= h_doubler;
+                    fpu_add_1_in_2 <= h_main;
+                    enable_add_1 <= '1';
+                    thisIsAdder_1 <= '0';
+                    c_ware <= to_vec(to_int(c_ware) + 1, c_ware'length);
+                    x_ware_find_address(
+                        c_ware => c_ware,
+                        x_ware_address => x_ware_address,
+                        x_address_out => x_address_out
+                    );
+                    fixed_point_state <= "0111"; 
+                when "0111" =>
                     --check h_doubler and X_c increment completion 
                     --update h_doubler
-                    --check whether to output higher part of current X or not based on mode
-                    --output interrupt succes signal
+                    --output interrupt success signal
                     if done_add_1 = '1' and increment_x_address = '0' then
                         h_doubler <= fpu_add_1_out;
-                        if mode_sig = "10" then --case fp64
-                            in_data <= result_x_temp(63 downto 32);
-                        end if;
-                        interrupt <= '1';
-                        error_success <= '1';
                         if interp_done_op = "11" then
+                            interrupt <= '1';
+                            error_success <= '1';
                             fixed_point_state <= "1111"; 
                         else
                             fixed_point_state <= "0000"; 
@@ -2192,7 +2176,25 @@ begin
                 when others =>
                     -- zeros and other cases
                     null;
-            end case ;
+            end case;
+        
+        --RESULTS OUTPUT
+        elsif rising_edge(clk) and rst = '0' and in_state = STATE_OUT then
+            outing(
+            mode => mode_sig,
+            main_adr => adr,
+            data_bus => in_data,
+            x_ware_data_out => X_ware_data_out,
+            x_ware_address => x_ware_address
+            read_enbl => X_ware_rd,
+            write_enbl => X_ware_wr,
+            c_ware => c_ware,
+            fsm => fsm_outing,
+            N_X_A_B => N_X_A_B_vec,
+            fsm_read => fsm_read, --to be adjusted
+            N_X_A_B_counter => N_X_A_B_vec,
+            c_ware_vec => c_ware_vec
+            );
         end if;
     end process;
 end architecture;
