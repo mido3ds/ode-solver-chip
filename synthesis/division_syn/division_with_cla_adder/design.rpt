@@ -1,0 +1,36 @@
+Report Physical info: 
+------------------------+-------------+-----------+------------
+                        |             |Area (squm)|Leakage (uW)
+------------------------+-------------+-----------+------------
+Design Name             |fpu_divider  |           |            
+  Total Instances       |         2370|       3661|      75.070
+    Macros              |            0|          0|       0.000
+    Pads                |            0|          0|       0.000
+    Phys                |            0|          0|       0.000
+    Blackboxes          |            0|          0|       0.000
+    Cells               |         2370|       3661|      75.070
+      Buffers           |            0|          0|       0.000
+      Inverters         |          402|        214|       5.770
+      Clock-Gates       |            1|          4|       0.059
+      Combinational     |         1544|       2057|      47.511
+      Latches           |          325|        864|      13.281
+      FlipFlops         |           98|        521|       8.449
+       Single-Bit FF    |           98|        521|       8.449
+       Multi-Bit FF     |            0|          0|       0.000
+       Clock-Gated      |           64|           |            
+       Bits             |           98|        521|       8.449
+         Load-Enabled   |            0|           |            
+         Clock-Gated    |           64|           |            
+  Tristate Pin Count    |            0|           |            
+Physical Info           |Placed       |           |            
+  Chip Size (mm x mm)   |0.138 x 0.138|      19073|            
+  Fixed Cell Area       |             |          0|            
+    Phys Only           |            0|          0|            
+  Placeable Area        |             |       6013|            
+  Movable Cell Area     |             |       3661|            
+  Utilization (%)       |           60|           |            
+  Chip Utilization (%)  |           60|           |            
+  Total Wire Length (mm)|       13.988|           |            
+  Longest Wire (mm)     |        0.077|           |            
+  Average Wire (mm)     |        0.072|           |            
+------------------------+-------------+-----------+------------
