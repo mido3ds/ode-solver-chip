@@ -1,2 +1,0 @@
-#!/bin/bash
-find out/ | awk '/'$1'.*output_with_color\.txt/' | xargs -l -I @ bash -c 'echo File: @ && cat @ && echo ========================' 2>/dev/null

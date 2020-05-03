@@ -12,7 +12,7 @@ Design, implementation, test and synthesis of a chip which solves ODE equations.
 | Mohamed Shawky        | 2       | 16   |
 | Mazen Amr             | 2       | 8    |
 | Mohamed Ahmed Ibrahim | 2       | 9    |
-| Mahmoud Ahmed       | 2       | 20   |
+| Mahmoud Ahmed         | 2       | 20   |
 
 # Requirements
 
